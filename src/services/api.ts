@@ -7,8 +7,9 @@ export interface ApiResponse<T> {
 }
 
 // 1. Perhatikan URL: Gunakan /rest/v1
-const BASE_URL = "https://nivi-production.up.railway.app/api";
+const BASE_URL = "https://oxyetuziuxpvhbmvpaok.supabase.co";
 // 2. WAJIB: Masukkan Anon Key dari Dashboard Supabase Anda
+const SUPABASE_ANON_KEY = "sb_publishable_KB-fM9xvAF_JJC_ihAA04w_qg2vN2Vg";
 
 class ApiService {
   private async request<T>(
@@ -20,11 +21,12 @@ class ApiService {
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY, // Supabase wajib butuh ini
         ...(options.headers as Record<string, string> || {}),
       };
 
       // Jika ada token user (setelah login), gunakan. Jika tidak, gunakan Anon Key.
-      headers['Authorization'] = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token || SUPABASE_ANON_KEY}`;
 
       const response = await fetch(`${BASE_URL}${endpoint}`, {
         ...options,
