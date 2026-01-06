@@ -4,8 +4,9 @@ import TaskScreen from "../pages/TaskScreen";
 import AttendanceScreen from "../pages/AttendanceScreen";
 import ProfileScreen from "../pages/ProfileScreen";
 
+const Tab = createMaterialTopTabNavigator()
+
 export default function SantriNavigator() {
-    const Tab = createMaterialTopTabNavigator()
   return (
     <Tab.Navigator>
       <Tab.Screen name="Dashboard" component={DashboardSantri} />
