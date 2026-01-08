@@ -7,28 +7,31 @@ import { useNavigation } from "@react-navigation/native";
 const AuthGate = () => {
   const navigation = useNavigation<any>();
 
-  useEffect(() => {
-    const init = async () => {
-      const token = await AsyncStorage.getItem("token");
-      const role = await AsyncStorage.getItem("role");
+useEffect(() => {
+  const init = async () => {
+    const token = await AsyncStorage.getItem("token");
+    const role = await AsyncStorage.getItem("role");
 
-      // ⬇️ PENTING: JIKA TIDAK ADA TOKEN → KE LOGIN
-      if (!token) {
-        navigation.replace("Login");
-        return;
-      }
+    if (!token) {
+      navigation.replace("Login");
+      return;
+    }
 
-      if (role === "santri") {
-        navigation.replace("DashboardSantri");
-      } else if (role === "pengajar") {
-        navigation.replace("DashboardPengajar");
-      } else {
-        navigation.replace("AdminDashboard");
-      }
-    };
+    // Navigasi sesuai role
+    if (role === "santri") {
+      navigation.replace("App", { initialRoute: "Santri" });
+    } else if (role === "pengajar") {
+      navigation.replace("App", { initialRoute: "Pengajar" });
+    } else if (role === "admin") {
+      navigation.replace("App", { initialRoute: "Admin" });
+    } else {
+      navigation.replace("Login"); // fallback
+    }
+  };
 
-    init();
-  }, []);
+  init();
+}, []);
+
 
   return (
     <View style={{ flex: 1, justifyContent: "center" }}>
