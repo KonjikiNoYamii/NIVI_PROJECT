@@ -1,5 +1,3 @@
-// src/types/task.ts
-
 /**
  * Interface untuk data tugas
  */
@@ -61,6 +59,57 @@ export interface SubmitTaskData {
 }
 
 /**
+ * Interface untuk data yang dikirim saat membuat tugas baru (pengajar)
+ */
+export interface CreateTaskRequest {
+  title: string;
+  description: string;
+  subject: string;
+  deadline: string; // ISO string format
+  assigned_to: number[]; // Array of student IDs
+  attachment_url?: string;
+}
+
+/**
+ * Interface untuk data yang dikirim saat mengedit tugas
+ */
+export interface UpdateTaskRequest {
+  title?: string;
+  description?: string;
+  subject?: string;
+  deadline?: string;
+  assigned_to?: number[];
+  attachment_url?: string;
+}
+
+/**
+ * Interface untuk data santri
+ */
+export interface Santri {
+  id: number;
+  name: string;
+  email?: string;
+  class?: string;
+  phone?: string;
+  avatar?: string;
+  nis?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Interface untuk data pengajar/guru
+ */
+export interface Teacher {
+  id: number;
+  name: string;
+  email: string;
+  subjects?: string[];
+  avatar?: string;
+  phone?: string;
+}
+
+/**
  * Interface untuk response API
  */
 export interface ApiResponse<T> {
@@ -69,6 +118,28 @@ export interface ApiResponse<T> {
   message?: string;
   error?: string;
   pagination?: PaginationData;
+}
+
+/**
+ * Interface untuk response dari API santri
+ */
+export interface SantriResponse extends ApiResponse<Santri[]> {}
+
+/**
+ * Interface untuk data tugas yang dibuat (response)
+ */
+export interface CreatedTask {
+  id: number;
+  subject: string;
+  title: string;
+  description: string;
+  deadline: string;
+  assigned_to: number[];
+  attachment_url?: string;
+  created_at: string;
+  updated_at: string;
+  teacher_id: number;
+  teacher_name: string;
 }
 
 /**
@@ -93,6 +164,16 @@ export interface TaskFilter {
   end_date?: string;
   sort_by?: 'deadline' | 'created_at' | 'subject';
   sort_order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Interface untuk filter santri
+ */
+export interface SantriFilter {
+  class?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -136,6 +217,19 @@ export interface Subject {
 }
 
 /**
+ * Interface untuk kelas/section
+ */
+export interface Class {
+  id: number;
+  name: string;
+  level: string;
+  year: number;
+  teacher_id?: number;
+  teacher_name?: string;
+  student_count: number;
+}
+
+/**
  * Interface untuk statistics tugas
  */
 export interface TaskStatistics {
@@ -145,6 +239,20 @@ export interface TaskStatistics {
   late: number;
   graded: number;
   average_score?: number;
+}
+
+/**
+ * Interface untuk notification/pemberitahuan
+ */
+export interface Notification {
+  id: number;
+  user_id: number;
+  title: string;
+  message: string;
+  type: 'task' | 'announcement' | 'reminder' | 'system';
+  data?: any;
+  read: boolean;
+  created_at: string;
 }
 
 /**
@@ -170,6 +278,7 @@ export type RootStackParamList = {
   TaskList: undefined;
   TaskDetail: { taskId: number };
   TaskSubmission: { task: Task };
+  TaskPengajar: undefined; // Tambahkan ini untuk screen tambah tugas
   Attendance: undefined;
   Profile: undefined;
   
@@ -218,3 +327,4 @@ export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 export type ApiStatus = 'idle' | 'loading' | 'success' | 'error';
 export type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
+export type TaskStatus = 'pending' | 'submitted' | 'late' | 'graded';
