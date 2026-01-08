@@ -14,8 +14,8 @@ export default function RootNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="AuthGate" component={AuthGate} />
+        <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="DashboardSantri" component={SantriBottomNavigator} />
         <Stack.Screen name="DashboardPengajar" component={DashboardPengajar} />
         <Stack.Screen name="AdminPanel" component={AdminPanel} />

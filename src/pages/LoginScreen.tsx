@@ -62,16 +62,6 @@ const LoginScreen = () => {
       />
 
       <Button title="Login" onPress={handleLogin} />
-
-      {/* LINK KE REGISTER */}
-      <TouchableOpacity
-        style={styles.registerLink}
-        onPress={() => navigation.navigate("Register")}
-      >
-        <Text style={styles.registerText}>
-          Belum punya akun? <Text style={styles.bold}>Daftar</Text>
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 };

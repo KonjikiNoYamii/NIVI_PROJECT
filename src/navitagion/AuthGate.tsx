@@ -1,16 +1,19 @@
+// screens/AuthGate.tsx
 import React, { useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
-export default function AuthGate() {
+const AuthGate = () => {
   const navigation = useNavigation<any>();
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const init = async () => {
+      const token = await AsyncStorage.getItem("token");
       const role = await AsyncStorage.getItem("role");
 
-      if (!role) {
+      // ⬇️ PENTING: JIKA TIDAK ADA TOKEN → KE LOGIN
+      if (!token) {
         navigation.replace("Login");
         return;
       }
@@ -20,16 +23,18 @@ export default function AuthGate() {
       } else if (role === "pengajar") {
         navigation.replace("DashboardPengajar");
       } else {
-        navigation.replace("AdminPanel");
+        navigation.replace("AdminDashboard");
       }
     };
 
-    checkAuth();
+    init();
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+    <View style={{ flex: 1, justifyContent: "center" }}>
       <ActivityIndicator size="large" />
     </View>
   );
-}
+};
+
+export default AuthGate;

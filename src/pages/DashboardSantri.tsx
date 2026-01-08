@@ -8,13 +8,10 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { absensiService } from "../services/absensi";
+import { absensiService, Absensi } from "../services/absensi";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-interface Absensi {
-  id: number;
-  tanggal: string;
-  status: "hadir" | "izin" | "alpha";
-}
+const MAX_ABSEN = 4;
 
 const DashboardSantri = () => {
   const [loading, setLoading] = useState(true);
@@ -33,14 +30,15 @@ const DashboardSantri = () => {
     }
   };
 
+  const sisaAbsen = MAX_ABSEN - absensi.length;
+
   const handleAbsen = async () => {
     try {
       setSubmitting(true);
-      await absensiService.absen();
-      Alert.alert("Sukses", "Absen berhasil");
+      await absensiService.absen("hadir");
       loadAbsensi();
-    } catch (err: any) {
-      Alert.alert("Gagal", err.response?.data?.message || "Tidak bisa absen");
+    } catch (e: any) {
+      Alert.alert("Gagal", e.response?.data?.message || "Tidak bisa absen");
     } finally {
       setSubmitting(false);
     }
@@ -52,25 +50,26 @@ const DashboardSantri = () => {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Absensi Hari Ini</Text>
 
-      {absensi.length < 4 && (
+      {sisaAbsen > 0 && (
         <TouchableOpacity
-          style={styles.absenButton}
+          style={styles.button}
           onPress={handleAbsen}
           disabled={submitting}
-          
         >
-          <Text style={styles.absenText}>
-            {submitting ? "Menyimpan..." : "ABSEN HADIR"}
+          <Text style={styles.buttonText}>
+            {submitting
+              ? "Menyimpan..."
+              : `ABSEN HADIR (${sisaAbsen}x tersisa)`}
           </Text>
         </TouchableOpacity>
       )}
@@ -80,40 +79,39 @@ const DashboardSantri = () => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.card}>
+            <Text style={styles.status}>{item.status.toUpperCase()}</Text>
             <Text>
-              {new Date(item.tanggal).toLocaleTimeString("id-ID")}
+              {new Date(item.tanggal).toLocaleString("id-ID")}
             </Text>
-            <Text>Status: {item.status}</Text>
           </View>
         )}
         ListEmptyComponent={
-          <Text style={{ textAlign: "center" }}>
-            Belum ada absensi hari ini
-          </Text>
+          <Text style={styles.empty}>Belum ada absensi</Text>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
 export default DashboardSantri;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
+  container: { flex: 1, padding: 16 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
-  absenButton: {
-    backgroundColor: "#4CAF50",
-    padding: 14,
-    borderRadius: 8,
+  title: { fontSize: 22, fontWeight: "700", marginBottom: 16 },
+  button: {
+    backgroundColor: "#2ecc71",
+    padding: 16,
+    borderRadius: 10,
     marginBottom: 16,
-    alignItems: "center",
   },
-  absenText: { color: "white", fontWeight: "bold" },
+  buttonText: { color: "#fff", fontWeight: "600", textAlign: "center" },
   card: {
-    backgroundColor: "#fff",
     padding: 12,
-    borderRadius: 6,
+    backgroundColor: "#fff",
+    borderRadius: 8,
     marginBottom: 8,
   },
+  status: { fontWeight: "700" },
+  empty: { textAlign: "center", marginTop: 40 },
 });
