@@ -168,18 +168,42 @@ const TaskScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {loading ? (
-        <ActivityIndicator size="large" />
-      ) : (
-        <FlatList
-          data={tasks}
-          keyExtractor={i => i.id.toString()}
-          renderItem={renderItem}
-          refreshing={refreshing}
-          onRefresh={() => fetchTasks(false)}
-        />
-      )}
+<SafeAreaView style={styles.safe}>
+  {loading ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#3498db" />
+      <Text style={styles.loadingText}>Memuat tugas...</Text>
+    </View>
+  ) : (
+    <FlatList
+      data={tasks}
+      keyExtractor={i => i.id.toString()}
+      renderItem={renderItem}
+      refreshing={refreshing}
+      onRefresh={() => fetchTasks(false)}
+      contentContainerStyle={
+        tasks.length === 0
+          ? { flex: 1, justifyContent: 'center' }
+          : undefined
+      }
+      ListEmptyComponent={
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>📭</Text>
+          <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
+          <Text style={styles.emptySubtitle}>
+            Saat ini belum ada tugas yang diberikan oleh pengajar.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.reloadBtn}
+            onPress={() => fetchTasks(true)}
+          >
+            <Text style={styles.reloadText}>Muat Ulang</Text>
+          </TouchableOpacity>
+        </View>
+      }
+    />
+  )}
 
       <Modal visible={!!selectedTask} transparent animationType="fade">
         <View style={styles.modalOverlay}>

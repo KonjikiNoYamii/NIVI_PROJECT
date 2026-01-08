@@ -1,10 +1,11 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-
 import DashboardSantri from "../pages/DashboardSantri";
 import TaskScreen from "../pages/TaskScreen";
 import ProfileScreen from "../pages/ProfileScreen";
-import AttendanceSantriScreen from "../pages/santri/AttendanceSantriScreen";
+import AttendanceSantriScreen from "../pages/AttendanceSantriScreen";
+
+
 
 const Tab = createBottomTabNavigator();
 

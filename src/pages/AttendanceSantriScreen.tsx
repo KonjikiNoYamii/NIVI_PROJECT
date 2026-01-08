@@ -18,7 +18,7 @@ const STATUS: ("hadir" | "izin" | "sakit")[] = [
   "sakit",
 ];
 
-const AttendanceScreen = () => {
+const AttendanceSantriScreen = () => {
   const [absensi, setAbsensi] = useState<Absensi[]>([]);
   const [selectedStatus, setSelectedStatus] =
     useState<"hadir" | "izin" | "sakit" | null>(null);
@@ -102,7 +102,7 @@ const AttendanceScreen = () => {
   );
 };
 
-export default AttendanceScreen;
+export default AttendanceSantriScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
