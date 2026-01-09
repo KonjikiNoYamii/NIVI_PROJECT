@@ -1,97 +1,366 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
-  Button,
   Alert,
   StyleSheet,
   TouchableOpacity,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+  ActivityIndicator,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+} from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { Icon } from 'react-native-elements';
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation<any>();
 
+  const validateForm = () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Email tidak boleh kosong');
+      return false;
+    }
+    if (!password.trim()) {
+      Alert.alert('Error', 'Password tidak boleh kosong');
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      Alert.alert('Error', 'Format email tidak valid');
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = async () => {
+    if (!validateForm()) return;
+
     try {
+      setLoading(true);
       const res = await axios.post(
-        "https://nivi-production.up.railway.app/api/auth/login",
-        { email, password }
+        'https://nivi-production.up.railway.app/api/auth/login',
+        { email, password },
       );
 
       const token = res.data.data.token;
       const user = res.data.data.user;
 
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("role", user.role);
-      await AsyncStorage.setItem("userId", String(user.id));
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('userToken', token);
+      await AsyncStorage.setItem('role', user.role);
+      await AsyncStorage.setItem('userId', String(user.id));
 
-      navigation.replace('AuthGate')
+      // Simpan informasi user tambahan jika ada
+      if (user.name) await AsyncStorage.setItem('userName', user.name);
+      if (user.email) await AsyncStorage.setItem('userEmail', user.email);
+
+      Alert.alert(
+        'Login Berhasil',
+        `Selamat datang, ${user.name || user.email}!`,
+        [{ text: 'OK', onPress: () => navigation.replace('AuthGate') }],
+      );
     } catch (err: any) {
       console.log(err.response?.data || err.message);
-      Alert.alert(
-        "Login gagal",
-        err.response?.data?.message || "Email atau password salah"
-      );
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Terjadi kesalahan, coba lagi nanti';
+
+      Alert.alert('Login Gagal', errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/logo.png')}
+                style={{ width: 120, height: 120, borderRadius: 60 }}
+              />{' '}
+            </View>
+            <Text style={styles.welcomeText}>Selamat Datang!!</Text>
+            <Text style={styles.subtitle}>
+              Masuk ke akun Anda untuk melanjutkan
+            </Text>
+          </View>
 
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        autoCapitalize="none"
-      />
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputContainer}>
+                <Icon
+                  name="envelope"
+                  type="font-awesome"
+                  size={18}
+                  color="#95a5a6"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="contoh@santri.dev"
+                  placeholderTextColor="#bdc3c7"
+                  value={email}
+                  onChangeText={setEmail}
+                  style={styles.input}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  editable={!loading}
+                />
+              </View>
+            </View>
 
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
-      />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputContainer}>
+                <Icon
+                  name="lock"
+                  type="font-awesome"
+                  size={20}
+                  color="#95a5a6"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  placeholder="Masukkan password"
+                  placeholderTextColor="#bdc3c7"
+                  value={password}
+                  onChangeText={setPassword}
+                  style={styles.input}
+                  secureTextEntry={!showPassword}
+                  editable={!loading}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.passwordToggle}
+                >
+                  <Icon
+                    name={showPassword ? 'eye-slash' : 'eye'}
+                    type="font-awesome"
+                    size={18}
+                    color="#95a5a6"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-      <Button title="Login" onPress={handleLogin} />
-    </View>
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Lupa Password?</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.loginButton,
+                loading && styles.loginButtonDisabled,
+              ]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.9}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Icon
+                    name="sign-in"
+                    type="font-awesome"
+                    size={18}
+                    color="#fff"
+                    style={styles.buttonIcon}
+                  />
+                  <Text style={styles.loginButtonText}>Masuk</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Dengan masuk, Anda menyetujui Ketentuan Layanan dan Kebijakan
+              Privasi
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: {
-    fontSize: 24,
+  safe: {
+    flex: 1,
+    backgroundColor: '#ffffffe8',
+  },
+  container: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
-    textAlign: "center",
-    fontWeight: "bold",
+  },
+  logoIcon: {
+    fontSize: 40,
+    marginRight: 12,
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#2c3e50',
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    textAlign: 'center',
+  },
+  form: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#dfe6e9',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    marginBottom: 15,
-    borderRadius: 6,
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#2c3e50',
   },
-  registerLink: {
-    marginTop: 15,
-    alignItems: "center",
+  passwordToggle: {
+    padding: 8,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '500',
+  },
+  loginButton: {
+    backgroundColor: '#3498db',
+    padding: 18,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#b0d4f0',
+  },
+  buttonIcon: {
+    marginRight: 10,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#dfe6e9',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#95a5a6',
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
   },
   registerText: {
     fontSize: 14,
-    color: "#555",
+    color: '#7f8c8d',
   },
-  bold: {
-    fontWeight: "bold",
-    color: "#1976D2",
+  registerLink: {
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '600',
+  },
+  footer: {
+    marginTop: 40,
+    paddingHorizontal: 20,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#95a5a6',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 
