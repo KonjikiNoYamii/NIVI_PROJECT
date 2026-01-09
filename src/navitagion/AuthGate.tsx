@@ -17,20 +17,20 @@ useEffect(() => {
       return;
     }
 
-    // Navigasi sesuai role
     if (role === "santri") {
-      navigation.replace("App", { initialRoute: "Santri" });
+      navigation.replace("SantriApp");
     } else if (role === "pengajar") {
-      navigation.replace("App", { initialRoute: "Pengajar" });
+      navigation.replace("PengajarApp");
     } else if (role === "admin") {
-      navigation.replace("App", { initialRoute: "Admin" });
+      navigation.replace("AdminApp");
     } else {
-      navigation.replace("Login"); // fallback
+      navigation.replace("Login");
     }
   };
 
   init();
 }, []);
+
 
 
   return (

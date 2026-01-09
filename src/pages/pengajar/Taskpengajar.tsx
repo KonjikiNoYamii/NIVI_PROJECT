@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   TextInput,
   TouchableOpacity,
-  Platform
+  Platform,
 } from 'react-native';
 import { Button, Icon } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,7 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 
 // Types
-import { ApiResponse } from '../types/task';
+import { ApiResponse } from '../../types/task';
 
 // Define CreateTaskRequest type locally
 interface CreateTaskRequest {
@@ -27,22 +27,17 @@ interface CreateTaskRequest {
   description: string;
   subject: string;
   deadline: string;
-  assigned_to: number[];
+  kelasId: number | null;
   attachment_url?: string;
 }
 
-interface Santri {
+interface Kelas {
   id: number;
-  name: string;
-  email?: string;
-  class?: string;
-  phone?: string;
-  created_at: string;
-  updated_at: string;
+  namaKelas: string;
 }
 
 // API Configuration
-const API_BASE_URL = 'https://api.santrinavigator.com/v1';
+const API_BASE_URL = 'https://nivi-production.up.railway.app/api';
 
 const TaskPengajar: React.FC = () => {
   const navigation = useNavigation();
@@ -50,8 +45,8 @@ const TaskPengajar: React.FC = () => {
   // State
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
-  const [santriList, setSantriList] = useState<Santri[]>([]);
-  const [loadingSantri, setLoadingSantri] = useState<boolean>(true);
+  const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [loadingKelas, setLoadingKelas] = useState<boolean>(true);
 
   // Form State
   const [formData, setFormData] = useState<CreateTaskRequest>({
@@ -59,96 +54,65 @@ const TaskPengajar: React.FC = () => {
     description: '',
     subject: '',
     deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    assigned_to: [],
-    attachment_url: ''
+    kelasId: null,
+    attachment_url: '',
   });
 
   // Date picker state
-  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   );
 
   // Fetch santri list on component mount
   useEffect(() => {
-    fetchSantriList();
+    fetchKelasList();
   }, []);
 
   // Fetch santri list
-  const fetchSantriList = useCallback(async (): Promise<void> => {
+  const fetchKelasList = useCallback(async () => {
     try {
-      setLoadingSantri(true);
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Error', 'Sesi telah berakhir. Silakan login kembali.');
-        return;
-      }
+      setLoadingKelas(true);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
 
-      const response = await axios.get<ApiResponse<Santri[]>>(`${API_BASE_URL}/santri`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
-      });
+      const res = await axios.get<ApiResponse<Kelas[]>>(
+        `${API_BASE_URL}/kelas/`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
-      if (response.data.success) {
-        setSantriList(response.data.data);
+      if (res.data.success) {
+        setKelasList(res.data.data);
       }
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse<Santri[]>>;
-      console.error('Error fetching santri:', axiosError.message);
-      
-      if (axiosError.response?.status === 401) {
-        Alert.alert('Sesi Berakhir', 'Silakan login kembali');
-      } else {
-        Alert.alert('Error', 'Gagal memuat daftar santri');
-      }
+    } catch (e) {
+      Alert.alert('Error', 'Gagal memuat daftar kelas');
     } finally {
-      setLoadingSantri(false);
+      setLoadingKelas(false); // ⬅️ INI PENTING
     }
   }, []);
 
   // Handle date change
   const handleDateChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    
-    if (date) {
+    // Android: selalu tutup picker
+    setShowDatePicker(false);
+
+    // Jika user menekan OK
+    if (event.type === 'set' && date) {
       setSelectedDate(date);
-      setFormData({
-        ...formData,
-        deadline: date.toISOString()
-      });
+      setFormData(prev => ({
+        ...prev,
+        deadline: date.toISOString(),
+      }));
     }
+
+    // Jika BATAL → jangan ubah apa pun
   };
 
   // Handle form input change
   const handleInputChange = (field: keyof CreateTaskRequest, value: string) => {
     setFormData({
       ...formData,
-      [field]: value
-    });
-  };
-
-  // Handle santri selection
-  const handleSantriSelection = (santriId: number) => {
-    const currentAssigned = [...formData.assigned_to];
-    const index = currentAssigned.indexOf(santriId);
-    
-    if (index > -1) {
-      // Remove if already selected
-      currentAssigned.splice(index, 1);
-    } else {
-      // Add if not selected
-      currentAssigned.push(santriId);
-    }
-    
-    setFormData({
-      ...formData,
-      assigned_to: currentAssigned
+      [field]: value,
     });
   };
 
@@ -169,8 +133,8 @@ const TaskPengajar: React.FC = () => {
       return false;
     }
 
-    if (formData.assigned_to.length === 0) {
-      Alert.alert('Peringatan', 'Pilih minimal satu santri');
+    if (!formData.kelasId) {
+      Alert.alert('Peringatan', 'Pilih kelas terlebih dahulu');
       return false;
     }
 
@@ -198,8 +162,8 @@ const TaskPengajar: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const token = await AsyncStorage.getItem('userToken');
-      
+      const token = await AsyncStorage.getItem('token');
+
       if (!token) {
         Alert.alert('Error', 'Sesi telah berakhir');
         return;
@@ -208,121 +172,109 @@ const TaskPengajar: React.FC = () => {
       // Prepare data for API
       const taskData = {
         ...formData,
-        deadline: new Date(formData.deadline).toISOString()
+        deadline: new Date(formData.deadline).toISOString(),
       };
 
       const response = await axios.post<ApiResponse<any>>(
-        `${API_BASE_URL}/tasks`,
+        `${API_BASE_URL}/tugas`,
         taskData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-        }
+        },
       );
 
       if (response.data.success) {
-        Alert.alert(
-          'Sukses',
-          'Tugas berhasil dibuat!',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form
-                setFormData({
-                  title: '',
-                  description: '',
-                  subject: '',
-                  deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                  assigned_to: [],
-                  attachment_url: ''
-                });
-                setSelectedDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-                
-                // Navigate back
-                navigation.goBack();
-              }
-            }
-          ]
-        );
+        Alert.alert('Sukses', 'Tugas berhasil dibuat!', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Reset form
+              setFormData({
+                title: '',
+                description: '',
+                subject: '',
+                deadline: new Date(
+                  Date.now() + 7 * 24 * 60 * 60 * 1000,
+                ).toISOString(),
+                kelasId: null,
+                attachment_url: '',
+              });
+              setSelectedDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+
+              // Navigate back
+              navigation.goBack();
+            },
+          },
+        ]);
       }
     } catch (error) {
       const axiosError = error as AxiosError<ApiResponse<any>>;
       console.error('Error creating task:', axiosError.response?.data);
-      
+
       let errorMessage = 'Gagal membuat tugas';
       if (axiosError.response?.status === 400) {
         errorMessage = 'Data tidak valid. Periksa kembali input Anda.';
       } else if (axiosError.response?.status === 403) {
         errorMessage = 'Anda tidak memiliki izin untuk membuat tugas';
       }
-      
+
       Alert.alert('Error', errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Format date for display
-  const formatDateDisplay = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   // Render santri selection
   const renderSantriSelection = () => {
-    if (loadingSantri) {
+    if (loadingKelas) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#3498db" />
-          <Text style={styles.loadingText}>Memuat daftar santri...</Text>
+          <Text style={styles.loadingText}>Memuat daftar kelas...</Text>
         </View>
       );
     }
 
     return (
       <View style={styles.santriSelectionContainer}>
-        <Text style={styles.sectionTitle}>Pilih Santri</Text>
-        <Text style={styles.sectionSubtitle}>
-          {formData.assigned_to.length} santri terpilih
-        </Text>
-        
-        <ScrollView 
-          style={styles.santriList}
-          showsVerticalScrollIndicator={false}
-        >
-          {santriList.map((santri) => {
-            const isSelected = formData.assigned_to.includes(santri.id);
-            
+        <Text style={styles.sectionTitle}>Pilih Kelas</Text>
+
+        <ScrollView style={styles.santriList}>
+          {kelasList.map(kelas => {
+            const selected = formData.kelasId === kelas.id;
+
             return (
               <TouchableOpacity
-                key={santri.id}
+                key={kelas.id}
                 style={[
                   styles.santriItem,
-                  isSelected && styles.santriItemSelected
+                  selected && styles.santriItemSelected,
                 ]}
-                onPress={() => handleSantriSelection(santri.id)}
-                activeOpacity={0.7}
+                onPress={() =>
+                  setFormData(prev => ({
+                    ...prev,
+                    kelasId: kelas.id,
+                  }))
+                }
               >
-                <View style={styles.santriInfo}>
-                  <Text style={styles.santriName}>{santri.name}</Text>
-                  <Text style={styles.santriClass}>Kelas: {santri.class || '-'}</Text>
-                </View>
-                <View style={[
-                  styles.selectionIndicator,
-                  isSelected && styles.selectionIndicatorSelected
-                ]}>
-                  {isSelected && (
-                    <Icon name="check" type="font-awesome" size={14} color="#fff" />
+                <Text style={styles.santriName}>{kelas.namaKelas}</Text>
+
+                <View
+                  style={[
+                    styles.selectionIndicator,
+                    selected && styles.selectionIndicatorSelected,
+                  ]}
+                >
+                  {selected && (
+                    <Icon
+                      name="check"
+                      type="font-awesome"
+                      size={14}
+                      color="#fff"
+                    />
                   )}
                 </View>
               </TouchableOpacity>
@@ -335,7 +287,7 @@ const TaskPengajar: React.FC = () => {
 
   // Render form
   const renderForm = () => (
-    <ScrollView 
+    <ScrollView
       style={styles.formContainer}
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.formContent}
@@ -347,7 +299,7 @@ const TaskPengajar: React.FC = () => {
           style={styles.textInput}
           placeholder="Masukkan judul tugas"
           value={formData.title}
-          onChangeText={(text) => handleInputChange('title', text)}
+          onChangeText={text => handleInputChange('title', text)}
           maxLength={100}
         />
         <Text style={styles.charCounter}>
@@ -361,7 +313,7 @@ const TaskPengajar: React.FC = () => {
         <View style={styles.pickerContainer}>
           <Picker
             selectedValue={formData.subject}
-            onValueChange={(value) => handleInputChange('subject', value)}
+            onValueChange={value => handleInputChange('subject', value)}
             style={styles.picker}
           >
             <Picker.Item label="Pilih Mata Pelajaran" value="" />
@@ -387,7 +339,7 @@ const TaskPengajar: React.FC = () => {
           style={[styles.textInput, styles.textArea]}
           placeholder="Jelaskan detail tugas yang harus dikerjakan..."
           value={formData.description}
-          onChangeText={(text) => handleInputChange('description', text)}
+          onChangeText={text => handleInputChange('description', text)}
           multiline={true}
           numberOfLines={4}
           textAlignVertical="top"
@@ -407,18 +359,22 @@ const TaskPengajar: React.FC = () => {
         >
           <Icon name="calendar" type="font-awesome" size={20} color="#3498db" />
           <Text style={styles.dateText}>
-            {formatDateDisplay(formData.deadline)}
+            {selectedDate.toLocaleDateString('id-ID', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
           </Text>
-          <Icon name="chevron-right" type="font-awesome" size={16} color="#95a5a6" />
         </TouchableOpacity>
-        
-        {showDatePicker && (
+
+        {showDatePicker && Platform.OS === 'android' && (
           <DateTimePicker
             value={selectedDate}
-            mode="datetime"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
+            mode="date"
+            display="spinner"
             minimumDate={new Date()}
+            onChange={handleDateChange}
           />
         )}
       </View>
@@ -433,7 +389,7 @@ const TaskPengajar: React.FC = () => {
           style={styles.textInput}
           placeholder="https://drive.google.com/..."
           value={formData.attachment_url}
-          onChangeText={(text) => handleInputChange('attachment_url', text)}
+          onChangeText={text => handleInputChange('attachment_url', text)}
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
@@ -446,7 +402,7 @@ const TaskPengajar: React.FC = () => {
       {/* Submit Button */}
       <View style={styles.submitContainer}>
         <Button
-          title={submitting ? "Membuat Tugas..." : "Buat Tugas"}
+          title={submitting ? 'Membuat Tugas...' : 'Buat Tugas'}
           onPress={handleSubmit}
           disabled={submitting}
           buttonStyle={styles.submitButton}
@@ -462,7 +418,7 @@ const TaskPengajar: React.FC = () => {
             />
           }
         />
-        
+
         <Button
           title="Batal"
           onPress={() => navigation.goBack()}
@@ -479,12 +435,6 @@ const TaskPengajar: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Icon name="arrow-left" type="font-awesome" size={20} color="#2c3e50" />
-        </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Tambah Tugas Baru</Text>
           <Text style={styles.headerSubtitle}>Untuk Santri</Text>

@@ -1,110 +1,211 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   SafeAreaView,
-} from 'react-native';
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// ================================
-// ABSENSI SANTRI - VIEW PENGAJAR
-// (HANYA MELIHAT, TIDAK EDIT)
-// ================================
-
-type Status = 'Hadir' | 'Izin' | 'Alfa';
-
-interface AbsensiSantri {
+interface Santri {
   id: number;
-  nama: string;
-  tanggal: string;
-  status: Status;
+  name: string;
 }
 
-const AbsensiSantriPengajarScreen = () => {
-  // DUMMY DATA (nanti dari API backend)
-  const [data] = useState<AbsensiSantri[]>([
-    { id: 1, nama: 'Ahmad', tanggal: '2026-01-06', status: 'Hadir' },
-    { id: 2, nama: 'Fulan', tanggal: '2026-01-06', status: 'Izin' },
-    { id: 3, nama: 'Zaid', tanggal: '2026-01-06', status: 'Alfa' },
-  ]);
+interface Absensi {
+  id: number;
+  userId: number;
+  tanggal: string;
+  status: "hadir" | "izin" | "sakit" | "alpha";
+}
 
-  const renderItem = ({ item }: { item: AbsensiSantri }) => (
-    <View style={styles.card}>
-      <View>
-        <Text style={styles.name}>{item.nama}</Text>
-        <Text style={styles.date}>{item.tanggal}</Text>
-      </View>
+interface Kelas {
+  id: number;
+  namaKelas: string;
+  santri: Santri[];
+  absensi: Absensi[];
+}
 
-      <View style={[styles.badge, styles[item.status]]}>
-        <Text style={styles.badgeText}>{item.status}</Text>
-      </View>
-    </View>
+const API_BASE_URL = "https://nivi-production.up.railway.app/api";
+
+const KelasScreen: React.FC = () => {
+  const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [selectedKelas, setSelectedKelas] = useState<Kelas | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingAbsensi, setLoadingAbsensi] = useState<boolean>(false);
+
+  useEffect(() => {
+    fetchKelas();
+  }, []);
+
+  const fetchKelas = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("token");
+      const res = await axios.get<{ success: boolean; data: Kelas[] }>(
+        `${API_BASE_URL}/kelas`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        setKelasList(res.data.data);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderKelasItem = ({ item }: { item: Kelas }) => (
+    <TouchableOpacity
+      style={styles.kelasCard}
+      onPress={() => setSelectedKelas(item)}
+    >
+      <Text style={styles.kelasTitle}>{item.namaKelas}</Text>
+      <Text style={styles.kelasSubtitle}>
+        Jumlah santri: {item.santri.length}
+      </Text>
+    </TouchableOpacity>
   );
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <Text style={styles.title}>Rekap Absensi Santri</Text>
+  const renderAbsensi = ({ item }: { item: Santri }) => {
+    const absensiUser = selectedKelas?.absensi.filter(
+      (a) => a.userId === item.id
+    );
 
-      <FlatList
-        data={data}
-        keyExtractor={item => item.id.toString()}
-        renderItem={renderItem}
-      />
+    return (
+      <View style={styles.card}>
+        <Text style={styles.name}>{item.name}</Text>
+        {absensiUser && absensiUser.length > 0 ? (
+          absensiUser.map((a) => (
+            <View
+              key={a.id}
+              style={[styles.badge, styles[a.status]]}
+            >
+              <Text style={styles.badgeText}>
+                {a.status.toUpperCase()} - {new Date(a.tanggal).toLocaleDateString()}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noDataText}>Belum ada absensi</Text>
+        )}
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#3498db" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!selectedKelas) {
+    // Pilih kelas
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>Pilih Kelas</Text>
+        <FlatList
+          data={kelasList}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderKelasItem}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  // Tampilan absensi per kelas yang dipilih
+  return (
+    <SafeAreaView style={styles.container}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => setSelectedKelas(null)}
+      >
+        <Text style={styles.backText}>⬅ Kembali ke daftar kelas</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.title}>Absensi Kelas: {selectedKelas.namaKelas}</Text>
+
+      {selectedKelas.santri.length > 0 ? (
+        <FlatList
+          data={selectedKelas.santri}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderAbsensi}
+        />
+      ) : (
+        <Text>Tidak ada santri di kelas ini</Text>
+      )}
     </SafeAreaView>
   );
 };
 
-export default AbsensiSantriPengajarScreen;
+export default KelasScreen;
 
 const styles = StyleSheet.create({
-  safe: {
+  container: {
     flex: 1,
-    backgroundColor: '#f0f7ff',
+    backgroundColor: "#f0f7ff",
     padding: 16,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1e3a8a',
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1e3a8a",
     marginBottom: 12,
   },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 14,
+  kelasCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     elevation: 2,
+  },
+  kelasTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1f2937",
+  },
+  kelasSubtitle: {
+    fontSize: 14,
+    color: "#64748b",
+    marginTop: 4,
+  },
+  backButton: {
+    marginBottom: 12,
+  },
+  backText: {
+    color: "#3498db",
+    fontWeight: "600",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  date: {
-    fontSize: 12,
-    color: '#64748b',
+    fontWeight: "600",
+    marginBottom: 6,
+    color: "#1f2937",
   },
   badge: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginVertical: 2,
+    alignSelf: "flex-start",
   },
-  Hadir: {
-    backgroundColor: '#bbf7d0',
-  },
-  Izin: {
-    backgroundColor: '#fde68a',
-  },
-  Alfa: {
-    backgroundColor: '#fecaca',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1f2937',
-  },
+  hadir: { backgroundColor: "#bbf7d0" },
+  izin: { backgroundColor: "#fde68a" },
+  sakit: { backgroundColor: "#fca5a5" },
+  alpha: { backgroundColor: "#fecaca" },
+  badgeText: { fontWeight: "700", fontSize: 12, color: "#1f2937" },
+  noDataText: { color: "#64748b", fontStyle: "italic" },
 });
