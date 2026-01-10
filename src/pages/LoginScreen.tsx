@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +16,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-elements';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { API } from '../services/api';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -47,14 +48,14 @@ const LoginScreen = () => {
     try {
       setLoading(true);
       const res = await axios.post(
-        'https://nivi-production.up.railway.app/api/auth/login',
+        `${API}/auth/login`,
         { email, password },
       );
 
       const token = res.data.data.token;
       const user = res.data.data.user;
 
-      await AsyncStorage.setItem('userToken', token);
+      await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('role', user.role);
       await AsyncStorage.setItem('userId', String(user.id));
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { absensiService, Absensi } from '../../services/absensi';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 const MAX_ABSEN = 4;
 
@@ -44,9 +45,12 @@ const DashboardSantri = () => {
     }
   };
 
-  useEffect(() => {
+ useFocusEffect(
+  useCallback(() => {
     loadAbsensi();
-  }, []);
+  }, [])
+);
+
 
   if (loading) {
     return (

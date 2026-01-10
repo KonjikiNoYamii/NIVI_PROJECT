@@ -48,13 +48,9 @@ const DashboardPengajar = () => {
     }
   };
 
-useEffect(() => {
-  const interval = setInterval(() => {
+  useEffect(() => {
     loadDashboard();
-  }, 5000); 
-
-  return () => clearInterval(interval);
-}, []);
+  },[]);
 
 
   const onRefresh = () => {

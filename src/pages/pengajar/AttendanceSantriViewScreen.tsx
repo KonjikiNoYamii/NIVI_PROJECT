@@ -13,6 +13,7 @@ import {
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "react-native-elements";
+import { API } from "../../services/api";
 
 interface Santri {
   id: number;
@@ -33,8 +34,6 @@ interface Kelas {
   absensi: Absensi[];
 }
 
-const API_BASE_URL = "https://nivi-production.up.railway.app/api";
-
 const KelasScreen: React.FC = () => {
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [selectedKelas, setSelectedKelas] = useState<Kelas | null>(null);
@@ -48,9 +47,9 @@ const KelasScreen: React.FC = () => {
   const fetchKelas = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await AsyncStorage.getItem("token");
       const res = await axios.get<{ success: boolean; data: Kelas[] }>(
-        `${API_BASE_URL}/kelas`,
+        `${API}/kelas`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {

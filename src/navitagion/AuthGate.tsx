@@ -7,31 +7,33 @@ import { useNavigation } from "@react-navigation/native";
 const AuthGate = () => {
   const navigation = useNavigation<any>();
 
-useEffect(() => {
-  const init = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const role = await AsyncStorage.getItem("role");
+  useEffect(() => {
+    const init = async () => {
+      const token = await AsyncStorage.getItem("token");
+      const role = await AsyncStorage.getItem("role");
 
-    if (!token) {
-      navigation.replace("Login");
-      return;
-    }
+      if (!token || !role) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Login" }],
+        });
+        return;
+      }
 
-    if (role === "santri") {
-      navigation.replace("SantriApp");
-    } else if (role === "pengajar") {
-      navigation.replace("PengajarApp");
-    } else if (role === "admin") {
-      navigation.replace("AdminApp");
-    } else {
-      navigation.replace("Login");
-    }
-  };
+      let target = "Login";
 
-  init();
-}, []);
+      if (role === "santri") target = "SantriApp";
+      if (role === "pengajar") target = "PengajarApp";
+      if (role === "admin") target = "AdminApp";
 
+      navigation.reset({
+        index: 0,
+        routes: [{ name: target }],
+      });
+    };
 
+    init();
+  }, []);
 
   return (
     <View style={{ flex: 1, justifyContent: "center" }}>

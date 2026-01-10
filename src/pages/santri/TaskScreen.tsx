@@ -16,8 +16,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { API } from '../../services/api';
 
-const API_BASE_URL = 'https://nivi-production.up.railway.app/api';
 
 interface Task {
   id: number;
@@ -44,7 +44,7 @@ const TaskScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('userToken');
 
-      const res = await axios.get(`${API_BASE_URL}/tugas`, {
+      const res = await axios.get(`${API}/tugas`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

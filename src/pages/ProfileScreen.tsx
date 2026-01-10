@@ -20,8 +20,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'react-native-image-picker';
 import Ionicons from '@react-native-vector-icons/ionicons'
 import { Icon } from 'react-native-elements';
+import { API } from '../services/api';
 // API Base
-const API_BASE_URL = 'https://nivi-production.up.railway.app/api/';
 
 // Types
 interface Profile {
@@ -86,13 +86,13 @@ const ProfileScreen: React.FC = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem('token');
       if (!token) {
         setLoading(false);
         return;
       }
 
-      const res = await axios.get(`${API_BASE_URL}profile/me`, {
+      const res = await axios.get(`${API}/profile/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -151,7 +151,7 @@ const ProfileScreen: React.FC = () => {
 
   // Save profile ke server
   const saveProfileToServer = async (data: Partial<Profile>) => {
-    const token = await AsyncStorage.getItem('userToken');
+    const token = await AsyncStorage.getItem('token');
     if (!token) throw new Error('Token tidak ditemukan');
 
     const payload = {
@@ -169,7 +169,7 @@ const ProfileScreen: React.FC = () => {
     };
 
     const res = await axios.put(
-      `${API_BASE_URL}profile/me`,
+      `${API}/profile/me`,
       payload,
       {
         headers: { Authorization: `Bearer ${token}` },
@@ -188,29 +188,21 @@ const ProfileScreen: React.FC = () => {
     
     setUpdating(true);
 
-    try {
-      const resData = await saveProfileToServer(editForm);
+try {
+  await saveProfileToServer(editForm);
 
-      const newProfileData: ProfileData = {
-        user: resData.user,
-        profile: resData.profile,
-      };
+  // 🔥 ambil ulang data dari server
+  await fetchProfile();
 
-      setProfileData(prev => ({
-        user: resData.user ?? prev.user,
-        profile: resData.profile ?? prev.profile,
-      }));
-      
-      await AsyncStorage.setItem('user', JSON.stringify(resData.user));
-      await AsyncStorage.setItem('profile', JSON.stringify(resData.profile));
+  Alert.alert('Sukses', 'Profil berhasil diperbarui');
+  setShowEditModal(false);
+} catch (err) {
+  console.log('update profile error', err);
+  Alert.alert('Error', 'Gagal menyimpan profil');
+} finally {
+  setUpdating(false);
+}
 
-      Alert.alert('Sukses', 'Profil berhasil diperbarui');
-      setShowEditModal(false);
-    } catch {
-      Alert.alert('Error', 'Gagal menyimpan profil');
-    } finally {
-      setUpdating(false);
-    }
   };
 
   // Logout

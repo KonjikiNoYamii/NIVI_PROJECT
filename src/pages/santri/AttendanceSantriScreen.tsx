@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { absensiService, Absensi } from '../../services/absensi';
+import { useFocusEffect } from '@react-navigation/native';
 
 const MAX_ABSEN = 4;
 
@@ -31,9 +32,11 @@ const AttendanceSantriScreen = () => {
     }
   };
 
-  useEffect(() => {
+ useFocusEffect(
+  useCallback(() => {
     loadAbsensi();
-  }, []);
+  }, [])
+);
 
   const sisaAbsen = MAX_ABSEN - absensi.length;
 

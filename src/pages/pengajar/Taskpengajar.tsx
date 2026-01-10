@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 
 // Types
 import { ApiResponse } from '../../types/task';
+import { API } from '../../services/api';
 
 // Define CreateTaskRequest type locally
 interface CreateTaskRequest {
@@ -45,7 +46,6 @@ const SUBJECTS = [
 ];
 
 // API Configuration
-const API_BASE_URL = 'https://nivi-production.up.railway.app/api';
 
 const TaskPengajar: React.FC = () => {
   const navigation = useNavigation();
@@ -84,11 +84,11 @@ const TaskPengajar: React.FC = () => {
   const fetchKelasList = useCallback(async () => {
     try {
       setLoadingKelas(true);
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
       const res = await axios.get<ApiResponse<Kelas[]>>(
-        `${API_BASE_URL}/kelas/`,
+        `${API}/kelas/`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -175,7 +175,7 @@ const TaskPengajar: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem('token');
 
       if (!token) {
         Alert.alert('Error', 'Sesi telah berakhir');
@@ -189,7 +189,7 @@ const TaskPengajar: React.FC = () => {
       };
 
       const response = await axios.post<ApiResponse<any>>(
-        `${API_BASE_URL}/tugas`,
+        `${API}/tugas`,
         taskData,
         {
           headers: {
