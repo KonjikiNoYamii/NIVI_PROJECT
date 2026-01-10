@@ -139,7 +139,7 @@ useEffect(() => {
           {/* Santri Card */}
           <View style={styles.statCard}>
             <View style={[styles.statIconContainer, { backgroundColor: '#e3f2fd' }]}>
-              <Icon name="user-graduate" type="font-awesome-5" size={20} color="#1976d2" />
+              <Icon name="users" type="font-awesome" size={20} color="#1976d2" />
             </View>
             <View style={styles.statContent}>
               <Text style={styles.statValue}>{data.totalSantri}</Text>
@@ -222,7 +222,7 @@ useEffect(() => {
               
               <View style={styles.absensiItem}>
                 <View style={[styles.absensiBadge, styles.izinBadge]}>
-                  <Icon name="user-clock" type="font-awesome-5" size={12} color="#fff" />
+                  <Icon name="clock-o" type="font-awesome" size={20} color="#fff" />
                 </View>
                 <View style={styles.absensiItemContent}>
                   <Text style={styles.absensiCount}>{data.absensi.izin}</Text>
