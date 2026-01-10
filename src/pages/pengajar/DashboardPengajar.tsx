@@ -120,18 +120,6 @@ useEffect(() => {
             <Text style={styles.title}>Dashboard Pengajar</Text>
             <Text style={styles.subtitle}>Ringkasan aktivitas terbaru</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.refreshButton}
-            onPress={onRefresh}
-            disabled={refreshing}
-          >
-            <Icon 
-              name="sync-alt" 
-              type="font-awesome-5" 
-              size={16} 
-              color={refreshing ? "#bdc3c7" : "#7f8c8d"} 
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Stats Grid - Row 1 */}
