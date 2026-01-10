@@ -11,32 +11,30 @@ import {
   Modal,
   TextInput,
   Platform,
+  Image,
 } from 'react-native';
-import { Button, Icon, Avatar } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'react-native-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'react-native-image-picker';
+import Ionicons from '@react-native-vector-icons/ionicons'
+import { Icon } from 'react-native-elements';
+// API Base
+const API_BASE_URL = 'https://nivi-production.up.railway.app/api/';
 
 // Types
-import { ApiResponse } from '../types/task';
-
-// API Configuration
-const API_BASE_URL = 'https://api.santrinavigator.com/v1';
-
-// Types untuk Profile
 interface Profile {
-  id: number;
-  userId: number;
+  id?: number;
+  userId?: number;
   namaLengkap: string;
-  noHp?: string;
-  alamat?: string;
-  fotoUrl?: string;
-  tanggalLahir?: string;
-  jenisKelamin?: string;
-  createdAt: string;
-  updatedAt: string;
+  noHp?: string | null;
+  alamat?: string | null;
+  fotoUrl?: string | null;
+  tanggalLahir?: string | null;
+  jenisKelamin?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface User {
@@ -51,705 +49,457 @@ interface ProfileData {
   profile: Profile;
 }
 
-// Default avatar URL
-const DEFAULT_AVATAR_URL = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
-
-// Demo data untuk development
-const DEMO_PROFILE_DATA: ProfileData = {
-  user: {
-    id: 1,
-    email: 'santri@example.com',
-    role: 'student',
-    createdAt: '2024-01-01T00:00:00.000Z',
-  },
-  profile: {
-    id: 1,
-    userId: 1,
-    namaLengkap: 'Ahmad Santoso',
-    noHp: '081234567890',
-    alamat: 'Jl. Pendidikan No. 123, Jakarta Selatan',
-    fotoUrl: DEFAULT_AVATAR_URL,
-    tanggalLahir: '2005-08-15T00:00:00.000Z',
-    jenisKelamin: 'L',
-    createdAt: '2024-01-01T00:00:00.000Z',
-    updatedAt: '2024-01-01T00:00:00.000Z',
-  },
-};
-
-// Mode development (ubah jadi false saat production)
-const IS_DEVELOPMENT = __DEV__ || true;
+// Default avatar
+const DEFAULT_AVATAR_URL =
+  'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
 
-  // State
-  const [loading, setLoading] = useState<boolean>(true);
-  const [updating, setUpdating] = useState<boolean>(false);
-  const [profileData, setProfileData] = useState<ProfileData>(DEMO_PROFILE_DATA);
-  const [apiAvailable, setApiAvailable] = useState<boolean>(false);
-  
-  // Edit modal state
-  const [showEditModal, setShowEditModal] = useState<boolean>(false);
-  const [editForm, setEditForm] = useState<Partial<Profile>>({});
-  
-  // Date picker state
-  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date('2005-08-15'));
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [profileData, setProfileData] = useState<ProfileData>({
+    user: {
+      id: 0,
+      email: '',
+      role: '',
+      createdAt: '',
+    },
+    profile: {
+      id: undefined,
+      userId: undefined,
+      namaLengkap: '',
+      noHp: null,
+      alamat: null,
+      fotoUrl: DEFAULT_AVATAR_URL,
+      tanggalLahir: null,
+      jenisKelamin: null,
+    },
+  });
 
-  // Fetch profile data
-  const fetchProfile = useCallback(async (): Promise<void> => {
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<Profile>>({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+
+  // Fetch profile dari server
+  const fetchProfile = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Jika development mode, langsung pakai data demo
-      if (IS_DEVELOPMENT) {
-        // Simulasi loading API
-        setTimeout(() => {
-          setProfileData(DEMO_PROFILE_DATA);
-          setSelectedDate(new Date(DEMO_PROFILE_DATA.profile.tanggalLahir || new Date()));
-          setApiAvailable(false); // API tidak tersedia di mode demo
-          setLoading(false);
-        }, 800);
-        return;
-      }
-      
       const token = await AsyncStorage.getItem('userToken');
-      
       if (!token) {
-        // Tidak ada token, pakai data demo
-        setProfileData(DEMO_PROFILE_DATA);
-        setApiAvailable(false);
         setLoading(false);
         return;
       }
 
-      // Coba fetch dari API
-      const response = await axios.get<ApiResponse<ProfileData>>(
-        `${API_BASE_URL}/profile`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 8000
-        }
-      );
+      const res = await axios.get(`${API_BASE_URL}profile/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      if (response.data.success) {
-        setProfileData(response.data.data);
-        setApiAvailable(true);
-        if (response.data.data.profile.tanggalLahir) {
-          setSelectedDate(new Date(response.data.data.profile.tanggalLahir));
-        }
-      }
-    } catch (error) {
-      console.log('API Profile belum tersedia, menggunakan data demo');
-      setProfileData(DEMO_PROFILE_DATA);
-      setApiAvailable(false);
-      
-      // Tampilkan alert hanya jika bukan development mode
-      if (!IS_DEVELOPMENT) {
-        Alert.alert(
-          'Info', 
-          'Server tidak dapat diakses. Menampilkan data demo.'
-        );
-      }
+      const data = res.data.data;
+
+      setProfileData({
+        user: {
+          id: data.user?.id ?? 0,
+          email: data.user?.email ?? '',
+          role: data.user?.role ?? '',
+          createdAt: data.user?.createdAt ?? '',
+        },
+        profile: {
+          id: data.profile?.id,
+          namaLengkap: data.profile?.namaLengkap ?? '',
+          noHp: data.profile?.noHp ?? '',
+          alamat: data.profile?.alamat ?? '',
+          fotoUrl: data.profile?.fotoUrl ?? '',
+          tanggalLahir: data.profile?.tanggalLahir,
+          jenisKelamin: data.profile?.jenisKelamin,
+        },
+      });
+    } catch (err) {
+      console.log('fetchProfile error', err);
+      Alert.alert('Error', 'Gagal memuat data profil');
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchProfile();
   }, []);
 
-  // Handle image picker
-  const handleImagePick = () => {
-    if (!apiAvailable) {
-      Alert.alert(
-        'Mode Demo',
-        'Fitur upload foto membutuhkan koneksi ke server'
-      );
-      return;
-    }
-    
-    Alert.alert(
-      'Ubah Foto Profil',
-      'Pilih sumber foto',
-      [
-        { text: 'Kamera', onPress: () => pickImage('camera') },
-        { text: 'Galeri', onPress: () => pickImage('gallery') },
-        { text: 'Batal', style: 'cancel' }
-      ]
-    );
-  };
-
-  const pickImage = async (source: 'camera' | 'gallery') => {
-    const options: ImagePicker.ImageLibraryOptions | ImagePicker.CameraOptions = {
-      mediaType: 'photo',
-      quality: 0.8,
-      maxWidth: 800,
-      maxHeight: 800,
-      includeBase64: false,
-    };
-
-    try {
-      let response: ImagePicker.ImagePickerResponse;
-      
-      if (source === 'camera') {
-        response = await ImagePicker.launchCamera(options as ImagePicker.CameraOptions);
-      } else {
-        response = await ImagePicker.launchImageLibrary(options as ImagePicker.ImageLibraryOptions);
-      }
-
-      if (response.didCancel) {
-        return;
-      }
-
-      if (response.errorCode || response.errorMessage) {
-        Alert.alert('Error', 'Gagal memilih gambar');
-        return;
-      }
-
-      if (response.assets && response.assets[0]) {
-        await uploadProfileImage(response.assets[0]);
-      }
-    } catch (error) {
-      console.error('Image picker error:', error);
-      Alert.alert('Error', 'Gagal memilih gambar');
-    }
-  };
-
-  // Upload profile image
-  const uploadProfileImage = async (imageAsset: ImagePicker.Asset) => {
-    try {
-      setUpdating(true);
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Error', 'Sesi telah berakhir');
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('foto', {
-        uri: imageAsset.uri,
-        type: imageAsset.type || 'image/jpeg',
-        name: imageAsset.fileName || 'profile.jpg',
-      } as any);
-
-      const response = await axios.post<ApiResponse<Profile>>(
-        `${API_BASE_URL}/profile/photo`,
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      if (response.data.success) {
-        setProfileData({
-          ...profileData,
-          profile: {
-            ...profileData.profile,
-            fotoUrl: response.data.data.fotoUrl,
-          }
-        });
-        Alert.alert('Sukses', 'Foto profil berhasil diperbarui');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      Alert.alert('Error', 'Gagal mengupload foto profil');
-    } finally {
-      setUpdating(false);
+  // Date picker
+  const handleDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (date) {
+      setSelectedDate(date);
+      setEditForm({ ...editForm, tanggalLahir: date.toISOString() });
     }
   };
 
   // Open edit modal
   const openEditModal = () => {
-    if (!apiAvailable) {
-      Alert.alert(
-        'Mode Demo',
-        'Fitur edit profil membutuhkan koneksi ke server'
-      );
-      return;
-    }
-    
     setEditForm({
-      namaLengkap: profileData.profile.namaLengkap,
-      noHp: profileData.profile.noHp || '',
-      alamat: profileData.profile.alamat || '',
-      tanggalLahir: profileData.profile.tanggalLahir,
-      jenisKelamin: profileData.profile.jenisKelamin || '',
+      namaLengkap: profileData.profile.namaLengkap ?? '',
+      noHp: profileData.profile.noHp ?? '',
+      alamat: profileData.profile.alamat ?? '',
+      tanggalLahir: profileData.profile.tanggalLahir ?? null,
+      jenisKelamin: profileData.profile.jenisKelamin ?? null,
+      fotoUrl: profileData.profile.fotoUrl ?? DEFAULT_AVATAR_URL,
     });
     setShowEditModal(true);
   };
 
-  // Handle date change for date picker
-  const handleDateChange = (event: any, date?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    
-    if (date) {
-      setSelectedDate(date);
-      setEditForm({
-        ...editForm,
-        tanggalLahir: date.toISOString(),
-      });
-    }
+  // Save profile ke server
+  const saveProfileToServer = async (data: Partial<Profile>) => {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) throw new Error('Token tidak ditemukan');
+
+    const payload = {
+      namaLengkap: data.namaLengkap,
+      noHp: data.noHp ?? null,
+      alamat: data.alamat ?? null,
+      fotoUrl:
+        data.fotoUrl ||
+        profileData.profile.fotoUrl ||
+        DEFAULT_AVATAR_URL,
+      tanggalLahir: data.tanggalLahir
+        ? new Date(data.tanggalLahir).toISOString()
+        : null,
+      jenisKelamin: data.jenisKelamin ?? null,
+    };
+
+    const res = await axios.put(
+      `${API_BASE_URL}profile/me`,
+      payload,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    return res.data.data;
   };
 
   // Update profile
   const handleUpdateProfile = async () => {
+    if (!editForm.namaLengkap?.trim()) {
+      Alert.alert('Peringatan', 'Nama lengkap wajib diisi');
+      return;
+    }
+    
+    setUpdating(true);
+
     try {
-      setUpdating(true);
-      const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Error', 'Sesi telah berakhir');
-        return;
-      }
+      const resData = await saveProfileToServer(editForm);
 
-      // Filter out empty strings
-      const cleanData: any = {};
-      Object.entries(editForm).forEach(([key, value]) => {
-        if (value !== undefined && value !== '') {
-          cleanData[key] = value;
-        }
-      });
+      const newProfileData: ProfileData = {
+        user: resData.user,
+        profile: resData.profile,
+      };
 
-      const response = await axios.put<ApiResponse<Profile>>(
-        `${API_BASE_URL}/profile`,
-        cleanData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      setProfileData(prev => ({
+        user: resData.user ?? prev.user,
+        profile: resData.profile ?? prev.profile,
+      }));
+      
+      await AsyncStorage.setItem('user', JSON.stringify(resData.user));
+      await AsyncStorage.setItem('profile', JSON.stringify(resData.profile));
 
-      if (response.data.success) {
-        setProfileData({
-          ...profileData,
-          profile: response.data.data,
-        });
-        setShowEditModal(false);
-        Alert.alert('Sukses', 'Profil berhasil diperbarui');
-      }
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse<Profile>>;
-      console.error('Update error:', axiosError.response?.data);
-      
-      let errorMessage = 'Gagal memperbarui profil';
-      if (axiosError.response?.status === 400) {
-        errorMessage = 'Data tidak valid';
-      }
-      
-      Alert.alert('Error', errorMessage);
+      Alert.alert('Sukses', 'Profil berhasil diperbarui');
+      setShowEditModal(false);
+    } catch {
+      Alert.alert('Error', 'Gagal menyimpan profil');
     } finally {
       setUpdating(false);
     }
   };
 
-  // Logout function
-  const handleLogout = () => {
-    Alert.alert(
-      'Konfirmasi Logout',
-      'Apakah Anda yakin ingin keluar?',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('userToken');
-              await AsyncStorage.removeItem('userData');
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' as never }],
-              });
-            } catch (error) {
-              console.error('Logout error:', error);
-            }
-          }
-        }
-      ]
-    );
+  // Logout
+  const handleLogout = async () => {
+    Alert.alert('Konfirmasi Logout', 'Apakah Anda yakin ingin keluar?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.removeItem('userToken');
+          await AsyncStorage.removeItem('user');
+          await AsyncStorage.removeItem('profile');
+          navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
+        },
+      },
+    ]);
   };
 
-  // Format date for display
-  const formatDate = (dateString?: string): string => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+  const handlePickImage = async () => {
+    const result = await ImagePicker.launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.8,
+      maxWidth: 600,
+      maxHeight: 600,
     });
+
+    if (result.didCancel) return;
+
+    const asset = result.assets?.[0];
+    if (!asset?.uri) return;
+
+    setEditForm(prev => ({
+      ...prev,
+      fotoUrl: asset.uri,
+    }));
   };
 
-  // Format gender for display
-  const formatGender = (gender?: string): string => {
+  const formatDate = (dateString?: string) =>
+    dateString
+      ? new Date(dateString).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : '-';
+
+  const formatGender = (gender?: string) => {
     switch (gender) {
-      case 'L': return 'Laki-laki';
-      case 'P': return 'Perempuan';
-      default: return '-';
+      case 'L':
+        return 'Laki-laki';
+      case 'P':
+        return 'Perempuan';
+      default:
+        return 'Tidak disebutkan';
     }
   };
 
-  // Use effect to fetch profile on mount
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  // Render Personal Information Card
-  const renderPersonalInfoCard = () => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Informasi Pribadi</Text>
-      </View>
-      <View style={styles.cardDivider} />
-      
-      <View style={styles.infoItem}>
-        <Icon name="user" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Nama Lengkap</Text>
-          <Text style={styles.infoValue}>{profileData.profile.namaLengkap}</Text>
-        </View>
-      </View>
-
-      <View style={styles.infoItem}>
-        <Icon name="phone" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>No. HP</Text>
-          <Text style={styles.infoValue}>{profileData.profile.noHp || '-'}</Text>
-        </View>
-      </View>
-
-      <View style={styles.infoItem}>
-        <Icon name="transgender" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Jenis Kelamin</Text>
-          <Text style={styles.infoValue}>
-            {formatGender(profileData.profile.jenisKelamin)}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.infoItem}>
-        <Icon name="birthday-cake" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Tanggal Lahir</Text>
-          <Text style={styles.infoValue}>
-            {formatDate(profileData.profile.tanggalLahir)}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.infoItem}>
-        <Icon name="map-marker" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Alamat</Text>
-          <Text style={styles.infoValue}>
-            {profileData.profile.alamat || '-'}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  // Render Account Information Card
-  const renderAccountInfoCard = () => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>Informasi Akun</Text>
-      </View>
-      <View style={styles.cardDivider} />
-      
-      <View style={styles.infoItem}>
-        <Icon name="envelope" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Email</Text>
-          <Text style={styles.infoValue}>{profileData.user.email}</Text>
-        </View>
-      </View>
-
-      <View style={styles.infoItem}>
-        <Icon name="user-tag" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Role</Text>
-          <Text style={styles.infoValue}>
-            {profileData.user.role === 'student' ? 'Santri' : 
-             profileData.user.role === 'teacher' ? 'Pengajar' : 'Admin'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.infoItem}>
-        <Icon name="calendar" type="font-awesome" size={20} color="#3498db" />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLabel}>Bergabung Sejak</Text>
-          <Text style={styles.infoValue}>
-            {formatDate(profileData.user.createdAt)}
-          </Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  // Render loading state
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.safe}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Memuat data profil...</Text>
-          {IS_DEVELOPMENT && (
-            <Text style={styles.loadingSubtext}>
-              Mode Development: Menggunakan data demo
-            </Text>
-          )}
+          <Text style={styles.loadingText}>Memuat profil...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safe}>
       <ScrollView 
-        style={styles.scrollView}
+        style={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* API Status Warning */}
-        {!apiAvailable && (
-          <View style={styles.apiWarning}>
-            <Icon name="info-circle" type="font-awesome" size={20} color="#f39c12" />
-            <Text style={styles.apiWarningText}>
-              Mode Demo: Data yang ditampilkan adalah contoh
-            </Text>
-            <TouchableOpacity 
-              onPress={fetchProfile} 
-              style={styles.retryIcon}
-            >
-              <Icon name="refresh" type="font-awesome" size={16} color="#3498db" />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Profile Header */}
+        {/* Profile Header Section */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <TouchableOpacity onPress={handleImagePick} disabled={updating}>
-              <View style={styles.avatarWrapper}>
-                <Avatar
-                  rounded
-                  size="xlarge"
-                  source={{
-                    uri: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL
-                  }}
-                  title={profileData.profile.namaLengkap.charAt(0)}
-                  containerStyle={styles.avatar}
-                />
-                {updating && (
-                  <View style={styles.avatarOverlay}>
-                    <ActivityIndicator size="large" color="#ffffff" />
-                  </View>
-                )}
-              </View>
-              <View style={styles.cameraIconContainer}>
-                <Icon
-                  name="camera"
-                  type="font-awesome"
-                  size={20}
-                  color="#ffffff"
-                />
-              </View>
+            <Image
+              source={{ uri: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL }}
+              style={styles.avatar}
+            />
+            <TouchableOpacity 
+              style={styles.editPhotoButton}
+              onPress={() => {
+                setEditForm({
+                  ...profileData.profile,
+                  fotoUrl: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL,
+                });
+                setShowEditModal(true);
+              }}
+            >
+              <Ionicons name="camera" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
-
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{profileData.profile.namaLengkap}</Text>
-            <Text style={styles.profileEmail}>{profileData.user.email}</Text>
-            <Text style={styles.profileRole}>
-              {profileData.user.role === 'student' ? 'Santri' : 
-               profileData.user.role === 'teacher' ? 'Pengajar' : 'Admin'}
+          
+          <Text style={styles.profileName}>
+            {profileData.profile.namaLengkap || 'Belum diisi'}
+          </Text>
+          <Text style={styles.profileEmail}>{profileData.user.email}</Text>
+          
+          <View style={styles.roleBadge}>
+            <Icon 
+              name='user-o' 
+              type="font-awesome" 
+              size={14} 
+              color="#3498db" 
+            />
+            <Text style={styles.roleText}>
+              {profileData.user.role === 'santri' ? 'Santri' : 'Pengajar'}
             </Text>
           </View>
-
-          <Button
-            title="Edit Profil"
-            type="outline"
-            onPress={openEditModal}
-            buttonStyle={styles.editButton}
-            titleStyle={styles.editButtonText}
-            icon={
-              <Icon
-                name="edit"
-                type="font-awesome"
-                size={16}
-                color="#3498db"
-                style={{ marginRight: 8 }}
-              />
-            }
-          />
         </View>
 
-        {/* Personal Information Card */}
-        {renderPersonalInfoCard()}
-
-        {/* Account Information Card */}
-        {renderAccountInfoCard()}
+        {/* Info Section */}
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Informasi Pribadi</Text>
+          
+          <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <Icon name="phone" type="font-awesome" size={16} color="#7f8c8d" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Nomor Telepon</Text>
+                <Text style={styles.infoValue}>
+                  {profileData.profile.noHp || 'Tidak ada'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Icon name="map-marker" type="font-awesome" size={16} color="#7f8c8d" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Alamat</Text>
+                <Text style={styles.infoValue}>
+                  {profileData.profile.alamat || 'Tidak ada'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Icon name="birthday-cake" type="font-awesome" size={16} color="#7f8c8d" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Tanggal Lahir</Text>
+                <Text style={styles.infoValue}>
+                  {formatDate(profileData.profile.tanggalLahir || '-')}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Icon name="venus-mars" type="font-awesome-5" size={16} color="#7f8c8d" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Jenis Kelamin</Text>
+                <Text style={styles.infoValue}>
+                  {formatGender(profileData.profile.jenisKelamin || '-')}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.infoRow}>
+              <Icon name="calendar" type="font-awesome" size={16} color="#7f8c8d" />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Bergabung Sejak</Text>
+                <Text style={styles.infoValue}>
+                  {formatDate(profileData.user.createdAt)}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Button
-            title="Ubah Password"
-            type="outline"
-            buttonStyle={styles.actionButton}
-            titleStyle={styles.actionButtonText}
-            icon={
-              <Icon
-                name="key"
-                type="font-awesome"
-                size={16}
-                color="#7f8c8d"
-                style={{ marginRight: 8 }}
-              />
-            }
-            onPress={() => {
-              if (!apiAvailable) {
-                Alert.alert(
-                  'Mode Demo',
-                  'Fitur ubah password membutuhkan koneksi ke server'
-                );
-              } else {
-                navigation.navigate('ChangePassword' as never);
-              }
-            }}
-          />
+        <View style={styles.actionsSection}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={openEditModal}
+            activeOpacity={0.8}
+          >
+            <Icon name="edit" type="font-awesome" size={18} color="#3498db" />
+            <Text style={styles.editButtonText}>Edit Profil</Text>
+          </TouchableOpacity>
           
-          <Button
-            title="Keluar"
-            type="outline"
-            buttonStyle={[styles.actionButton, styles.logoutButton]}
-            titleStyle={[styles.actionButtonText, styles.logoutButtonText]}
-            icon={
-              <Icon
-                name="sign-out"
-                type="font-awesome"
-                size={16}
-                color="#e74c3c"
-                style={{ marginRight: 8 }}
-              />
-            }
+          <TouchableOpacity
+            style={styles.logoutButton}
             onPress={handleLogout}
-          />
+            activeOpacity={0.8}
+          >
+            <Icon name="sign-out" type="font-awesome" size={18} color="#e74c3c" />
+            <Text style={styles.logoutButtonText}>Keluar</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* Edit Profile Modal */}
+      {/* Edit Modal */}
       <Modal
         visible={showEditModal}
+        transparent
         animationType="slide"
-        transparent={true}
-        onRequestClose={() => !updating && setShowEditModal(false)}
+        onRequestClose={() => setShowEditModal(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profil</Text>
-              <TouchableOpacity
-                onPress={() => !updating && setShowEditModal(false)}
+              <TouchableOpacity 
+                onPress={() => setShowEditModal(false)}
                 disabled={updating}
               >
-                <Icon name="times" type="font-awesome" size={20} color="#666" />
+                <Icon name="times" type="font-awesome" size={20} color="#7f8c8d" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Nama Lengkap *</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Masukkan nama lengkap"
-                  value={editForm.namaLengkap}
-                  onChangeText={(text) => setEditForm({...editForm, namaLengkap: text})}
-                  editable={!updating}
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+                onPress={handlePickImage}
+                style={styles.photoPicker}
+                disabled={updating}
+              >
+                <Image
+                  source={{ uri: editForm.fotoUrl || DEFAULT_AVATAR_URL }}
+                  style={styles.modalAvatar}
                 />
-              </View>
+                <View style={styles.changePhotoButton}>
+                  <Icon name="camera" type="font-awesome" size={16} color="#fff" />
+                  <Text style={styles.changePhotoText}>Ganti Foto</Text>
+                </View>
+              </TouchableOpacity>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>No. HP</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Masukkan nomor HP"
-                  value={editForm.noHp}
-                  onChangeText={(text) => setEditForm({...editForm, noHp: text})}
-                  keyboardType="phone-pad"
-                  editable={!updating}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Jenis Kelamin</Text>
-                <View style={styles.genderOptions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.genderOption,
-                      editForm.jenisKelamin === 'L' && styles.genderOptionSelected
-                    ]}
-                    onPress={() => setEditForm({...editForm, jenisKelamin: 'L'})}
-                    disabled={updating}
-                  >
-                    <Icon
-                      name="male"
-                      type="font-awesome"
-                      size={20}
-                      color={editForm.jenisKelamin === 'L' ? '#fff' : '#3498db'}
-                    />
-                    <Text style={[
-                      styles.genderOptionText,
-                      editForm.jenisKelamin === 'L' && styles.genderOptionTextSelected
-                    ]}>
-                      Laki-laki
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.genderOption,
-                      editForm.jenisKelamin === 'P' && styles.genderOptionSelected
-                    ]}
-                    onPress={() => setEditForm({...editForm, jenisKelamin: 'P'})}
-                    disabled={updating}
-                  >
-                    <Icon
-                      name="female"
-                      type="font-awesome"
-                      size={20}
-                      color={editForm.jenisKelamin === 'P' ? '#fff' : '#e84393'}
-                    />
-                    <Text style={[
-                      styles.genderOptionText,
-                      editForm.jenisKelamin === 'P' && styles.genderOptionTextSelected
-                    ]}>
-                      Perempuan
-                    </Text>
-                  </TouchableOpacity>
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Nama Lengkap *</Text>
+                <View style={styles.inputContainer}>
+                  <Icon name="user" type="font-awesome" size={16} color="#95a5a6" />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Masukkan nama lengkap"
+                    placeholderTextColor="#bdc3c7"
+                    value={editForm.namaLengkap ?? ''}
+                    onChangeText={t => setEditForm({ ...editForm, namaLengkap: t })}
+                    editable={!updating}
+                  />
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Tanggal Lahir</Text>
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Nomor Telepon</Text>
+                <View style={styles.inputContainer}>
+                  <Icon name="phone" type="font-awesome" size={16} color="#95a5a6" />
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Masukkan nomor telepon"
+                    placeholderTextColor="#bdc3c7"
+                    value={editForm.noHp ?? ''}
+                    onChangeText={t => setEditForm({ ...editForm, noHp: t })}
+                    keyboardType="phone-pad"
+                    editable={!updating}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Alamat</Text>
+                <View style={styles.inputContainer}>
+                  <Icon name="map-marker" type="font-awesome" size={16} color="#95a5a6" />
+                  <TextInput
+                    style={[styles.textInput, { height: 80 }]}
+                    placeholder="Masukkan alamat lengkap"
+                    placeholderTextColor="#bdc3c7"
+                    value={editForm.alamat ?? ''}
+                    onChangeText={t => setEditForm({ ...editForm, alamat: t })}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    editable={!updating}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Tanggal Lahir</Text>
                 <TouchableOpacity
-                  style={styles.dateInput}
                   onPress={() => setShowDatePicker(true)}
+                  style={styles.dateInputContainer}
                   disabled={updating}
                 >
-                  <Icon name="calendar" type="font-awesome" size={20} color="#3498db" />
+                  <Icon name="calendar" type="font-awesome" size={16} color="#95a5a6" />
                   <Text style={styles.dateInputText}>
-                    {editForm.tanggalLahir ? formatDate(editForm.tanggalLahir) : 'Pilih tanggal'}
+                    {editForm.tanggalLahir
+                      ? formatDate(editForm.tanggalLahir)
+                      : 'Pilih tanggal lahir'}
                   </Text>
                 </TouchableOpacity>
                 {showDatePicker && (
@@ -757,45 +507,64 @@ const ProfileScreen: React.FC = () => {
                     value={selectedDate || new Date()}
                     mode="date"
                     display="default"
-                    onChange={handleDateChange}
                     maximumDate={new Date()}
+                    onChange={handleDateChange}
                   />
                 )}
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Alamat</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textArea]}
-                  placeholder="Masukkan alamat lengkap"
-                  value={editForm.alamat}
-                  onChangeText={(text) => setEditForm({...editForm, alamat: text})}
-                  multiline={true}
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  editable={!updating}
-                />
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Jenis Kelamin</Text>
+                <View style={styles.genderContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderButton,
+                      editForm.jenisKelamin === 'L' && styles.genderButtonActive,
+                    ]}
+                    onPress={() => setEditForm({ ...editForm, jenisKelamin: 'L' })}
+                    disabled={updating}
+                  >
+                    <Text style={[
+                      styles.genderButtonText,
+                      editForm.jenisKelamin === 'L' && styles.genderButtonTextActive,
+                    ]}>Laki-laki</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.genderButton,
+                      editForm.jenisKelamin === 'P' && styles.genderButtonActive,
+                    ]}
+                    onPress={() => setEditForm({ ...editForm, jenisKelamin: 'P' })}
+                    disabled={updating}
+                  >
+                    <Text style={[
+                      styles.genderButtonText,
+                      editForm.jenisKelamin === 'P' && styles.genderButtonTextActive,
+                    ]}>Perempuan</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </ScrollView>
 
-            <View style={styles.modalFooter}>
-              <Button
-                title="Batal"
-                onPress={() => !updating && setShowEditModal(false)}
-                type="outline"
-                buttonStyle={styles.cancelButton}
-                titleStyle={styles.cancelButtonText}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowEditModal(false)}
                 disabled={updating}
-                containerStyle={styles.modalButton}
-              />
-              <Button
-                title={updating ? "Menyimpan..." : "Simpan Perubahan"}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveButton, updating && styles.saveButtonDisabled]}
                 onPress={handleUpdateProfile}
                 disabled={updating || !editForm.namaLengkap?.trim()}
-                buttonStyle={styles.saveButton}
-                loading={updating}
-                containerStyle={styles.modalButton}
-              />
+              >
+                {updating ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -805,177 +574,123 @@ const ProfileScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  scrollView: {
+  container: {
     flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#f8f9fa',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
     color: '#7f8c8d',
+    fontWeight: '500',
   },
-  loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#95a5a6',
-    fontStyle: 'italic',
-  },
-  apiWarning: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff9e6',
-    padding: 12,
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#f39c12',
-  },
-  apiWarningText: {
-    flex: 1,
-    marginLeft: 12,
-    color: '#f39c12',
-    fontSize: 14,
-  },
-  retryIcon: {
-    padding: 4,
-  },
+  // Profile Header
   profileHeader: {
     backgroundColor: '#ffffff',
-    padding: 24,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+    marginBottom: 20,
   },
   avatarContainer: {
     position: 'relative',
     marginBottom: 16,
   },
-  avatarWrapper: {
-    position: 'relative',
-  },
   avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 4,
-    borderColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderColor: '#fff',
+    backgroundColor: '#f0f0f0',
   },
-  avatarOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraIconContainer: {
+  editPhotoButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
     backgroundColor: '#3498db',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: '#ffffff',
+    borderColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 4,
-  },
-  profileInfo: {
-    alignItems: 'center',
-    marginBottom: 20,
+    elevation: 3,
   },
   profileName: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2c3e50',
     marginBottom: 4,
+    textAlign: 'center',
   },
   profileEmail: {
     fontSize: 16,
     color: '#7f8c8d',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
-  profileRole: {
-    fontSize: 14,
-    color: '#3498db',
-    fontWeight: '600',
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#ebf5fb',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 4,
   },
-  editButton: {
-    borderColor: '#3498db',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-  },
-  editButtonText: {
-    color: '#3498db',
+  roleText: {
     fontSize: 14,
+    color: '#3498db',
     fontWeight: '600',
+    marginLeft: 6,
   },
-  // Custom Card Styles
-  card: {
+  // Info Section
+  infoSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2c3e50',
+    marginBottom: 16,
+  },
+  infoCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 0,
-    padding: 0,
-    overflow: 'hidden',
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
-  cardHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    textAlign: 'left',
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#e9ecef',
-    marginVertical: 12,
-  },
-  infoItem: {
+  infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
   infoContent: {
     flex: 1,
@@ -984,34 +699,51 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 12,
     color: '#95a5a6',
-    marginBottom: 2,
+    fontWeight: '500',
+    marginBottom: 4,
   },
   infoValue: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#2c3e50',
     fontWeight: '500',
   },
-  actionButtons: {
+  // Actions Section
+  actionsSection: {
+    paddingHorizontal: 20,
+    marginBottom: 40,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ebf5fb',
     padding: 16,
-    marginBottom: 24,
-  },
-  actionButton: {
-    borderColor: '#d5dbdb',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: '#3498db',
   },
-  actionButtonText: {
-    color: '#7f8c8d',
+  editButtonText: {
     fontSize: 16,
-    fontWeight: '500',
+    color: '#3498db',
+    fontWeight: '600',
+    marginLeft: 10,
   },
   logoutButton: {
-    borderColor: '#e74c3c',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fef2f2',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#fecaca',
   },
   logoutButtonText: {
-    color: '#e74c3c',
+    fontSize: 16,
+    color: '#dc2626',
+    fontWeight: '600',
+    marginLeft: 10,
   },
   // Modal Styles
   modalOverlay: {
@@ -1021,8 +753,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '90%',
   },
   modalHeader: {
@@ -1030,80 +762,79 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#f0f0f0',
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2c3e50',
   },
-  modalBody: {
+  modalScroll: {
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    maxHeight: 400,
   },
-  inputGroup: {
+  photoPicker: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  modalAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#f0f0f0',
+  },
+  changePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3498db',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  changePhotoText: {
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 6,
+    fontSize: 14,
+  },
+  formGroup: {
     marginBottom: 20,
   },
-  inputLabel: {
-    fontSize: 16,
+  formLabel: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#2c3e50',
     marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#dfe6e9',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
   },
   textInput: {
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#d5dbdb',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#2c3e50',
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  genderOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  genderOption: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: '#d5dbdb',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-  },
-  genderOptionSelected: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
-  },
-  genderOptionText: {
+    paddingVertical: 14,
     fontSize: 16,
     color: '#2c3e50',
-    marginLeft: 8,
+    marginLeft: 12,
+    paddingRight: 10,
   },
-  genderOptionTextSelected: {
-    color: '#ffffff',
-  },
-  dateInput: {
+  dateInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#dfe6e9',
+    borderRadius: 12,
     backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#d5dbdb',
-    borderRadius: 8,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   dateInputText: {
     flex: 1,
@@ -1111,33 +842,69 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     marginLeft: 12,
   },
-  modalFooter: {
+  genderContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-    backgroundColor: '#f8f9fa',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    justifyContent: 'space-between',
   },
-  modalButton: {
+  genderButton: {
     flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#dfe6e9',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa',
     marginHorizontal: 4,
   },
+  genderButtonActive: {
+    backgroundColor: '#3498db',
+    borderColor: '#3498db',
+  },
+  genderButtonText: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  genderButtonTextActive: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
   cancelButton: {
-    borderColor: '#95a5a6',
-    borderRadius: 8,
-    paddingVertical: 12,
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#d5dbdb',
+    borderRadius: 12,
+    marginRight: 10,
   },
   cancelButtonText: {
-    color: '#7f8c8d',
     fontSize: 16,
+    color: '#7f8c8d',
+    fontWeight: '600',
   },
   saveButton: {
+    flex: 2,
+    paddingVertical: 14,
+    alignItems: 'center',
     backgroundColor: '#3498db',
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: 12,
+    marginLeft: 10,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#b0d4f0',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
   },
 });
 

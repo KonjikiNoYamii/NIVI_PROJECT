@@ -54,12 +54,10 @@ const LoginScreen = () => {
       const token = res.data.data.token;
       const user = res.data.data.user;
 
-      await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('userToken', token);
       await AsyncStorage.setItem('role', user.role);
       await AsyncStorage.setItem('userId', String(user.id));
 
-      // Simpan informasi user tambahan jika ada
       if (user.name) await AsyncStorage.setItem('userName', user.name);
       if (user.email) await AsyncStorage.setItem('userEmail', user.email);
 
