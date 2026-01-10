@@ -262,7 +262,6 @@ useEffect(() => {
         {/* Summary Section */}
         <View style={styles.summarySection}>
           <View style={styles.summaryHeader}>
-            <Icon name="chart-line" type="font-awesome-5" size={20} color="#3498db" />
             <Text style={styles.summaryTitle}>Ringkasan</Text>
           </View>
           <View style={styles.summaryContent}>
@@ -577,7 +576,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1e293b',
-    marginLeft: 10,
+    marginLeft: 5,
   },
   summaryContent: {
     paddingLeft: 2,
