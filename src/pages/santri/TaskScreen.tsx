@@ -24,7 +24,11 @@ interface Task {
   title: string;
   description?: string;
   deadline: string;
-  status: 'pending' | 'submitted' | 'reviewed' | 'rejected';
+status:
+  | 'belum_submit'
+  | 'pending'
+  | 'reviewed'
+  | 'rejected';
   submission_link?: string | null;
   submitted_at?: string | null;
 }
@@ -43,25 +47,25 @@ const TaskScreen: React.FC = () => {
 
       const token = await AsyncStorage.getItem('token');
 
-      const res = await axios.get(`${API}/tugas`, {
+      const res = await axios.get(`${API}/tugas/santri`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      const formatted: Task[] = res.data.data.map((t: any) => ({
-        id: t.id,
-        subject: 'Tugas',
-        title: t.title,
-        description: t.description,
-        deadline: t.deadline,
-        status:
-          t.submission && (t.submission.linkUrl || t.submission.fileUrl)
-            ? t.submission.status
-            : 'pending',
-        submission_link: t.submission?.linkUrl ?? null,
-        submitted_at: t.submission?.submittedAt ?? null,
-      }));
+const formatted: Task[] = res.data.data.map((t: any) => ({
+  id: t.id,
+  subject: 'Tugas',
+  title: t.title,
+  description: t.description,
+  deadline: t.deadline,
+
+  status: t.status ?? 'belum_submit',
+
+  submission_link: t.submission_link ?? null,
+  submitted_at: t.submitted_at ?? null,
+}));
+
 
       setTasks(formatted);
     } catch {
@@ -123,6 +127,34 @@ const TaskScreen: React.FC = () => {
   const renderItem = ({ item }: { item: Task }) => {
     const late = isLate(item.deadline) && item.status === 'pending';
 
+    const getStatusLabel = (status: Task['status']) => {
+switch (status) {
+  case 'belum_submit':
+    return 'Belum Dikumpulkan';
+  case 'pending':
+    return 'Menunggu Penilaian';
+  case 'reviewed':
+    return 'Sudah Dinilai';
+  case 'rejected':
+    return 'Ditolak';
+}
+
+};
+
+const getStatusColor = (status: Task['status']) => {
+  switch (status) {
+    case 'belum_submit':
+      return '#3498db';
+    case 'reviewed':
+      return '#2ecc71';
+    case 'rejected':
+      return '#e74c3c';
+    default:
+      return '#95a5a6';
+  }
+};
+
+
     return (
       <View style={styles.card}>
         <View style={styles.headerRow}>
@@ -133,26 +165,31 @@ const TaskScreen: React.FC = () => {
         </View>
 
         <Text style={styles.title}>{item.title}</Text>
+        
         {item.description && (
           <Text style={styles.desc}>{item.description}</Text>
         )}
 
-        {item.status === 'pending' && (
-          <TouchableOpacity
-            style={[styles.submitBtn, late && styles.lateBtn]}
-            onPress={() => setSelectedTask(item)}
-          >
-            <Text style={styles.submitText}>
-              {late ? 'Kumpulkan (Terlambat)' : 'Kumpulkan'}
-            </Text>
-          </TouchableOpacity>
-        )}
+{item.status === 'belum_submit' && (
+  <TouchableOpacity
+    style={[styles.submitBtn, late && styles.lateBtn]}
+    onPress={() => setSelectedTask(item)}
+  >
+    <Text style={styles.submitText}>
+      {late ? 'Kumpulkan (Terlambat)' : 'Kumpulkan'}
+    </Text>
+  </TouchableOpacity>
+)}
 
-        {item.status !== 'pending' && (
-          <View style={styles.submittedContainer}>
-            <Text style={styles.submittedText}>Sudah Dikumpulkan</Text>
-          </View>
-        )}
+
+{item.status !== 'belum_submit' && (
+  <View style={styles.submittedContainer}>
+    <Text style={styles.submittedText}>
+      {getStatusLabel(item.status)}
+    </Text>
+  </View>
+)}
+
 
         {item.submission_link && (
           <TouchableOpacity
@@ -207,10 +244,8 @@ const TaskScreen: React.FC = () => {
       <Modal visible={!!selectedTask} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modal}>
-            {/* Judul */}
             <Text style={styles.modalTitle}>Pengumpulan Tugas</Text>
 
-            {/* Info tugas */}
             {selectedTask && (
               <View style={styles.taskInfo}>
                 <Text style={styles.taskTitle}>{selectedTask.title}</Text>
@@ -221,7 +256,6 @@ const TaskScreen: React.FC = () => {
               </View>
             )}
 
-            {/* Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Link Tugas</Text>
               <Text style={styles.inputHint}>
@@ -242,7 +276,6 @@ const TaskScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Tombol */}
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.cancelBtn}

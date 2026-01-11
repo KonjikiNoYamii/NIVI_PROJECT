@@ -1,16 +1,20 @@
-import React, { useCallback, useEffect, useState } from 'react';
+// DashboardSantri.tsx
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
-  FlatList,
   StyleSheet,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import { absensiService, Absensi } from '../../services/absensi';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { absensiService, Absensi } from "../../services/absensi";
+import HeaderDashboard from "../../components/santri/HeaderDashboard";
+import AbsensiCard from "../../components/santri/AbsensiCard";
+import HistoryCard from "../../components/santri/HistoryCard";
+import InfoCard from "../../components/santri/InfoCard";
 
 const MAX_ABSEN = 4;
 
@@ -25,93 +29,103 @@ const DashboardSantri = () => {
       const data = await absensiService.getToday();
       setAbsensi(data);
     } catch {
-      Alert.alert('Error', 'Gagal mengambil absensi');
+      Alert.alert("Error", "Gagal mengambil data absensi");
     } finally {
       setLoading(false);
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      loadAbsensi();
+    }, [])
+  );
+
   const sisaAbsen = MAX_ABSEN - absensi.length;
+  const sudahAbsen = absensi.length > 0;
+  const progressAbsen = absensi.length / MAX_ABSEN;
 
   const handleAbsen = async () => {
     try {
       setSubmitting(true);
-      await absensiService.absen('hadir');
+      await absensiService.absen("hadir");
       loadAbsensi();
+      Alert.alert("Berhasil", "Absensi berhasil dikirim");
     } catch (e: any) {
-      Alert.alert('Gagal', e.response?.data?.message || 'Tidak bisa absen');
+      Alert.alert("Gagal", e.response?.data?.message || "Tidak bisa melakukan absen saat ini");
     } finally {
       setSubmitting(false);
     }
   };
 
- useFocusEffect(
-  useCallback(() => {
-    loadAbsensi();
-  }, [])
-);
-
+  const getTimeStatus = () => {
+    const now = new Date();
+    const hours = now.getHours();
+    
+    if (hours < 12) return "Pagi";
+    if (hours < 15) return "Siang";
+    if (hours < 18) return "Sore";
+    return "Malam";
+  };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator size="large" />
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3498db" />
+          <Text style={styles.loadingText}>Memuat data absensi...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Absensi Hari Ini</Text>
+    <SafeAreaView style={styles.safe}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+      >
+        <HeaderDashboard getTimeStatus={getTimeStatus}/>
+        
+        <AbsensiCard
+          absensi={absensi}
+          progressAbsen={progressAbsen}
+          sudahAbsen={sudahAbsen}
+          sisaAbsen={sisaAbsen}
+          submitting={submitting}
+          handleAbsen={handleAbsen}
+          MAX_ABSEN={MAX_ABSEN}
+        />
 
-      {sisaAbsen > 0 && (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleAbsen}
-          disabled={submitting}
-        >
-          <Text style={styles.buttonText}>
-            {submitting
-              ? 'Menyimpan...'
-              : `ABSEN HADIR (${sisaAbsen}x tersisa)`}
-          </Text>
-        </TouchableOpacity>
-      )}
+        <HistoryCard absensi={absensi} />
 
-      <FlatList
-        data={absensi}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.status}>{item.status.toUpperCase()}</Text>
-            <Text>{new Date(item.tanggal).toLocaleString('id-ID')}</Text>
-          </View>
-        )}
-        ListEmptyComponent={<Text style={styles.empty}>Belum ada absensi</Text>}
-      />
+        <InfoCard MAX_ABSEN={MAX_ABSEN} />
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-export default DashboardSantri;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 16 },
-  button: {
-    backgroundColor: '#2ecc71',
+  safe: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  container: {
+    flex: 1,
     padding: 16,
-    borderRadius: 10,
-    marginBottom: 16,
   },
-  buttonText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
-  card: {
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
   },
-  status: { fontWeight: '700' },
-  empty: { textAlign: 'center', marginTop: 40 },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748b',
+    fontWeight: '500',
+  },
 });
+
+export default DashboardSantri;

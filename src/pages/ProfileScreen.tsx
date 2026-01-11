@@ -309,7 +309,6 @@ try {
               name='user-o' 
               type="font-awesome" 
               size={14} 
-              color="#3498db" 
             />
             <Text style={styles.roleText}>
               {profileData.user.role === 'santri' ? 'Santri' : 'Pengajar'}
@@ -323,7 +322,7 @@ try {
           
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Icon name="phone" type="font-awesome" size={16} color="#7f8c8d" />
+              <Icon name="phone" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Nomor Telepon</Text>
                 <Text style={styles.infoValue}>
@@ -333,7 +332,7 @@ try {
             </View>
             
             <View style={styles.infoRow}>
-              <Icon name="map-marker" type="font-awesome" size={16} color="#7f8c8d" />
+              <Icon name="map-marker" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Alamat</Text>
                 <Text style={styles.infoValue}>
@@ -343,7 +342,7 @@ try {
             </View>
             
             <View style={styles.infoRow}>
-              <Icon name="birthday-cake" type="font-awesome" size={16} color="#7f8c8d" />
+              <Icon name="birthday-cake" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Tanggal Lahir</Text>
                 <Text style={styles.infoValue}>
@@ -353,7 +352,7 @@ try {
             </View>
             
             <View style={styles.infoRow}>
-              <Icon name="venus-mars" type="font-awesome-5" size={16} color="#7f8c8d" />
+              <Icon name="venus-mars" type="font-awesome" size={16}/>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Jenis Kelamin</Text>
                 <Text style={styles.infoValue}>
@@ -363,7 +362,7 @@ try {
             </View>
             
             <View style={styles.infoRow}>
-              <Icon name="calendar" type="font-awesome" size={16} color="#7f8c8d" />
+              <Icon name="calendar" type="font-awesome" size={16}  />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Bergabung Sejak</Text>
                 <Text style={styles.infoValue}>
@@ -487,7 +486,7 @@ try {
                   style={styles.dateInputContainer}
                   disabled={updating}
                 >
-                  <Icon name="calendar" type="font-awesome" size={16} color="#95a5a6" />
+                  <Icon name="calendar" type="font-awesome" size={16} />
                   <Text style={styles.dateInputText}>
                     {editForm.tanggalLahir
                       ? formatDate(editForm.tanggalLahir)
@@ -593,11 +592,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
     marginBottom: 20,
   },
   avatarContainer: {
