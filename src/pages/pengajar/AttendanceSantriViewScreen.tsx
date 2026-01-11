@@ -236,18 +236,6 @@ const KelasScreen: React.FC = () => {
                 {kelasList.length} kelas tersedia
               </Text>
             </View>
-            <TouchableOpacity 
-              style={styles.refreshButton}
-              onPress={onRefresh}
-              disabled={refreshing}
-            >
-              <Icon 
-                name="sync-alt" 
-                type="font-awesome-5" 
-                size={16} 
-                color={refreshing ? "#cbd5e1" : "#64748b"} 
-              />
-            </TouchableOpacity>
           </View>
 
           {kelasList.length === 0 ? (

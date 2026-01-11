@@ -11,7 +11,6 @@ import {
   Modal,
   Linking,
 } from 'react-native';
-import { Icon } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,7 +41,7 @@ const TaskScreen: React.FC = () => {
     try {
       showLoading ? setLoading(true) : setRefreshing(true);
 
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem('token');
 
       const res = await axios.get(`${API}/tugas`, {
         headers: {
@@ -81,10 +80,10 @@ const TaskScreen: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const token = await AsyncStorage.getItem('userToken');
+      const token = await AsyncStorage.getItem('token');
 
       await axios.post(
-        `https://nivi-production.up.railway.app/api/submission`,
+        `${API}/submission`,
         {
           tugasId: taskId,
           linkUrl: submissionLink,
