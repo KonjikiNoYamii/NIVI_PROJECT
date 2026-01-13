@@ -41,30 +41,27 @@ const DashboardSantri = () => {
     }, [])
   );
 
-  const sisaAbsen = MAX_ABSEN - absensi.length;
-  const sudahAbsen = absensi.length > 0;
-  const progressAbsen = absensi.length / MAX_ABSEN;
-
   const handleAbsen = async () => {
     try {
       setSubmitting(true);
       await absensiService.absen("hadir");
-      loadAbsensi();
+      await loadAbsensi();
       Alert.alert("Berhasil", "Absensi berhasil dikirim");
     } catch (e: any) {
-      Alert.alert("Gagal", e.response?.data?.message || "Tidak bisa melakukan absen saat ini");
+      Alert.alert(
+        "Gagal",
+        e.response?.data?.message || "Tidak bisa melakukan absen saat ini"
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   const getTimeStatus = () => {
-    const now = new Date();
-    const hours = now.getHours();
-    
-    if (hours < 12) return "Pagi";
-    if (hours < 15) return "Siang";
-    if (hours < 18) return "Sore";
+    const hour = new Date().getHours();
+    if (hour < 12) return "Pagi";
+    if (hour < 15) return "Siang";
+    if (hour < 18) return "Sore";
     return "Malam";
   };
 
@@ -81,24 +78,17 @@ const DashboardSantri = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView 
-        style={styles.container} 
-        showsVerticalScrollIndicator={false}
-      >
-        <HeaderDashboard getTimeStatus={getTimeStatus}/>
-        
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <HeaderDashboard getTimeStatus={getTimeStatus} />
+
         <AbsensiCard
           absensi={absensi}
-          progressAbsen={progressAbsen}
-          sudahAbsen={sudahAbsen}
-          sisaAbsen={sisaAbsen}
           submitting={submitting}
           handleAbsen={handleAbsen}
           MAX_ABSEN={MAX_ABSEN}
         />
 
         <HistoryCard absensi={absensi} />
-
         <InfoCard MAX_ABSEN={MAX_ABSEN} />
       </ScrollView>
     </SafeAreaView>
@@ -108,7 +98,7 @@ const DashboardSantri = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
   },
   container: {
     flex: 1,
@@ -116,15 +106,13 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#64748b',
-    fontWeight: '500',
+    color: "#64748b",
   },
 });
 

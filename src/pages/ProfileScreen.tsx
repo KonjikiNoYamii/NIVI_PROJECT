@@ -18,7 +18,7 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'react-native-image-picker';
-import Ionicons from '@react-native-vector-icons/ionicons'
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { Icon } from 'react-native-elements';
 import { API } from '../services/api';
 // API Base
@@ -159,22 +159,16 @@ const ProfileScreen: React.FC = () => {
       noHp: data.noHp ?? null,
       alamat: data.alamat ?? null,
       fotoUrl:
-        data.fotoUrl ||
-        profileData.profile.fotoUrl ||
-        DEFAULT_AVATAR_URL,
+        data.fotoUrl || profileData.profile.fotoUrl || DEFAULT_AVATAR_URL,
       tanggalLahir: data.tanggalLahir
         ? new Date(data.tanggalLahir).toISOString()
         : null,
       jenisKelamin: data.jenisKelamin ?? null,
     };
 
-    const res = await axios.put(
-      `${API}/profile/me`,
-      payload,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const res = await axios.put(`${API}/profile/me`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     return res.data.data;
   };
@@ -185,24 +179,22 @@ const ProfileScreen: React.FC = () => {
       Alert.alert('Peringatan', 'Nama lengkap wajib diisi');
       return;
     }
-    
+
     setUpdating(true);
 
-try {
-  await saveProfileToServer(editForm);
+    try {
+      await saveProfileToServer(editForm);
 
-  // 🔥 ambil ulang data dari server
-  await fetchProfile();
+      await fetchProfile();
 
-  Alert.alert('Sukses', 'Profil berhasil diperbarui');
-  setShowEditModal(false);
-} catch (err) {
-  console.log('update profile error', err);
-  Alert.alert('Error', 'Gagal menyimpan profil');
-} finally {
-  setUpdating(false);
-}
-
+      Alert.alert('Sukses', 'Profil berhasil diperbarui');
+      setShowEditModal(false);
+    } catch (err) {
+      console.log('update profile error', err);
+      Alert.alert('Error', 'Gagal menyimpan profil');
+    } finally {
+      setUpdating(false);
+    }
   };
 
   // Logout
@@ -274,18 +266,17 @@ try {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView 
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Profile Header Section */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             <Image
-              source={{ uri: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL }}
+              source={{
+                uri: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL,
+              }}
               style={styles.avatar}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.editPhotoButton}
               onPress={() => {
                 setEditForm({
@@ -298,20 +289,20 @@ try {
               <Ionicons name="camera" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.profileName}>
             {profileData.profile.namaLengkap || 'Belum diisi'}
           </Text>
           <Text style={styles.profileEmail}>{profileData.user.email}</Text>
-          
+
           <View style={styles.roleBadge}>
-            <Icon 
-              name='user-o' 
-              type="font-awesome" 
-              size={14} 
-            />
+            <Icon name="user-o" type="font-awesome" size={14} />
             <Text style={styles.roleText}>
-              {profileData.user.role === 'santri' ? 'Santri' : 'Pengajar'}
+              {profileData.user.role === 'santri'
+                ? 'Santri'
+                : profileData.user.role === 'pengajar'
+                ? 'Pengajar'
+                : 'Admin'}
             </Text>
           </View>
         </View>
@@ -319,7 +310,7 @@ try {
         {/* Info Section */}
         <View style={styles.infoSection}>
           <Text style={styles.sectionTitle}>Informasi Pribadi</Text>
-          
+
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <Icon name="phone" type="font-awesome" size={16} />
@@ -330,7 +321,7 @@ try {
                 </Text>
               </View>
             </View>
-            
+
             <View style={styles.infoRow}>
               <Icon name="map-marker" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
@@ -340,7 +331,7 @@ try {
                 </Text>
               </View>
             </View>
-            
+
             <View style={styles.infoRow}>
               <Icon name="birthday-cake" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
@@ -350,9 +341,9 @@ try {
                 </Text>
               </View>
             </View>
-            
+
             <View style={styles.infoRow}>
-              <Icon name="venus-mars" type="font-awesome" size={16}/>
+              <Icon name="venus-mars" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Jenis Kelamin</Text>
                 <Text style={styles.infoValue}>
@@ -360,9 +351,9 @@ try {
                 </Text>
               </View>
             </View>
-            
+
             <View style={styles.infoRow}>
-              <Icon name="calendar" type="font-awesome" size={16}  />
+              <Icon name="calendar" type="font-awesome" size={16} />
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Bergabung Sejak</Text>
                 <Text style={styles.infoValue}>
@@ -383,13 +374,18 @@ try {
             <Icon name="edit" type="font-awesome" size={18} color="#3498db" />
             <Text style={styles.editButtonText}>Edit Profil</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
             activeOpacity={0.8}
           >
-            <Icon name="sign-out" type="font-awesome" size={18} color="#e74c3c" />
+            <Icon
+              name="sign-out"
+              type="font-awesome"
+              size={18}
+              color="#e74c3c"
+            />
             <Text style={styles.logoutButtonText}>Keluar</Text>
           </TouchableOpacity>
         </View>
@@ -406,15 +402,23 @@ try {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profil</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowEditModal(false)}
                 disabled={updating}
               >
-                <Icon name="times" type="font-awesome" size={20} color="#7f8c8d" />
+                <Icon
+                  name="times"
+                  type="font-awesome"
+                  size={20}
+                  color="#7f8c8d"
+                />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.modalScroll}
+              showsVerticalScrollIndicator={false}
+            >
               <TouchableOpacity
                 onPress={handlePickImage}
                 style={styles.photoPicker}
@@ -425,7 +429,12 @@ try {
                   style={styles.modalAvatar}
                 />
                 <View style={styles.changePhotoButton}>
-                  <Icon name="camera" type="font-awesome" size={16} color="#fff" />
+                  <Icon
+                    name="camera"
+                    type="font-awesome"
+                    size={16}
+                    color="#fff"
+                  />
                   <Text style={styles.changePhotoText}>Ganti Foto</Text>
                 </View>
               </TouchableOpacity>
@@ -433,13 +442,20 @@ try {
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Nama Lengkap *</Text>
                 <View style={styles.inputContainer}>
-                  <Icon name="user" type="font-awesome" size={16} color="#95a5a6" />
+                  <Icon
+                    name="user"
+                    type="font-awesome"
+                    size={16}
+                    color="#95a5a6"
+                  />
                   <TextInput
                     style={styles.textInput}
                     placeholder="Masukkan nama lengkap"
                     placeholderTextColor="#bdc3c7"
                     value={editForm.namaLengkap ?? ''}
-                    onChangeText={t => setEditForm({ ...editForm, namaLengkap: t })}
+                    onChangeText={t =>
+                      setEditForm({ ...editForm, namaLengkap: t })
+                    }
                     editable={!updating}
                   />
                 </View>
@@ -448,7 +464,12 @@ try {
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Nomor Telepon</Text>
                 <View style={styles.inputContainer}>
-                  <Icon name="phone" type="font-awesome" size={16} color="#95a5a6" />
+                  <Icon
+                    name="phone"
+                    type="font-awesome"
+                    size={16}
+                    color="#95a5a6"
+                  />
                   <TextInput
                     style={styles.textInput}
                     placeholder="Masukkan nomor telepon"
@@ -464,7 +485,12 @@ try {
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Alamat</Text>
                 <View style={styles.inputContainer}>
-                  <Icon name="map-marker" type="font-awesome" size={16} color="#95a5a6" />
+                  <Icon
+                    name="map-marker"
+                    type="font-awesome"
+                    size={16}
+                    color="#95a5a6"
+                  />
                   <TextInput
                     style={[styles.textInput, { height: 80 }]}
                     placeholder="Masukkan alamat lengkap"
@@ -510,28 +536,44 @@ try {
                   <TouchableOpacity
                     style={[
                       styles.genderButton,
-                      editForm.jenisKelamin === 'L' && styles.genderButtonActive,
+                      editForm.jenisKelamin === 'L' &&
+                        styles.genderButtonActive,
                     ]}
-                    onPress={() => setEditForm({ ...editForm, jenisKelamin: 'L' })}
+                    onPress={() =>
+                      setEditForm({ ...editForm, jenisKelamin: 'L' })
+                    }
                     disabled={updating}
                   >
-                    <Text style={[
-                      styles.genderButtonText,
-                      editForm.jenisKelamin === 'L' && styles.genderButtonTextActive,
-                    ]}>Laki-laki</Text>
+                    <Text
+                      style={[
+                        styles.genderButtonText,
+                        editForm.jenisKelamin === 'L' &&
+                          styles.genderButtonTextActive,
+                      ]}
+                    >
+                      Laki-laki
+                    </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.genderButton,
-                      editForm.jenisKelamin === 'P' && styles.genderButtonActive,
+                      editForm.jenisKelamin === 'P' &&
+                        styles.genderButtonActive,
                     ]}
-                    onPress={() => setEditForm({ ...editForm, jenisKelamin: 'P' })}
+                    onPress={() =>
+                      setEditForm({ ...editForm, jenisKelamin: 'P' })
+                    }
                     disabled={updating}
                   >
-                    <Text style={[
-                      styles.genderButtonText,
-                      editForm.jenisKelamin === 'P' && styles.genderButtonTextActive,
-                    ]}>Perempuan</Text>
+                    <Text
+                      style={[
+                        styles.genderButtonText,
+                        editForm.jenisKelamin === 'P' &&
+                          styles.genderButtonTextActive,
+                      ]}
+                    >
+                      Perempuan
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -546,7 +588,10 @@ try {
                 <Text style={styles.cancelButtonText}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.saveButton, updating && styles.saveButtonDisabled]}
+                style={[
+                  styles.saveButton,
+                  updating && styles.saveButtonDisabled,
+                ]}
                 onPress={handleUpdateProfile}
                 disabled={updating || !editForm.namaLengkap?.trim()}
               >

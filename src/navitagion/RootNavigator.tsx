@@ -8,6 +8,7 @@ import LoginScreen from "../pages/LoginScreen";
 import SantriDrawer from "./SantriDrawer";
 import PengajarDrawer from "./PengajarDrawer";
 import AdminDrawer from "./AdminDrawer";
+import ActivateAccountScreen from "../pages/admin/ActivateAccountScreen";
 
 const Stack = createStackNavigator();
 
@@ -20,6 +21,7 @@ export default function RootNavigator() {
         <Stack.Screen name="SantriApp" component={SantriDrawer} />
         <Stack.Screen name="PengajarApp" component={PengajarDrawer} />
         <Stack.Screen name="AdminApp" component={AdminDrawer} />
+        <Stack.Screen name="ActivateAccount" component={ActivateAccountScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

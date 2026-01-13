@@ -67,15 +67,17 @@ const LoginScreen = () => {
         `Selamat datang, ${user.name || user.email}!`,
         [{ text: 'OK', onPress: () => navigation.replace('AuthGate') }],
       );
-    } catch (err: any) {
-      console.log(err.response?.data || err.message);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Terjadi kesalahan, coba lagi nanti';
+    }catch (err: any) {
+  const message = err.response?.data?.message;
 
-      Alert.alert('Login Gagal', errorMessage);
-    } finally {
+  if (message === "Akun belum diaktivasi") {
+    navigation.navigate("ActivateAccount", { email });
+    return;
+  }
+
+  Alert.alert("Login Gagal", message || "Terjadi kesalahan");
+}
+finally {
       setLoading(false);
     }
   };

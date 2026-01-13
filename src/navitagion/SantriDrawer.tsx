@@ -118,26 +118,6 @@ export default function SantriDrawer() {
           color: '#1e293b',
         },
         headerTitleAlign: 'center',
-        headerRight: () => {
-          if (route.name === 'Profil') {
-            return (
-              <TouchableOpacity
-                style={styles.headerRightButton}
-                onPress={() => {
-                  // Handle edit profile or other actions
-                }}
-              >
-                <Icon 
-                  name="edit" 
-                  type="font-awesome" 
-                  size={16} // Diperkecil dari 18px
-                  color="#3498db" 
-                />
-              </TouchableOpacity>
-            );
-          }
-          return null;
-        },
         drawerStyle: {
           backgroundColor: '#ffffff',
           width: 260, // Diperkecil dari 280px
