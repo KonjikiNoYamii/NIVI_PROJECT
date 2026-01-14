@@ -19,7 +19,6 @@ import { useNavigation } from "@react-navigation/native";
 
 const Drawer = createDrawerNavigator();
 
-// Custom Drawer Content Component
 function CustomDrawerContent(props: any) {
   const navigation = useNavigation();
   const [userName, setUserName] = useState('');

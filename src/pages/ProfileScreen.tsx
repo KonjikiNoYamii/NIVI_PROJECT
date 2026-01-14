@@ -205,7 +205,7 @@ const ProfileScreen: React.FC = () => {
         text: 'Logout',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.removeItem('userToken');
+          await AsyncStorage.removeItem('token');
           await AsyncStorage.removeItem('user');
           await AsyncStorage.removeItem('profile');
           navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });

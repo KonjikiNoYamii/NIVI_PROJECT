@@ -108,7 +108,7 @@ export default function DashboardAdmin() {
           <StatCard
             title="Total Kelas"
             value={data?.totalKelas || 0}
-            icon="school"
+            icon="graduation-cap"
             color="#e74c3c"
           />
           <StatCard

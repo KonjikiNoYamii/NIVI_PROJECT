@@ -1,7 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import DashboardAdmin from '../pages/admin/AdminDashboard';
-import CreateSantriScreen from '../pages/admin/CreateSantri';
+import CreateKelas from '../pages/admin/CreateKelas';
+import ManageSantriScreen from '../pages/admin/CreateSantri';
+import ManagePengajarScreen from '../pages/admin/CreatePengajarScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -13,7 +15,9 @@ export default function AdminBottomNavigator() {
       }}
     >
       <Tab.Screen name="AdminDashboard" component={DashboardAdmin} />
-      <Tab.Screen name='CreateSantriScreen' component={CreateSantriScreen}/>
+      <Tab.Screen name='ManageSantriScreen' component={ManageSantriScreen}/>
+      <Tab.Screen name='ManagePengajarScreen' component={ManagePengajarScreen}/>
+      <Tab.Screen name='CreateKelas' component={CreateKelas}/>
     </Tab.Navigator>
   );
 }
