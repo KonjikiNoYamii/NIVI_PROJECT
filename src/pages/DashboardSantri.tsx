@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import { useRoute } from "@react-navigation/native"; // Tambahkan ini
 import { absensiService, Absensi } from "../services/absensi";
 import { ProgressBar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -21,18 +22,22 @@ const SANTRI_DATA = {
   deadline: "25 Apr 2024",
 };
 
-interface DashboardSantriProps {
-  userData: {
-    name: string;
-    kelas: string;
-    kehadiran: number;
-  };
-}
+// Hapus interface DashboardSantriProps atau jadikan opsional
+// Karena sekarang kita akan ambil dari route params
 
-const DashboardSantri = ({ userData }: DashboardSantriProps) => {
+const DashboardSantri = () => { // Hapus props dari parameter
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [absensi, setAbsensi] = useState<Absensi[]>([]);
+  
+  // Ambil userData dari route params
+  const route = useRoute();
+  const params = route.params as { userData?: any };
+  const userData = params?.userData || {
+    name: "Santri",
+    kelas: "Kelas X",
+    kehadiran: 85, // nilai default
+  };
 
   const loadAbsensi = async () => {
     try {
