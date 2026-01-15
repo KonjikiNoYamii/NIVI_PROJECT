@@ -1,94 +1,120 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
-// Import screens
-import DashboardSantri from '../pages/DashboardSantri';
-import TaskScreen from '../pages/TaskScreen';
-import AttendanceScreen from '../pages/AttendanceScreen';
-import ProfileScreen from '../pages/ProfileScreen';
-import AdminNavigator from './AdminNavigator';
+import { View, StyleSheet } from 'react-native';
+import DashboardSantri from '../pages/santri/DashboardSantri';
+import TaskScreen from '../pages/santri/TaskScreen';
+import AttendanceSantriScreen from '../pages/santri/AttendanceSantriScreen';
+import { Icon } from 'react-native-elements';
 
 const Tab = createBottomTabNavigator();
 
-const SantriNavigator = () => {
-  const isAdmin = true; // Ganti dengan logic autentikasi
-
+export default function SantriBottomNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#3498db',
-        tabBarInactiveTintColor: '#7f8c8d',
+        tabBarInactiveTintColor: '#95a5a6',
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 5,
-          paddingTop: 5,
-          backgroundColor: '#fff',
-          borderTopWidth: 1,
-          borderTopColor: '#ecf0f1',
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          borderTopWidth: 0,
+          height: 70,
+          paddingBottom: 0,
+          paddingTop: 10,
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 16,
+          borderRadius: 20,
+          elevation: 10,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+          borderWidth: 1,
+          borderColor: '#f1f5f9',
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
+          marginBottom: 6,
         },
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName = 'home';
-          
-          if (route.name === 'Dashboard') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Tugas') {
-            iconName = focused ? 'book' : 'book-outline';
-          } else if (route.name === 'Absen') {
-            iconName = focused ? 'calendar-check' : 'calendar-check-outline';
-          } else if (route.name === 'AdminPanel') {
-            iconName = focused ? 'shield-account' : 'shield-account-outline';
-            size = 26;
-          } else if (route.name === 'Profil') {
-            iconName = focused ? 'account' : 'account-outline';
-          }
-          
-          return <Icon name={iconName} size={size} color={color} />;
+        tabBarItemStyle: {
+          height: 70,
         },
-      })}
+      }}
     >
-      <Tab.Screen 
-        name="Dashboard" 
+      <Tab.Screen
+        name="Dashboard"
         component={DashboardSantri}
-        options={{ title: 'Beranda' }}
+        options={{
+          tabBarLabel: 'Beranda',
+          tabBarIcon: ({ focused, color, size }) => (
+            <View style={[
+              styles.iconContainer,
+              focused && styles.iconContainerActive
+            ]}>
+              <Icon
+                name="home"
+                type="font-awesome"
+                size={focused ? 20 : 18}
+              />
+            </View>
+          ),
+        }}
       />
-      
-      <Tab.Screen 
-        name="Tugas" 
+      <Tab.Screen
+        name="Tugas"
         component={TaskScreen}
-        options={{ title: 'Tugas' }}
+        options={{
+          tabBarLabel: 'Tugas',
+          tabBarIcon: ({ focused, color, size }) => (
+            <View style={[
+              styles.iconContainer,
+              focused && styles.iconContainerActive
+            ]}>
+              <Icon
+                name="tasks"
+                type="font-awesome"
+                size={focused ? 20 : 18}
+              />
+            </View>
+          ),
+        }}
       />
-      
-      <Tab.Screen 
-        name="Absen" 
-        component={AttendanceScreen}
-        options={{ title: 'Absen' }}
-      />
-      
-      {/* Hanya tampilkan jika user adalah admin */}
-      {isAdmin && (
-        <Tab.Screen 
-          name="AdminPanel" 
-          component={AdminNavigator}
-          options={{ 
-            title: 'Admin',
-            tabBarBadge: '⚙️', // Emoji badge
-          }}
-        />
-      )}
-      
-      <Tab.Screen 
-        name="Profil" 
-        component={ProfileScreen}
-        options={{ title: 'Profil' }}
+      <Tab.Screen
+        name="Absen"
+        component={AttendanceSantriScreen}
+        options={{
+          tabBarLabel: 'Absensi',
+          tabBarIcon: ({ focused, color, size }) => (
+            <View style={[
+              styles.iconContainer,
+              focused && styles.iconContainerActive
+            ]}>
+              <Icon
+                name="calendar"
+                type="font-awesome"
+                size={focused ? 20 : 18}
+              />
+            </View>
+          ),
+        }}
       />
     </Tab.Navigator>
   );
-};
+}
 
-export default SantriNavigator;
+const styles = StyleSheet.create({
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainerActive: {
+    backgroundColor: '#ebf5fb',
+  },
+});

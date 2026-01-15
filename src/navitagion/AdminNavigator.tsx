@@ -1,53 +1,23 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SantriListScreen from '../pages/admin/SantriListScreen';
-import SantriDetailScreen from '../pages/admin/SantriDetailScreen';
-import SantriFormScreen from '../pages/admin/SantriFormScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import DashboardAdmin from '../pages/admin/AdminDashboard';
+import CreateKelas from '../pages/admin/CreateKelas';
+import ManageSantriScreen from '../pages/admin/CreateSantri';
+import ManagePengajarScreen from '../pages/admin/CreatePengajarScreen';
 
-export type AdminStackParamList = {
-  SantriList: undefined;
-  SantriDetail: { santriId: string };
-  AddSantri: undefined;
-  EditSantri: { santriId: string };
-};
+const Tab = createBottomTabNavigator();
 
-const Stack = createNativeStackNavigator<AdminStackParamList>();
-
-const AdminNavigator = () => {
+export default function AdminBottomNavigator() {
   return (
-    <Stack.Navigator
+    <Tab.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: '#3498db',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: '600',
-        },
+        headerShown: false,
       }}
     >
-      <Stack.Screen
-        name="SantriList"
-        component={SantriListScreen}
-        options={{ title: 'Data Santri' }}
-      />
-      <Stack.Screen
-        name="SantriDetail"
-        component={SantriDetailScreen}
-        options={{ title: 'Detail Santri' }}
-      />
-      <Stack.Screen
-        name="AddSantri"
-        component={SantriFormScreen}
-        options={{ title: 'Tambah Santri' }}
-      />
-      <Stack.Screen
-        name="EditSantri"
-        component={SantriFormScreen}
-        options={{ title: 'Edit Santri' }}
-      />
-    </Stack.Navigator>
+      <Tab.Screen name="AdminDashboard" component={DashboardAdmin} />
+      <Tab.Screen name='ManageSantriScreen' component={ManageSantriScreen}/>
+      <Tab.Screen name='ManagePengajarScreen' component={ManagePengajarScreen}/>
+      <Tab.Screen name='CreateKelas' component={CreateKelas}/>
+    </Tab.Navigator>
   );
-};
-
-export default AdminNavigator;
+}

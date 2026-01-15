@@ -12,19 +12,24 @@ const AuthGate = () => {
       const token = await AsyncStorage.getItem("token");
       const role = await AsyncStorage.getItem("role");
 
-      // ⬇️ PENTING: JIKA TIDAK ADA TOKEN → KE LOGIN
-      if (!token) {
-        navigation.replace("Login");
+      if (!token || !role) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Login" }],
+        });
         return;
       }
 
-      if (role === "santri") {
-        navigation.replace("DashboardSantri");
-      } else if (role === "pengajar") {
-        navigation.replace("DashboardPengajar");
-      } else {
-        navigation.replace("AdminDashboard");
-      }
+      let target = "Login";
+
+      if (role === "santri") target = "SantriApp";
+      if (role === "pengajar") target = "PengajarApp";
+      if (role === "admin") target = "AdminApp";
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: target }],
+      });
     };
 
     init();

@@ -1,185 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
 
-// Import navigators
-import SantriNavigator from './SantriNavigator';
-import AdminNavigator from './AdminNavigator';
+import AuthGate from "./AuthGate";
+import LoginScreen from "../pages/LoginScreen";
 
-// Import screens
-import TaskScreen from '../pages/TaskScreen';
-import AttendanceScreen from '../pages/AttendanceScreen';
-import ProfileScreen from '../pages/ProfileScreen';
+import SantriDrawer from "./SantriDrawer";
+import PengajarDrawer from "./PengajarDrawer";
+import AdminDrawer from "./AdminDrawer";
+import ActivateAccountScreen from "../pages/ActivateAccountScreen";
+import ActivateRequestScreen from "../pages/ActivateRequestScreen";
+import { StyleSheet } from "react-native";
 
-// Import Auth Context (jika ada)
-// import { useAuth } from '../contexts/AuthContext';
+const Stack = createStackNavigator();
 
-const Tab = createBottomTabNavigator();
-
-// Custom tab bar button untuk admin (opsional FAB-style)
-const AdminTabButton = ({ children, onPress }: any) => (
-  <TouchableOpacity
-    style={styles.adminTabButton}
-    onPress={onPress}
-    activeOpacity={0.8}
-  >
-    <View style={styles.adminButtonInner}>
-      {children}
-    </View>
-  </TouchableOpacity>
-);
-
-// Custom tab bar dengan badge untuk admin
-const CustomTabBarIcon = ({ route, focused, color, size }: any) => {
-  let iconName = 'home';
-  let badgeCount = 0;
-  
-  switch (route.name) {
-    case 'Dashboard':
-      iconName = focused ? 'home' : 'home-outline';
-      break;
-    case 'Tugas':
-      iconName = focused ? 'book' : 'book-outline';
-      break;
-    case 'Absen':
-      iconName = focused ? 'calendar-check' : 'calendar-check-outline';
-      break;
-    case 'Admin':
-      iconName = focused ? 'shield-account' : 'shield-account-outline';
-      size = 26;
-      badgeCount = 3; // Contoh notifikasi
-      break;
-    case 'Profil':
-      iconName = focused ? 'account' : 'account-outline';
-      break;
-    default:
-      iconName = 'circle';
-  }
-  
-  return (
-    <View style={styles.iconContainer}>
-      <Icon name={iconName} size={size} color={color} />
-      
-      {/* Badge untuk Admin */}
-      {route.name === 'Admin' && badgeCount > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {badgeCount > 9 ? '9+' : badgeCount}
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-};
-
-const RootNavigator = () => {
-  // Ganti dengan logic autentikasi yang sesungguhnya
-  const [isAdmin, setIsAdmin] = useState(false);
-  
-  // Contoh: cek role dari async storage atau context
-  useEffect(() => {
-    // Simulasi cek role
-    // Di production, ambil dari AsyncStorage atau context
-    const checkAdminRole = async () => {
-      // Contoh: user dengan role 'admin' atau 'guru'
-      const userRole = 'admin'; // Ganti dengan data sesungguhnya
-      setIsAdmin(userRole === 'admin' || userRole === 'guru');
-    };
-    
-    checkAdminRole();
-  }, []);
-
+export default function RootNavigator() {
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarActiveTintColor: '#3498db',
-          tabBarInactiveTintColor: '#7f8c8d',
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabBarLabel,
-          tabBarIcon: ({ focused, color, size }) => (
-            <CustomTabBarIcon 
-              route={route} 
-              focused={focused} 
-              color={color} 
-              size={size} 
-            />
-          ),
-        })}
-      >
-        {/* Tab Dashboard - menggunakan SantriNavigator */}
-        <Tab.Screen 
-          name="Dashboard" 
-          component={SantriNavigator}
-          options={{ 
-            title: 'Beranda',
-            tabBarLabel: 'Beranda',
-          }}
-        />
-        
-        {/* Tab Tugas */}
-        <Tab.Screen 
-          name="Tugas" 
-          component={TaskScreen}
-          options={{ 
-            title: 'Tugas',
-            tabBarLabel: 'Tugas',
-          }}
-        />
-        
-        {/* Tab Absen */}
-        <Tab.Screen 
-          name="Absen" 
-          component={AttendanceScreen}
-          options={{ 
-            title: 'Absen',
-            tabBarLabel: 'Absen',
-          }}
-        />
-        
-        {/* Tab Admin - hanya tampil jika user adalah admin */}
-        {isAdmin ? (
-          <Tab.Screen 
-            name="Admin" 
-            component={AdminNavigator}
-            options={{ 
-              title: 'Admin',
-              tabBarLabel: 'Admin',
-              // Opsional: gunakan custom button untuk FAB-style
-              // tabBarButton: (props) => (
-              //   <AdminTabButton {...props} />
-              // ),
-            }}
-          />
-        ) : (
-          // Jika bukan admin, sembunyikan tab atau tampilkan placeholder
-          <Tab.Screen 
-            name="AdminPlaceholder" 
-            component={TaskScreen}
-            options={{
-              tabBarButton: () => null, // Sembunyikan tab
-            }}
-          />
-        )}
-        
-        {/* Tab Profil */}
-        <Tab.Screen 
-          name="Profil" 
-          component={ProfileScreen}
-          options={{ 
-            title: 'Profil',
-            tabBarLabel: 'Profil',
-          }}
-        />
-      </Tab.Navigator>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="AuthGate" component={AuthGate} />
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="ActivateRequest" component={ActivateRequestScreen}/>
+        <Stack.Screen name="ActivateAccount" component={ActivateAccountScreen}/>
+        <Stack.Screen name="SantriApp" component={SantriDrawer} />
+        <Stack.Screen name="PengajarApp" component={PengajarDrawer} />
+        <Stack.Screen name="AdminApp" component={AdminDrawer} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };
 
-export default RootNavigator;
 
 const styles = StyleSheet.create({
   tabBar: {
