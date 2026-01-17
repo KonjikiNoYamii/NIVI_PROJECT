@@ -4,6 +4,7 @@ import DashboardAdmin from '../pages/admin/AdminDashboard';
 import ManageSantriScreen from '../pages/admin/ManageSantriScreen';
 import ManagePengajarScreen from '../pages/admin/ManagePengajarScreen';
 import ManageKelasScreen from '../pages/admin/ManageKelasScreen';
+import CreateMataPelajaranScreen from '../pages/admin/MataPelajaranPage';
 
 
 const Tab = createBottomTabNavigator();
@@ -18,7 +19,9 @@ export default function AdminBottomNavigator() {
       <Tab.Screen name="AdminDashboard" component={DashboardAdmin} />
       <Tab.Screen name='ManageSantriScreen' component={ManageSantriScreen}/>
       <Tab.Screen name='ManagePengajarScreen' component={ManagePengajarScreen}/>
-      <Tab.Screen name='CreateKelas' component={ManageKelasScreen}/>
+      <Tab.Screen name='ManageKelasScreen' component={ManageKelasScreen}/>
+      <Tab.Screen name='ManageMapelScreen' component={CreateMataPelajaranScreen}/>
     </Tab.Navigator>
   );
 }
+    
