@@ -1,5 +1,5 @@
 {
-  "name": "Yami mobile app",
+  "name": "yami_mobile_app",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.1",
@@ -35,6 +36,7 @@
     "react": "19.1.1",
     "react-fontawesome": "^1.7.1",
     "react-native": "0.82.1",
+    "react-native-calendars": "^1.1313.0",
     "react-native-chart-kit": "^6.12.0",
     "react-native-elements": "^3.4.3",
     "react-native-fs": "^2.20.0",
@@ -43,11 +45,7 @@
     "react-native-keychain": "^10.0.0",
     "react-native-pager-view": "^6.9.1",
     "react-native-paper": "^5.14.5",
-<<<<<<< HEAD
-    "react-native-reanimated": "^4.1.5",
-=======
     "react-native-reanimated": "^4.2.1",
->>>>>>> ab87e40a77ca6607bec925b2b941ab0a5581ac90
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.18.0",
     "react-native-share": "^12.2.1",
