@@ -23,7 +23,7 @@ const ActivateAccountScreen = ({ route, navigation }: any) => {
       Alert.alert("Error", "Password wajib diisi");
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 6) {``
       Alert.alert("Error", "Password minimal 6 karakter");
       return;
     }

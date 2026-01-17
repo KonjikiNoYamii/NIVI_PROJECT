@@ -1,5 +1,5 @@
 // screens/admin/DashboardAdmin.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -26,30 +26,42 @@ export default function DashboardAdmin() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDashboard = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
+const fetchDashboard = useCallback(async () => {
+  try {
+    setLoading(true);
 
-      const res = await axios.get(`${API}/panel/dashboard/admin`, {
+    const token = await AsyncStorage.getItem("token");
+
+    if (!token) {
+      console.log("Token belum ada, fetch dibatalkan");
+      return;
+    }
+
+    const res = await axios.get(
+      `${API}/panel/dashboard/admin`,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      });
+      }
+    );
 
-      setData(res.data);
-    } catch (err) {
-      console.log("Gagal mengambil dashboard admin", err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    setData(res.data);
+  } catch (error) {
+    console.log("Gagal fetch dashboard:", error);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, []);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchDashboard();
-    }, [])
-  );
+
+ useFocusEffect(
+  useCallback(() => {
+    fetchDashboard();
+  }, [fetchDashboard])
+);
+
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
