@@ -62,13 +62,19 @@ const handleLogin = async () => {
     });
 
     if (res.data.status === 'NOT_ACTIVE') {
-      Alert.alert('Akun Belum Aktivasi', 'Silakan buat password Anda', [
-        {
-          text: 'Lanjutkan',
-          onPress: () =>
-            navigation.replace('ActivateAccount', { token: res.data.token }),
-        },
-      ]);
+      Alert.alert(
+        'Akun Belum Aktivasi',
+        'Silakan buat password Anda',
+        [
+          {
+            text: 'Lanjutkan',
+            onPress: () =>
+              navigation.replace('ActivateAccount', {
+                token: res.data.token,
+              }),
+          },
+        ]
+      );
       return;
     }
 
@@ -81,11 +87,11 @@ const handleLogin = async () => {
       ['userName', user.name ?? ''],
       ['userEmail', user.email ?? ''],
     ]);
-
-    // ❗ JANGAN navigate di sini
   } catch (err: any) {
-    const message = err.response?.data?.message || 'Terjadi kesalahan';
-    Alert.alert('Login Gagal', message);
+    Alert.alert(
+      'Login Gagal',
+      err.response?.data?.message || 'Terjadi kesalahan'
+    );
     return;
   } finally {
     const elapsed = Date.now() - startTime;
@@ -95,7 +101,7 @@ const handleLogin = async () => {
     }
 
     setLoading(false);
-    navigation.replace('AuthGate'); // ✅ di sini
+    navigation.replace('AuthGate');
   }
 };
 
@@ -111,17 +117,25 @@ const handleRequestActivation = async () => {
   try {
     setLoading(true);
 
-    const res = await axios.post(`${API}/auth/request-activation`, { email });
+    const res = await axios.post(
+      `${API}/auth/request-activation`,
+      { email }
+    );
 
     Alert.alert('Berhasil', res.data.message, [
       {
         text: 'OK',
         onPress: () =>
-          navigation.navigate('ActivateAccount', { token: res.data.token }),
+          navigation.navigate('ActivateAccount', {
+            token: res.data.token,
+          }),
       },
     ]);
   } catch (err: any) {
-    Alert.alert('Error', err.response?.data?.message || 'Gagal request aktivasi');
+    Alert.alert(
+      'Error',
+      err.response?.data?.message || 'Gagal request aktivasi'
+    );
   } finally {
     const elapsed = Date.now() - startTime;
 
@@ -132,6 +146,7 @@ const handleRequestActivation = async () => {
     setLoading(false);
   }
 };
+
 
 
 
@@ -167,11 +182,10 @@ const handleRequestActivation = async () => {
                   name="envelope"
                   type="font-awesome"
                   size={18}
-                  color="#95a5a6"
                   style={styles.inputIcon}
                 />
                 <TextInput
-                  placeholder="contoh@santri.dev"
+                  placeholder="Masukkan email"
                   placeholderTextColor="#bdc3c7"
                   value={email}
                   onChangeText={setEmail}
@@ -191,7 +205,6 @@ const handleRequestActivation = async () => {
                   name="lock"
                   type="font-awesome"
                   size={20}
-                  color="#95a5a6"
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -211,7 +224,7 @@ const handleRequestActivation = async () => {
                     name={showPassword ? 'eye-slash' : 'eye'}
                     type="font-awesome"
                     size={18}
-                    color="#95a5a6"
+                    color="#fcffff"
                   />
                 </TouchableOpacity>
               </View>
@@ -334,9 +347,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotPasswordText: {
-    fontSize: 14,
+    fontSize: 18,
     color: '#3498db',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   loginButton: {
     backgroundColor: '#3498db',
@@ -402,13 +415,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  requestButton: {
-    padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: '#95a5a6',
-  },
-  requestButtonText: { color: '#fff', fontWeight: '600' },
+requestButton: {
+  marginTop: 16,
+  paddingVertical: 14,
+  alignItems: 'center',
+},
+
+requestButtonText: {
+  fontSize: 15,
+  color: '#3498db',
+  fontWeight: '600',
+},
+
+
 });
 
 export default LoginScreen;
