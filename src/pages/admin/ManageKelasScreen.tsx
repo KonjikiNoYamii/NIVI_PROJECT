@@ -8,13 +8,13 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
-  SafeAreaView,
   Keyboard,
 } from "react-native";
 import axios from "axios";
 import { API } from "../../services/api";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const ManageKelasScreen = ({ navigation }: any) => {
+const ManageKelasScreen = () => {
   const [namaKelas, setNamaKelas] = useState("");
   const [deskripsi, setDeskripsi] = useState("");
   const [loading, setLoading] = useState(false);

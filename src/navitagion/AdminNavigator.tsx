@@ -5,6 +5,7 @@ import ManageSantriScreen from '../pages/admin/ManageSantriScreen';
 import ManagePengajarScreen from '../pages/admin/ManagePengajarScreen';
 import ManageKelasScreen from '../pages/admin/ManageKelasScreen';
 import CreateMataPelajaranScreen from '../pages/admin/MataPelajaranPage';
+import AdminJadwalScreen from '../pages/admin/ManageAbsenScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -21,6 +22,7 @@ export default function AdminBottomNavigator() {
       <Tab.Screen name='ManagePengajarScreen' component={ManagePengajarScreen}/>
       <Tab.Screen name='ManageKelasScreen' component={ManageKelasScreen}/>
       <Tab.Screen name='ManageMapelScreen' component={CreateMataPelajaranScreen}/>
+      <Tab.Screen name='ManageAbsenScreen' component={AdminJadwalScreen}/>
     </Tab.Navigator>
   );
 }

@@ -1,81 +1,44 @@
-// components/dashboard/SectionCard.tsx
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Icon } from 'react-native-elements';
+import { Icon } from "react-native-elements";
+import { NIVI } from "../../theme/niviTheme";
 
-interface SectionCardProps {
+interface Props {
   title: string;
   children: React.ReactNode;
   icon?: string;
-  actionText?: string;
-  onActionPress?: () => void;
 }
 
-const SectionCard: React.FC<SectionCardProps> = ({ 
-  title, 
-  children, 
-  icon = "info-circle",
-  actionText,
-  onActionPress 
-}) => {
+const SectionCard: React.FC<Props> = ({ title, children, icon = "info-circle" }) => {
   return (
     <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleContainer}>
-          <Icon 
-            name={icon} 
-            type="font-awesome" 
-            size={16} 
-            style={styles.sectionIcon}
-          />
-          <Text style={styles.sectionTitle}>{title}</Text>
-        </View>
-        {actionText && onActionPress && (
-          <Text style={styles.actionText} onPress={onActionPress}>
-            {actionText}
-          </Text>
-        )}
+      <View style={styles.header}>
+        <Icon name={icon} type="font-awesome" size={16} color={NIVI.primary} />
+        <Text style={styles.title}>{title}</Text>
       </View>
-      <View style={styles.sectionContent}>
-        {children}
-      </View>
+      {children}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   section: {
-    backgroundColor: '#ffffff',
+    backgroundColor: NIVI.card,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: NIVI.border,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionIcon: {
-    marginRight: 8,
-  },
-  sectionTitle: {
+  title: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1e293b',
-  },
-  actionText: {
-    fontSize: 14,
-    color: '#3498db',
-    fontWeight: '600',
-  },
-  sectionContent: {
-    // Content styling
+    fontWeight: "600",
+    color: NIVI.textPrimary,
+    marginLeft: 8,
   },
 });
 
