@@ -26,7 +26,7 @@ export const absensiService = {
     const token = await AsyncStorage.getItem("token");
 
     const res = await axios.post(
-      `${API}/absensi/me/absen`,
+      `${API}/absensi/absen`,
       { status },
       {
         headers: {

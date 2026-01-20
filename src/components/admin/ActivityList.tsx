@@ -1,77 +1,44 @@
-// components/dashboard/ActivityList.tsx
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Icon } from 'react-native-elements';
+import { Icon } from "react-native-elements";
+import { NIVI } from "../../theme/niviTheme";
 
-interface ActivityListProps {
-  data: any;
-}
-
-const ActivityList: React.FC<ActivityListProps> = ({ data }) => {
-  const activities = [
+const ActivityList = ({ data }: any) => {
+  const items = [
     {
-      id: 1,
       title: "Tugas Aktif",
       value: data?.tugasAktif || 0,
       icon: "tasks",
-      color: "#3498db",
-      bgColor: "#e8f4fc",
-      action: "Lihat Semua",
+      color: NIVI.primary,
     },
     {
-      id: 2,
       title: "Submission Masuk",
       value: data?.submissionMasuk || 0,
       icon: "inbox",
-      color: "#2ecc71",
-      bgColor: "#f0f9f0",
-      action: "Review",
+      color: NIVI.success,
     },
     {
-      id: 3,
       title: "Izin Pending",
       value: data?.izinPending || 0,
       icon: "clipboard-list",
-      color: "#f39c12",
-      bgColor: "#fef6e6",
-      action: "Proses",
+      color: NIVI.warning,
     },
   ];
 
   return (
     <View>
-      {activities.map((activity) => (
-        <TouchableOpacity key={activity.id} style={styles.activityItem} activeOpacity={0.7}>
-          <View style={styles.activityLeft}>
-            <View style={[styles.activityIcon, { backgroundColor: activity.bgColor }]}>
-              <Icon 
-                name={activity.icon} 
-                type="font-awesome" 
-                size={16} 
-                color={activity.color}
-              />
+      {items.map((item, i) => (
+        <TouchableOpacity key={i} style={styles.row}>
+          <View style={styles.left}>
+            <View style={[styles.iconBox, { backgroundColor: `${item.color}1A` }]}>
+              <Icon name={item.icon} type="font-awesome" size={16} color={item.color} />
             </View>
-            <View style={styles.activityContent}>
-              <Text style={styles.activityTitle}>{activity.title}</Text>
-              <View style={styles.activityInfo}>
-                <Text style={styles.activityValue}>{activity.value} item</Text>
-                {activity.value > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>Baru</Text>
-                  </View>
-                )}
-              </View>
+            <View>
+              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.value}>{item.value} item</Text>
             </View>
           </View>
-          <View style={styles.activityRight}>
-            <Text style={styles.activityAction}>{activity.action}</Text>
-            <Icon 
-              name="chevron-right" 
-              type="font-awesome" 
-              size={12} 
-              color="#94a3b8"
-            />
-          </View>
+          <Icon name="chevron-right" type="font-awesome" size={12} color={NIVI.textMuted} />
         </TouchableOpacity>
       ))}
     </View>
@@ -79,66 +46,35 @@ const ActivityList: React.FC<ActivityListProps> = ({ data }) => {
 };
 
 const styles = StyleSheet.create({
-  activityItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: NIVI.border,
   },
-  activityLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+  left: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  activityIcon: {
+  iconBox: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
+  title: {
     fontSize: 14,
-    color: '#475569',
-    marginBottom: 4,
-    fontWeight: '500',
+    fontWeight: "500",
+    color: NIVI.textSecondary,
   },
-  activityInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  activityValue: {
+  value: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginRight: 8,
-  },
-  badge: {
-    backgroundColor: '#fee2e2',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 10,
-    color: '#ef4444',
-    fontWeight: '600',
-  },
-  activityRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  activityAction: {
-    fontSize: 14,
-    color: '#3498db',
-    fontWeight: '600',
-    marginRight: 8,
+    fontWeight: "700",
+    color: NIVI.textPrimary,
   },
 });
 

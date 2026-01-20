@@ -11,32 +11,37 @@ import {
   Platform,
   ScrollView,
   Image,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { API } from "../services/api";
+} from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { Icon } from 'react-native-elements';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { API } from '../services/api';
+import Loading from '../components/loading';
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation<any>();
 
+  const MIN_LOADING_TIME = 2000;
+  const sleep = (ms: number) =>
+    new Promise(resolve => setTimeout<any>(resolve, ms));
+
   const validateForm = () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Email tidak boleh kosong");
+      Alert.alert('Error', 'Email tidak boleh kosong');
       return false;
     }
     if (!password.trim()) {
-      Alert.alert("Error", "Password tidak boleh kosong");
+      Alert.alert('Error', 'Password tidak boleh kosong');
       return false;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      Alert.alert("Error", "Format email tidak valid");
+      Alert.alert('Error', 'Format email tidak valid');
       return false;
     }
     return true;
@@ -44,6 +49,8 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!validateForm()) return;
+
+    const startTime = Date.now();
 
     try {
       setLoading(true);
@@ -53,66 +60,81 @@ const LoginScreen = () => {
         password,
       });
 
-      // 🔴 USER BELUM AKTIF
-     if (res.data.status === "NOT_ACTIVE") {
-  Alert.alert(
-    "Akun Belum Aktivasi",
-    "Silakan buat password Anda",
-    [
-      {
-        text: "Lanjutkan",
-        onPress: () =>
-          navigation.replace("ActivateAccount", { token: res.data.token }),
-      },
-    ]
-  );
-  return;
-}
+      if (res.data.status === 'NOT_ACTIVE') {
+        Alert.alert('Akun Belum Aktivasi', 'Silakan buat password Anda', [
+          {
+            text: 'Lanjutkan',
+            onPress: () =>
+              navigation.replace('ActivateAccount', {
+                token: res.data.token,
+              }),
+          },
+        ]);
+        return;
+      }
 
-
-      // ✅ LOGIN OK
       const { token, user } = res.data;
 
       await AsyncStorage.multiSet([
-        ["token", token],
-        ["role", user.role],
-        ["userId", String(user.id)],
-        ["userName", user.name ?? ""],
-        ["userEmail", user.email ?? ""],
+        ['token', token],
+        ['role', user.role],
+        ['userId', String(user.id)],
+        ['kelasId', String(user.kelasId)], // penting ini
+        ['userName', user.name ?? ''],
+        ['userEmail', user.email ?? ''],
       ]);
-
-      Alert.alert(
-        "Login Berhasil",
-        `Selamat datang, ${user.name || user.email}!`,
-        [{ text: "OK", onPress: () => navigation.replace("AuthGate") }]
-      );
     } catch (err: any) {
-      const message = err.response?.data?.message || "Terjadi kesalahan";
-      Alert.alert("Login Gagal", message);
+      Alert.alert(
+        'Login Gagal',
+        err.response?.data?.message || 'Terjadi kesalahan',
+      );
+      return;
     } finally {
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < MIN_LOADING_TIME) {
+        await sleep(MIN_LOADING_TIME - elapsed);
+      }
+
       setLoading(false);
+      navigation.replace('AuthGate');
     }
   };
 
   const handleRequestActivation = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Masukkan email untuk request aktivasi");
+      Alert.alert('Error', 'Masukkan email untuk request aktivasi');
       return;
     }
 
+    const startTime = Date.now();
+
     try {
       setLoading(true);
+
       const res = await axios.post(`${API}/auth/request-activation`, { email });
-      Alert.alert("Berhasil", res.data.message, [
+
+      Alert.alert('Berhasil', res.data.message, [
         {
-          text: "OK",
-          onPress: () => navigation.navigate("ActivateAccount", { token: res.data.token }),
+          text: 'OK',
+          onPress: () =>
+            navigation.navigate('ActivateAccount', {
+              token: res.data.token,
+            }),
         },
       ]);
     } catch (err: any) {
-      const message = err.response?.data?.message || "Gagal request aktivasi";
-      Alert.alert("Error", message);
+      Alert.alert(
+        'Error',
+        err.response?.data?.message || 'Gagal request aktivasi',
+      );
     } finally {
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < MIN_LOADING_TIME) {
+        await sleep(MIN_LOADING_TIME - elapsed);
+      }
+
       setLoading(false);
     }
   };
@@ -121,7 +143,7 @@ const LoginScreen = () => {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
@@ -131,7 +153,7 @@ const LoginScreen = () => {
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Image
-                source={require("../assets/logo.png")}
+                source={require('../assets/logo.png')}
                 style={{ width: 120, height: 120, borderRadius: 60 }}
               />
             </View>
@@ -149,11 +171,10 @@ const LoginScreen = () => {
                   name="envelope"
                   type="font-awesome"
                   size={18}
-                  color="#95a5a6"
                   style={styles.inputIcon}
                 />
                 <TextInput
-                  placeholder="contoh@santri.dev"
+                  placeholder="Masukkan email"
                   placeholderTextColor="#bdc3c7"
                   value={email}
                   onChangeText={setEmail}
@@ -173,7 +194,6 @@ const LoginScreen = () => {
                   name="lock"
                   type="font-awesome"
                   size={20}
-                  color="#95a5a6"
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -190,43 +210,42 @@ const LoginScreen = () => {
                   style={styles.passwordToggle}
                 >
                   <Icon
-                    name={showPassword ? "eye-slash" : "eye"}
+                    name={showPassword ? 'eye-slash' : 'eye'}
                     type="font-awesome"
                     size={18}
-                    color="#95a5a6"
+                    color="#fcffff"
                   />
                 </TouchableOpacity>
               </View>
             </View>
 
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[
+                styles.loginButton,
+                loading && styles.loginButtonDisabled,
+              ]}
               onPress={handleLogin}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.loginButtonText}>Masuk</Text>
-              )}
+              <Text style={styles.loginButtonText}>Masuk</Text>
             </TouchableOpacity>
 
-            {/* 🔹 Tombol request aktivasi */}
             <TouchableOpacity
               style={styles.requestButton}
               onPress={handleRequestActivation}
               disabled={loading}
             >
-              <Text style={styles.requestButtonText}>Belum Aktivasi? Request Aktivasi</Text>
+              <Text style={styles.requestButtonText}>
+                Belum Aktivasi? Request Aktivasi
+              </Text>
             </TouchableOpacity>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Loading visible={loading} />
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safe: {
@@ -317,9 +336,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotPasswordText: {
-    fontSize: 14,
+    fontSize: 18,
     color: '#3498db',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   loginButton: {
     backgroundColor: '#3498db',
@@ -385,8 +404,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-    requestButton: { padding: 12, borderRadius: 12, alignItems: "center", backgroundColor: "#95a5a6" },
-  requestButtonText: { color: "#fff", fontWeight: "600" },
+  requestButton: {
+    marginTop: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+
+  requestButtonText: {
+    fontSize: 15,
+    color: '#3498db',
+    fontWeight: '600',
+  },
 });
 
 export default LoginScreen;

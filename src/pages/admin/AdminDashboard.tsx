@@ -1,167 +1,133 @@
-// screens/admin/DashboardAdmin.tsx
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  SafeAreaView,
   ActivityIndicator,
   RefreshControl,
-  SafeAreaView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
-import { Icon } from 'react-native-elements';
+import { Icon } from "react-native-elements";
+
 import { API } from "../../services/api";
+import { NIVI } from "../../theme/niviTheme";
 import StatCard from "../../components/admin/Card";
 import AttendanceStats from "../../components/admin/AttedanceChart";
 import SectionCard from "../../components/admin/Section";
 import ActivityList from "../../components/admin/ActivityList";
-
-
 
 export default function DashboardAdmin() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
+      setLoading(true);
       const token = await AsyncStorage.getItem("token");
+      if (!token) return;
 
       const res = await axios.get(`${API}/panel/dashboard/admin`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       setData(res.data);
     } catch (err) {
-      console.log("Gagal mengambil dashboard admin", err);
+      console.log("Dashboard error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       fetchDashboard();
-    }, [])
+    }, [fetchDashboard])
   );
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true);
     fetchDashboard();
-  }, []);
+  };
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Memuat dashboard...</Text>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={NIVI.primary} />
+          <Text style={styles.loadingText}>Memuat Dashboard…</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
-        style={styles.container}
+    <SafeAreaView style={styles.safe}>
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        contentContainerStyle={styles.container}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Dashboard Admin</Text>
             <Text style={styles.subtitle}>
-              {new Date().toLocaleDateString('id-ID', { 
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+              {new Date().toLocaleDateString("id-ID", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
               })}
             </Text>
           </View>
         </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
+        {/* STAT CARDS */}
+        <View style={styles.grid}>
           <StatCard
             title="Total Santri"
             value={data?.totalSantri || 0}
             icon="user-o"
-            color="#3498db"
+            color={NIVI.primary}
           />
           <StatCard
             title="Total Pengajar"
             value={data?.totalPengajar || 0}
             icon="chalkboard-teacher"
-            color="#2ecc71"
+            color={NIVI.success}
           />
           <StatCard
             title="Total Kelas"
             value={data?.totalKelas || 0}
             icon="graduation-cap"
-            color="#e74c3c"
+            color={NIVI.secondary}
           />
           <StatCard
             title="Total Admin"
             value={data?.totalAdmin || 0}
-            icon="user-shield"
-            color="#f39c12"
+            icon="user-lock"
+            color={NIVI.warning}
           />
         </View>
 
-        {/* Attendance Section */}
-        <View style={styles.attendanceSection}>
+        {/* ATTENDANCE */}
+        <View style={styles.section}>
           <AttendanceStats data={data?.absensi} />
         </View>
 
-        {/* Activity Section */}
-        <View style={styles.activitySection}>
-          <SectionCard title="Aktivitas Terkini" icon="clock-o">
+        {/* ACTIVITY */}
+        <View style={styles.section}>
+          <SectionCard title="Aktivitas Terkini" icon="clock">
             <ActivityList data={data} />
           </SectionCard>
-        </View>
-
-        {/* Quick Stats */}
-        <View style={styles.quickStats}>
-          <View style={styles.quickStatCard}>
-            <View style={[styles.quickStatIcon, { backgroundColor: '#e8f4fc' }]}>
-              <Icon name="tasks" type="font-awesome" size={20} color="#3498db" />
-            </View>
-            <View style={styles.quickStatContent}>
-              <Text style={styles.quickStatValue}>{data?.tugasAktif || 0}</Text>
-              <Text style={styles.quickStatLabel}>Tugas Aktif</Text>
-            </View>
-          </View>
-
-          <View style={styles.quickStatCard}>
-            <View style={[styles.quickStatIcon, { backgroundColor: '#f0f9f0' }]}>
-              <Icon name="inbox" type="font-awesome" size={20} color="#2ecc71" />
-            </View>
-            <View style={styles.quickStatContent}>
-              <Text style={styles.quickStatValue}>{data?.submissionMasuk || 0}</Text>
-              <Text style={styles.quickStatLabel}>Submission</Text>
-            </View>
-          </View>
-
-          <View style={styles.quickStatCard}>
-            <View style={[styles.quickStatIcon, { backgroundColor: '#fef6e6' }]}>
-              <Icon name="clipboard-list" type="font-awesome" size={20} color="#f39c12" />
-            </View>
-            <View style={styles.quickStatContent}>
-              <Text style={styles.quickStatValue}>{data?.izinPending || 0}</Text>
-              <Text style={styles.quickStatLabel}>Izin Pending</Text>
-            </View>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -169,127 +135,60 @@ export default function DashboardAdmin() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  safe: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: NIVI.background,
   },
   container: {
-    flex: 1,
     padding: 16,
+    paddingBottom: 32,
   },
-  loadingContainer: {
+  loading: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#64748b',
-    fontWeight: '500',
+    color: NIVI.textSecondary,
+    fontWeight: "500",
   },
+
+  /* HEADER */
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 4,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#1e293b',
-    letterSpacing: -0.5,
+    fontWeight: "700",
+    color: NIVI.textPrimary,
   },
   subtitle: {
     fontSize: 14,
-    color: '#94a3b8',
+    color: NIVI.textMuted,
     marginTop: 4,
   },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: `${NIVI.primary}1A`,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+
+  /* GRID */
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     marginBottom: 24,
   },
-  attendanceSection: {
+
+  section: {
     marginBottom: 24,
-  },
-  activitySection: {
-    marginBottom: 24,
-  },
-  quickStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  quickStatCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  quickStatIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  quickStatContent: {
-    flex: 1,
-  },
-  quickStatValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 2,
-  },
-  quickStatLabel: {
-    fontSize: 12,
-    color: '#64748b',
-  },
-  systemStatus: {
-    marginBottom: 32,
-  },
-  statusGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statusItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '48%',
-    marginBottom: 12,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  statusText: {
-    fontSize: 14,
-    color: '#475569',
   },
 });

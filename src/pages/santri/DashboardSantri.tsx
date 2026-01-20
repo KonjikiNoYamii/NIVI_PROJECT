@@ -1,5 +1,5 @@
 // DashboardSantri.tsx
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,17 +11,27 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { absensiService, Absensi } from "../../services/absensi";
+import { absensiSettingService } from "../../services/absensiSetting";
 import HeaderDashboard from "../../components/santri/HeaderDashboard";
 import AbsensiCard from "../../components/santri/AbsensiCard";
 import HistoryCard from "../../components/santri/HistoryCard";
 import InfoCard from "../../components/santri/InfoCard";
 
-const MAX_ABSEN = 4;
-
 const DashboardSantri = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [absensi, setAbsensi] = useState<Absensi[]>([]);
+  const [MAX_ABSEN, setMaxAbsen] = useState<number>(0);
+
+  // Load maxAbsen dari backend
+  const loadMaxAbsen = async () => {
+    try {
+      const max = await absensiSettingService.getMaxAbsen();
+      if (max !== null) setMaxAbsen(max);
+    } catch {
+      Alert.alert("Error", "Gagal mengambil setting absensi");
+    }
+  };
 
   const loadAbsensi = async () => {
     try {
@@ -37,6 +47,7 @@ const DashboardSantri = () => {
 
   useFocusEffect(
     useCallback(() => {
+      loadMaxAbsen();
       loadAbsensi();
     }, [])
   );
@@ -96,24 +107,10 @@ const DashboardSantri = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: "#64748b",
-  },
+  safe: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { flex: 1, padding: 16 },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 16, fontSize: 16, color: "#64748b" },
 });
 
 export default DashboardSantri;
