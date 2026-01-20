@@ -29,8 +29,7 @@ const LoginScreen = () => {
 
   const MIN_LOADING_TIME = 2000;
   const sleep = (ms: number) =>
-  new Promise(resolve => setTimeout<any>(resolve, ms));
-
+    new Promise(resolve => setTimeout<any>(resolve, ms));
 
   const validateForm = () => {
     if (!email.trim()) {
@@ -48,24 +47,21 @@ const LoginScreen = () => {
     return true;
   };
 
-const handleLogin = async () => {
-  if (!validateForm()) return;
+  const handleLogin = async () => {
+    if (!validateForm()) return;
 
-  const startTime = Date.now();
+    const startTime = Date.now();
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const res = await axios.post(`${API}/auth/login`, {
-      email,
-      password,
-    });
+      const res = await axios.post(`${API}/auth/login`, {
+        email,
+        password,
+      });
 
-    if (res.data.status === 'NOT_ACTIVE') {
-      Alert.alert(
-        'Akun Belum Aktivasi',
-        'Silakan buat password Anda',
-        [
+      if (res.data.status === 'NOT_ACTIVE') {
+        Alert.alert('Akun Belum Aktivasi', 'Silakan buat password Anda', [
           {
             text: 'Lanjutkan',
             onPress: () =>
@@ -73,82 +69,75 @@ const handleLogin = async () => {
                 token: res.data.token,
               }),
           },
-        ]
+        ]);
+        return;
+      }
+
+      const { token, user } = res.data;
+
+      await AsyncStorage.multiSet([
+        ['token', token],
+        ['role', user.role],
+        ['userId', String(user.id)],
+        ['kelasId', String(user.kelasId)], // penting ini
+        ['userName', user.name ?? ''],
+        ['userEmail', user.email ?? ''],
+      ]);
+    } catch (err: any) {
+      Alert.alert(
+        'Login Gagal',
+        err.response?.data?.message || 'Terjadi kesalahan',
       );
+      return;
+    } finally {
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < MIN_LOADING_TIME) {
+        await sleep(MIN_LOADING_TIME - elapsed);
+      }
+
+      setLoading(false);
+      navigation.replace('AuthGate');
+    }
+  };
+
+  const handleRequestActivation = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Masukkan email untuk request aktivasi');
       return;
     }
 
-    const { token, user } = res.data;
+    const startTime = Date.now();
 
-    await AsyncStorage.multiSet([
-      ['token', token],
-      ['role', user.role],
-      ['userId', String(user.id)],
-      ['userName', user.name ?? ''],
-      ['userEmail', user.email ?? ''],
-    ]);
-  } catch (err: any) {
-    Alert.alert(
-      'Login Gagal',
-      err.response?.data?.message || 'Terjadi kesalahan'
-    );
-    return;
-  } finally {
-    const elapsed = Date.now() - startTime;
+    try {
+      setLoading(true);
 
-    if (elapsed < MIN_LOADING_TIME) {
-      await sleep(MIN_LOADING_TIME - elapsed);
+      const res = await axios.post(`${API}/auth/request-activation`, { email });
+
+      Alert.alert('Berhasil', res.data.message, [
+        {
+          text: 'OK',
+          onPress: () =>
+            navigation.navigate('ActivateAccount', {
+              token: res.data.token,
+            }),
+        },
+      ]);
+    } catch (err: any) {
+      Alert.alert(
+        'Error',
+        err.response?.data?.message || 'Gagal request aktivasi',
+      );
+    } finally {
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < MIN_LOADING_TIME) {
+        await sleep(MIN_LOADING_TIME - elapsed);
+      }
+
+      setLoading(false);
     }
-
-    setLoading(false);
-    navigation.replace('AuthGate');
-  }
-};
-
-
-const handleRequestActivation = async () => {
-  if (!email.trim()) {
-    Alert.alert('Error', 'Masukkan email untuk request aktivasi');
-    return;
-  }
-
-  const startTime = Date.now();
-
-  try {
-    setLoading(true);
-
-    const res = await axios.post(
-      `${API}/auth/request-activation`,
-      { email }
-    );
-
-    Alert.alert('Berhasil', res.data.message, [
-      {
-        text: 'OK',
-        onPress: () =>
-          navigation.navigate('ActivateAccount', {
-            token: res.data.token,
-          }),
-      },
-    ]);
-  } catch (err: any) {
-    Alert.alert(
-      'Error',
-      err.response?.data?.message || 'Gagal request aktivasi'
-    );
-  } finally {
-    const elapsed = Date.now() - startTime;
-
-    if (elapsed < MIN_LOADING_TIME) {
-      await sleep(MIN_LOADING_TIME - elapsed);
-    }
-
-    setLoading(false);
-  }
-};
-
-
-
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -253,7 +242,7 @@ const handleRequestActivation = async () => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-<Loading visible={loading} />
+      <Loading visible={loading} />
     </SafeAreaView>
   );
 };
@@ -415,19 +404,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-requestButton: {
-  marginTop: 16,
-  paddingVertical: 14,
-  alignItems: 'center',
-},
+  requestButton: {
+    marginTop: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
 
-requestButtonText: {
-  fontSize: 15,
-  color: '#3498db',
-  fontWeight: '600',
-},
-
-
+  requestButtonText: {
+    fontSize: 15,
+    color: '#3498db',
+    fontWeight: '600',
+  },
 });
 
 export default LoginScreen;

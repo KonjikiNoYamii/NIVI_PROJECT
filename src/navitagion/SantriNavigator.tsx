@@ -3,8 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, StyleSheet } from 'react-native';
 import DashboardSantri from '../pages/santri/DashboardSantri';
 import TaskScreen from '../pages/santri/TaskScreen';
-import AttendanceSantriScreen from '../pages/santri/AttendanceSantriScreen';
 import { Icon } from 'react-native-elements';
+import SantriAbsensiScreen from '../pages/santri/AttendanceSantriScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -85,7 +85,7 @@ export default function SantriBottomNavigator() {
       />
       <Tab.Screen
         name="Absen"
-        component={AttendanceSantriScreen}
+        component={SantriAbsensiScreen}
         options={{
           tabBarLabel: 'Absensi',
           tabBarIcon: ({ focused, color, size }) => (
