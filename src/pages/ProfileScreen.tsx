@@ -127,6 +127,13 @@ const ProfileScreen: React.FC = () => {
     fetchProfile();
   }, []);
 
+  const avatarUri = profileData.profile.fotoUrl
+  ? profileData.profile.fotoUrl.startsWith('http')
+    ? profileData.profile.fotoUrl
+    : `${API}${profileData.profile.fotoUrl}`
+  : DEFAULT_AVATAR_URL;
+
+
   // Date picker
   const handleDateChange = (event: any, date?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
@@ -144,30 +151,45 @@ const ProfileScreen: React.FC = () => {
       alamat: profileData.profile.alamat ?? '',
       tanggalLahir: profileData.profile.tanggalLahir ?? null,
       jenisKelamin: profileData.profile.jenisKelamin ?? null,
-      fotoUrl: profileData.profile.fotoUrl ?? DEFAULT_AVATAR_URL,
+      fotoUrl: profileData.profile.fotoUrl || null,
     });
     setShowEditModal(true);
   };
+  console.log('FOTO URL =>', profileData.profile.fotoUrl);
 
   // Save profile ke server
   const saveProfileToServer = async (data: Partial<Profile>) => {
     const token = await AsyncStorage.getItem('token');
     if (!token) throw new Error('Token tidak ditemukan');
 
-    const payload = {
-      namaLengkap: data.namaLengkap,
-      noHp: data.noHp ?? null,
-      alamat: data.alamat ?? null,
-      fotoUrl:
-        data.fotoUrl || profileData.profile.fotoUrl || DEFAULT_AVATAR_URL,
-      tanggalLahir: data.tanggalLahir
-        ? new Date(data.tanggalLahir).toISOString()
-        : null,
-      jenisKelamin: data.jenisKelamin ?? null,
-    };
+    const formData = new FormData();
 
-    const res = await axios.put(`${API}/profile/me`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
+    formData.append('namaLengkap', data.namaLengkap ?? '');
+    formData.append('noHp', data.noHp ?? '');
+    formData.append('alamat', data.alamat ?? '');
+    formData.append('jenisKelamin', data.jenisKelamin ?? '');
+
+    if (data.tanggalLahir) {
+      formData.append(
+        'tanggalLahir',
+        new Date(data.tanggalLahir).toISOString(),
+      );
+    }
+
+    // ⬇️ INI BAGIAN PALING PENTING
+    if (data.fotoUrl && data.fotoUrl.startsWith('file://')) {
+      formData.append('image', {
+        uri: data.fotoUrl,
+        name: 'profile.jpg',
+        type: 'image/jpeg',
+      } as any);
+    }
+
+    const res = await axios.put(`${API}/profile/me`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
     });
 
     return res.data.data;
@@ -270,19 +292,16 @@ const ProfileScreen: React.FC = () => {
         {/* Profile Header Section */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
-            <Image
-              source={{
-                uri: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL,
-              }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: avatarUri }} style={styles.avatar} />
+
             <TouchableOpacity
               style={styles.editPhotoButton}
               onPress={() => {
                 setEditForm({
-                  ...profileData.profile,
-                  fotoUrl: profileData.profile.fotoUrl || DEFAULT_AVATAR_URL,
-                });
+  ...profileData.profile,
+  fotoUrl: profileData.profile.fotoUrl || null,
+});
+
                 setShowEditModal(true);
               }}
             >

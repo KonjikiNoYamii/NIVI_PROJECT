@@ -53,18 +53,23 @@ const TaskScreen: React.FC = () => {
         },
       });
 
-const formatted: Task[] = res.data.data.map((t: any) => ({
-  id: t.id,
-  subject: 'Tugas',
-  title: t.title,
-  description: t.description,
-  deadline: t.deadline,
+const formatted: Task[] = res.data.data.map((t: any) => {
+  const submission = t.submission?.[0]; // submission santri ini
 
-  status: t.status ?? 'belum_submit',
+  return {
+    id: t.id,
+    subject: t.mataPelajaran?.nama ?? 'Mata Pelajaran',
+    title: t.title,
+    description: t.description,
+    deadline: t.deadline,
 
-  submission_link: t.submission_link ?? null,
-  submitted_at: t.submitted_at ?? null,
-}));
+    status: submission?.status ?? 'belum_submit',
+
+    submission_link: submission?.linkUrl ?? null,
+    submitted_at: submission?.submittedAt ?? null,
+  };
+});
+
 
 
       setTasks(formatted);

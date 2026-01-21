@@ -3,6 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import DashboardPengajar from '../pages/pengajar/DashboardPengajar';
 import TaskPengajar from '../pages/pengajar/Taskpengajar';
 import AbsensiSantriPengajarScreen from '../pages/pengajar/AttendanceSantriViewScreen';
+import PengajarIzinScreen from '../pages/pengajar/ManageIzinSantri';
+import PengumpulanTugasScreen from '../pages/pengajar/PengumpulanTugasSantri';
 
 const Tab = createBottomTabNavigator();
 
@@ -19,6 +21,8 @@ export default function PengajarBottomNavigator() {
         name="AbsensiSantriPengajarScreen"
         component={AbsensiSantriPengajarScreen}
       />
+      <Tab.Screen name='ManageIzinSantri' component={PengajarIzinScreen}/>
+      <Tab.Screen name='NilaiTugas' component={PengumpulanTugasScreen}/>
     </Tab.Navigator>
   );
 }
