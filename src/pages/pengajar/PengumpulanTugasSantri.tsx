@@ -46,6 +46,7 @@ const PengajarSubmissionScreen = () => {
       });
 
       setData(res.data.data);
+      
     } catch {
       Alert.alert('Error', 'Gagal memuat pengumpulan tugas');
     } finally {
@@ -76,12 +77,18 @@ const PengajarSubmissionScreen = () => {
     }
   };
 
-  const openLink = async (url?: string | null) => {
-    if (!url) return;
-    if (await Linking.canOpenURL(url)) {
-      await Linking.openURL(url);
-    }
-  };
+const openLink = async (url?: string | null) => {
+  if (!url) return Alert.alert('Error', 'URL tidak ditemukan');
+
+  try {
+    const finalUrl = url.startsWith('http') ? url : `https://${url}`;
+    await Linking.openURL(finalUrl);
+  } catch (error) {
+    Alert.alert('Error', 'Gagal membuka URL');
+    console.log('Link error:', error);
+  }
+};
+
 
   useEffect(() => {
     fetchSubmission();
@@ -106,6 +113,7 @@ const PengajarSubmissionScreen = () => {
 
         {item.linkUrl && (
           <TouchableOpacity onPress={() => openLink(item.linkUrl)}>
+            
             <Text style={styles.link}>📎 Buka Tugas</Text>
           </TouchableOpacity>
         )}

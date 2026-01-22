@@ -146,19 +146,6 @@ switch (status) {
 
 };
 
-const getStatusColor = (status: Task['status']) => {
-  switch (status) {
-    case 'belum_submit':
-      return '#3498db';
-    case 'reviewed':
-      return '#2ecc71';
-    case 'rejected':
-      return '#e74c3c';
-    default:
-      return '#95a5a6';
-  }
-};
-
 
     return (
       <View style={styles.card}>
@@ -320,6 +307,7 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingBottom:80
   },
   container: {
     flex: 1,
