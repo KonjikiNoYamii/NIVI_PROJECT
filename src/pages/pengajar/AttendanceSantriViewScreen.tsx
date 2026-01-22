@@ -10,6 +10,7 @@ import {
   RefreshControl,
   ScrollView,
   Image,
+  Modal,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,7 +24,6 @@ interface Santri {
     fotoUrl?: string | null;
   } | null;
 }
-
 
 interface Absensi {
   id: number;
@@ -44,29 +44,47 @@ const KelasScreen: React.FC = () => {
   const [selectedKelas, setSelectedKelas] = useState<Kelas | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [editModal, setEditModal] = useState(false);
+  const [selectedAbsensi, setSelectedAbsensi] = useState<Absensi | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<
+    'hadir' | 'izin' | 'sakit' | 'alpha'
+  >('hadir');
 
   useEffect(() => {
     fetchKelas();
   }, []);
 
-  const fetchKelas = async () => {
-    try {
-      setLoading(true);
-      const token = await AsyncStorage.getItem('token');
-      const res = await axios.get<{ success: boolean; data: Kelas[] }>(
-        `${API}/kelas`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      if (res.data.success) {
-        setKelasList(res.data.data);
+const fetchKelas = async () => {
+  try {
+    setLoading(true);
+    const token = await AsyncStorage.getItem('token');
+
+    const res = await axios.get<{ success: boolean; data: Kelas[] }>(
+      `${API}/kelas`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+
+    if (res.data.success) {
+      setKelasList(res.data.data);
+
+      // 🔥 PENTING: sync ulang selectedKelas
+      if (selectedKelas) {
+        const updated = res.data.data.find(
+          k => k.id === selectedKelas.id
+        );
+        if (updated) {
+          setSelectedKelas(updated);
+        }
       }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
-  };
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+};
+
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -167,20 +185,19 @@ const KelasScreen: React.FC = () => {
       <View style={styles.absensiCard}>
         <View style={styles.absensiHeader}>
           <View style={styles.avatarContainer}>
-  {item.profile?.fotoUrl ? (
-    <Image
-      source={{
-        uri: `${API}${item.profile.fotoUrl}`,
-      }}
-      style={styles.avatarImage}
-    />
-  ) : (
-    <Text style={styles.avatarText}>
-      {item.name.charAt(0).toUpperCase()}
-    </Text>
-  )}
-</View>
-
+            {item.profile?.fotoUrl ? (
+              <Image
+                source={{
+                  uri: `${API}${item.profile.fotoUrl}`,
+                }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {item.name.charAt(0).toUpperCase()}
+              </Text>
+            )}
+          </View>
 
           <View style={styles.santriInfo}>
             <Text style={styles.santriName}>{item.name}</Text>
@@ -195,6 +212,7 @@ const KelasScreen: React.FC = () => {
               keyExtractor={a => a.id.toString()}
               renderItem={({ item: absen }) => (
                 <View style={styles.absensiRecord}>
+                  {/* STATUS BADGE */}
                   <View
                     style={[
                       styles.statusBadge,
@@ -216,14 +234,35 @@ const KelasScreen: React.FC = () => {
                       {getStatusText(absen.status)}
                     </Text>
                   </View>
-                  <Text style={styles.absensiDate}>
-                    {new Date(absen.tanggal).toLocaleDateString('id-ID', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </Text>
+
+                  {/* KANAN: TANGGAL + EDIT */}
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.absensiDate}>
+                      {new Date(absen.tanggal).toLocaleDateString('id-ID', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+
+                    {/* TOMBOL EDIT (KHUSUS PENGAJAR) */}
+                    <TouchableOpacity
+                      style={{ marginTop: 4 }}
+                      onPress={() => {
+                        setSelectedAbsensi(absen);
+                        setSelectedStatus(absen.status);
+                        setEditModal(true);
+                      }}
+                    >
+                      <Icon
+                        name="edit"
+                        type="font-awesome"
+                        size={14}
+                        color="#64748b"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             />
@@ -333,6 +372,69 @@ const KelasScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
+
+              {/* ===== MODAL EDIT ABSENSI ===== */}
+      <Modal
+  visible={editModal}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setEditModal(false)} // Android back
+>
+  <View style={styles.modalBackdrop}>
+    <View style={styles.modalBox}>
+
+      {/* HEADER MODAL */}
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
+
+        {/* TOMBOL X */}
+        <TouchableOpacity onPress={() => setEditModal(false)}>
+          <Icon
+            name="close"
+            type="font-awesome"
+            size={18}
+            color="#64748b"
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* ISI MODAL */}
+      {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
+        <TouchableOpacity
+          key={s}
+          style={[
+            styles.statusOption,
+            selectedStatus === s && styles.statusSelected,
+          ]}
+          onPress={() => setSelectedStatus(s as any)}
+        >
+          <Text>{s.toUpperCase()}</Text>
+        </TouchableOpacity>
+      ))}
+
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={async () => {
+          const token = await AsyncStorage.getItem('token');
+
+          await axios.put(
+            `${API}/absensi/${selectedAbsensi?.id}`,
+            { status: selectedStatus },
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+
+          setEditModal(false);
+          fetchKelas();
+        }}
+      >
+        <Text style={styles.saveText}>Simpan</Text>
+      </TouchableOpacity>
+
+    </View>
+  </View>
+</Modal>
+
+
         {/* Header */}
         <View style={styles.absensiHeaderr}>
           <TouchableOpacity
@@ -739,6 +841,51 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  statusOption: {
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: '#f1f5f9',
+  },
+  statusSelected: {
+    backgroundColor: '#dbeafe',
+  },
+  saveButton: {
+    marginTop: 12,
+    backgroundColor: '#2563eb',
+    padding: 12,
+    borderRadius: 8,
+  },
+  saveText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  modalHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 12,
+},
+
 });
 
 export default KelasScreen;
