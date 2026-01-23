@@ -19,6 +19,7 @@ import { API } from "../../services/api";
 import { NIVI } from "../../theme/niviTheme";
 import { Icon } from "react-native-elements";
 import { TextInput } from "react-native-gesture-handler";
+import { socket } from "../../services/socket";
 
 const getToken = async () => {
   const token = await AsyncStorage.getItem("token");
@@ -64,7 +65,7 @@ export default function SantriAbsensiScreen() {
   const fetchIzinPending = useCallback(async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`${API}/izin/me/today`, {
+      const res = await axios.get(`${API}/izin/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIzinPending(res.data.some((i: any) => i.status === "menunggu"));
@@ -75,6 +76,28 @@ export default function SantriAbsensiScreen() {
     fetchAbsensiHariIni();
     fetchIzinPending();
   }, [fetchAbsensiHariIni, fetchIzinPending]);
+
+  useEffect(() => {
+  // connect socket saat screen dibuka
+  socket.connect();
+
+  socket.on("connect", () => {
+    console.log("WEBSOCKET CONNECTED:", socket.id);
+  });
+
+  // contoh listener realtime absensi
+  socket.on("absensi-update", (data) => {
+    console.log("Realtime absensi:", data);
+    setAbsensiHariIni(data);
+  });
+
+  return () => {
+    socket.off("connect");
+    socket.off("absensi-update");
+    socket.disconnect();
+  };
+}, []);
+
 
   // ==================== SUBMIT ABSEN ====================
   const submitAbsen = async (status: StatusAbsensi) => {

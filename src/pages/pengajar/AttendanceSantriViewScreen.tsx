@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -49,42 +49,52 @@ const KelasScreen: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<
     'hadir' | 'izin' | 'sakit' | 'alpha'
   >('hadir');
+  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
+
+  // 🔹 DI ATAS renderAbsensiItem
+  const sortedAbsensi = useMemo(() => {
+    if (!selectedKelas?.absensi) return [];
+
+    return [...selectedKelas.absensi].sort((a, b) => {
+      const timeA = new Date(a.tanggal).getTime();
+      const timeB = new Date(b.tanggal).getTime();
+
+      return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [selectedKelas?.absensi, sortOrder]);
 
   useEffect(() => {
     fetchKelas();
   }, []);
 
-const fetchKelas = async () => {
-  try {
-    setLoading(true);
-    const token = await AsyncStorage.getItem('token');
+  const fetchKelas = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('token');
 
-    const res = await axios.get<{ success: boolean; data: Kelas[] }>(
-      `${API}/kelas`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+      const res = await axios.get<{ success: boolean; data: Kelas[] }>(
+        `${API}/kelas`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
-    if (res.data.success) {
-      setKelasList(res.data.data);
+      if (res.data.success) {
+        setKelasList(res.data.data);
 
-      // 🔥 PENTING: sync ulang selectedKelas
-      if (selectedKelas) {
-        const updated = res.data.data.find(
-          k => k.id === selectedKelas.id
-        );
-        if (updated) {
-          setSelectedKelas(updated);
+        // 🔥 PENTING: sync ulang selectedKelas
+        if (selectedKelas) {
+          const updated = res.data.data.find(k => k.id === selectedKelas.id);
+          if (updated) {
+            setSelectedKelas(updated);
+          }
         }
       }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setLoading(false);
-    setRefreshing(false);
-  }
-};
-
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -177,9 +187,7 @@ const fetchKelas = async () => {
   );
 
   const renderAbsensiItem = ({ item }: { item: Santri }) => {
-    const absensiUser = selectedKelas?.absensi.filter(
-      a => a.userId === item.id,
-    );
+    const absensiUser = sortedAbsensi.filter(a => a.userId === item.id);
 
     return (
       <View style={styles.absensiCard}>
@@ -209,10 +217,10 @@ const fetchKelas = async () => {
           {absensiUser && absensiUser.length > 0 ? (
             <FlatList
               data={absensiUser}
+              scrollEnabled={false} // 🔥 PENTING
               keyExtractor={a => a.id.toString()}
               renderItem={({ item: absen }) => (
                 <View style={styles.absensiRecord}>
-                  {/* STATUS BADGE */}
                   <View
                     style={[
                       styles.statusBadge,
@@ -372,68 +380,64 @@ const fetchKelas = async () => {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-
-              {/* ===== MODAL EDIT ABSENSI ===== */}
-      <Modal
-  visible={editModal}
-  transparent
-  animationType="fade"
-  onRequestClose={() => setEditModal(false)} // Android back
->
-  <View style={styles.modalBackdrop}>
-    <View style={styles.modalBox}>
-
-      {/* HEADER MODAL */}
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
-
-        {/* TOMBOL X */}
-        <TouchableOpacity onPress={() => setEditModal(false)}>
-          <Icon
-            name="close"
-            type="font-awesome"
-            size={18}
-            color="#64748b"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* ISI MODAL */}
-      {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
-        <TouchableOpacity
-          key={s}
-          style={[
-            styles.statusOption,
-            selectedStatus === s && styles.statusSelected,
-          ]}
-          onPress={() => setSelectedStatus(s as any)}
+        {/* ===== MODAL EDIT ABSENSI ===== */}
+        <Modal
+          visible={editModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setEditModal(false)} // Android back
         >
-          <Text>{s.toUpperCase()}</Text>
-        </TouchableOpacity>
-      ))}
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalBox}>
+              {/* HEADER MODAL */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
 
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={async () => {
-          const token = await AsyncStorage.getItem('token');
+                {/* TOMBOL X */}
+                <TouchableOpacity onPress={() => setEditModal(false)}>
+                  <Icon
+                    name="close"
+                    type="font-awesome"
+                    size={18}
+                    color="#64748b"
+                  />
+                </TouchableOpacity>
+              </View>
 
-          await axios.put(
-            `${API}/absensi/${selectedAbsensi?.id}`,
-            { status: selectedStatus },
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+              {/* ISI MODAL */}
+              {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
+                <TouchableOpacity
+                  key={s}
+                  style={[
+                    styles.statusOption,
+                    selectedStatus === s && styles.statusSelected,
+                  ]}
+                  onPress={() => setSelectedStatus(s as any)}
+                >
+                  <Text>{s.toUpperCase()}</Text>
+                </TouchableOpacity>
+              ))}
 
-          setEditModal(false);
-          fetchKelas();
-        }}
-      >
-        <Text style={styles.saveText}>Simpan</Text>
-      </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={async () => {
+                  const token = await AsyncStorage.getItem('token');
 
-    </View>
-  </View>
-</Modal>
+                  await axios.put(
+                    `${API}/absensi/${selectedAbsensi?.id}`,
+                    { status: selectedStatus },
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
 
+                  setEditModal(false);
+                  fetchKelas();
+                }}
+              >
+                <Text style={styles.saveText}>Simpan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Header */}
         <View style={styles.absensiHeaderr}>
@@ -508,6 +512,27 @@ const fetchKelas = async () => {
               <Text style={styles.summaryLabel}>Alpha</Text>
             </View>
           </View>
+        </View>
+                <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              sortOrder === 'latest' && styles.activeButton,
+            ]}
+            onPress={() => setSortOrder('latest')}
+          >
+            <Text>Terbaru</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              sortOrder === 'oldest' && styles.activeButton,
+            ]}
+            onPress={() => setSortOrder('oldest')}
+          >
+            <Text>Terlama</Text>
+          </TouchableOpacity>
         </View>
 
         {/* List Absensi */}
@@ -880,12 +905,32 @@ const styles = StyleSheet.create({
   },
 
   modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+filterContainer: {
   flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 12,
+  justifyContent: 'center',
+  marginTop: 4,     // ⬅️ kecil & nempel
+  marginBottom: 20 // ⬅️ masih ada napas
 },
 
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 5,
+  },
+  activeButton: {
+    backgroundColor: '#4F46E5',
+  },
+  filterText: {
+    color: '#111827',
+    fontWeight: '600',
+  },
 });
 
 export default KelasScreen;
