@@ -14,7 +14,8 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API } from '../../services/api';
+import io from 'socket.io-client';
+import { API, SOCKET_URL } from '../../services/api';
 import Loading from '../../components/loading';
 
 /* ================= UTIL ================= */
@@ -77,6 +78,12 @@ export default function AdminJadwalScreen() {
     });
   }, []);
 
+  /* ================= SOCKET ================= */
+  const socket = useMemo(
+    () => io(SOCKET_URL, { transports: ['websocket'] }),
+    [],
+  );
+
   /* ================= FETCH ================= */
 
   const fetchKelas = useCallback(async () => {
@@ -94,7 +101,7 @@ export default function AdminJadwalScreen() {
     }
   }, []);
 
-  const fetchJadwal = async (kelasId: number) => {
+  const fetchJadwal = useCallback(async (kelasId: number) => {
     setLoading(true);
     try {
       const token = await getToken();
@@ -107,15 +114,14 @@ export default function AdminJadwalScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchAbsensiSetting = async (kelasId: number) => {
+  const fetchAbsensiSetting = useCallback(async (kelasId: number) => {
     try {
       const token = await getToken();
       const res = await axios.get(`${API}/absensi-setting/kelas/${kelasId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (res.data.data) {
         setMaxAbsen(String(res.data.data.maxAbsen));
         setSettingId(res.data.data.id);
@@ -126,7 +132,7 @@ export default function AdminJadwalScreen() {
     } catch {
       Alert.alert('Error', 'Gagal mengambil setting absensi');
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchKelas();
@@ -155,11 +161,9 @@ export default function AdminJadwalScreen() {
 
   const saveMaxAbsen = async () => {
     if (!selectedKelas || !maxAbsen) return;
-
     setLoading(true);
     try {
       const token = await getToken();
-
       if (settingId) {
         await axios.put(
           `${API}/absensi-setting/${settingId}`,
@@ -173,7 +177,7 @@ export default function AdminJadwalScreen() {
           { headers: { Authorization: `Bearer ${token}` } },
         );
       }
-
+      socket.emit('absensi-setting-changed', { kelasId: selectedKelas });
       Alert.alert('Sukses', 'Batas absen disimpan');
     } catch {
       Alert.alert('Error', 'Gagal menyimpan batas absen');
@@ -192,7 +196,6 @@ export default function AdminJadwalScreen() {
       Alert.alert('Error', 'Tanggal sudah memiliki jadwal');
       return;
     }
-
     setLoading(true);
     try {
       const token = await getToken();
@@ -207,6 +210,7 @@ export default function AdminJadwalScreen() {
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+      socket.emit('jadwal-changed', { kelasId: selectedKelas });
       fetchJadwal(selectedKelas!);
     } catch {
       Alert.alert('Error', 'Gagal membuat jadwal');
@@ -222,6 +226,7 @@ export default function AdminJadwalScreen() {
       await axios.delete(`${API}/jadwal/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      socket.emit('jadwal-changed', { kelasId: selectedKelas });
       fetchJadwal(selectedKelas!);
     } catch {
       Alert.alert('Error', 'Gagal menghapus jadwal');
@@ -229,111 +234,125 @@ export default function AdminJadwalScreen() {
       setLoading(false);
     }
   };
+
   const submitEdit = async () => {
-  if (!editingJadwal) return;
-
-  setLoading(true);
-  try {
-    const token = await getToken();
-
-    const payload: any = {
-      jamMulai: editJamMulai,
-      jamSelesai: editJamSelesai,
-    };
-
-    // hanya kirim tanggal kalau BELUM ada absensi
-    if (editingJadwal.absensi.length === 0 && editTanggal) {
-      payload.tanggal = editTanggal.toISOString().split("T")[0];
+    if (!editingJadwal) return;
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const payload: any = {
+        jamMulai: editJamMulai,
+        jamSelesai: editJamSelesai,
+      };
+      if (editingJadwal.absensi.length === 0 && editTanggal) {
+        payload.tanggal = editTanggal.toISOString().split('T')[0];
+      }
+      await axios.put(`${API}/jadwal/${editingJadwal.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      socket.emit('jadwal-changed', { kelasId: selectedKelas });
+      setEditVisible(false);
+      fetchJadwal(selectedKelas!);
+    } catch {
+      Alert.alert('Error', 'Gagal update jadwal');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    await axios.put(
-      `${API}/jadwal/${editingJadwal.id}`,
-      payload,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    setEditVisible(false);
-    fetchJadwal(selectedKelas!);
-
-  } catch (e: any) {
-    Alert.alert("Error", e.response?.data?.message || "Gagal update jadwal");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  /* ================= SOCKET LISTENER ================= */
+  useEffect(() => {
+    socket.on('jadwal-changed', ({ kelasId }: { kelasId: number }) => {
+      if (selectedKelas === kelasId) fetchJadwal(kelasId);
+    });
+    socket.on('absensi-setting-changed', ({ kelasId }: { kelasId: number }) => {
+      if (selectedKelas === kelasId) fetchAbsensiSetting(kelasId);
+    });
+    return () => {
+      socket.off('jadwal-changed');
+      socket.off('absensi-setting-changed');
+    };
+  }, [selectedKelas, fetchJadwal, fetchAbsensiSetting, socket]);
 
   /* ================= UI ================= */
 
   return (
     <ScrollView style={styles.container}>
       <Modal visible={editVisible} transparent animationType="slide">
-  <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "center" }}>
-    <View style={{ backgroundColor: "#fff", margin: 20, borderRadius: 12, padding: 16 }}>
-
-      <Text style={{ fontWeight: "600", fontSize: 16 }}>Edit Jadwal</Text>
-
-      {/* JAM MULAI */}
-      <Picker
-        selectedValue={editJamMulai}
-        onValueChange={setEditJamMulai}
-      >
-        {jamOptions.map(j => (
-          <Picker.Item key={j} label={j} value={j} />
-        ))}
-      </Picker>
-
-      {/* JAM SELESAI */}
-      <Picker
-        selectedValue={editJamSelesai}
-        onValueChange={setEditJamSelesai}
-      >
-        {jamOptions.map(j => (
-          <Picker.Item key={j} label={j} value={j} />
-        ))}
-      </Picker>
-
-      {/* TANGGAL */}
-      <TouchableOpacity
-        disabled={editingJadwal?.absensi?.length > 0}
-        style={{
-          opacity: editingJadwal?.absensi?.length > 0 ? 0.5 : 1,
-          borderWidth: 1,
-          borderColor: "#ddd",
-          padding: 8,
-          borderRadius: 8,
-        }}
-        onPress={() => setShowTM(true)}
-      >
-        <Text>{editTanggal?.toDateString()}</Text>
-      </TouchableOpacity>
-
-      {editingJadwal?.absensi?.length > 0 && (
-        <Text style={{ color: "orange", fontSize: 12, marginTop: 4 }}>
-          Jadwal sudah digunakan absensi, tanggal tidak bisa diubah
-        </Text>
-      )}
-
-      {/* ACTION */}
-      <View style={{ flexDirection: "row", marginTop: 12 }}>
-        <TouchableOpacity
-          style={{ flex: 1, padding: 10 }}
-          onPress={() => setEditVisible(false)}
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            justifyContent: 'center',
+          }}
         >
-          <Text style={{ textAlign: "center" }}>Batal</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={{ flex: 1, padding: 10, backgroundColor: "#4a90e2", borderRadius: 8 }}
-          onPress={submitEdit}
-        >
-          <Text style={{ color: "#fff", textAlign: "center" }}>Simpan</Text>
-        </TouchableOpacity>
-      </View>
-
-    </View>
-  </View>
-</Modal>
+          <View
+            style={{
+              backgroundColor: '#fff',
+              margin: 20,
+              borderRadius: 12,
+              padding: 16,
+            }}
+          >
+            <Text style={{ fontWeight: '600', fontSize: 16 }}>Edit Jadwal</Text>
+            <Picker
+              selectedValue={editJamMulai}
+              onValueChange={setEditJamMulai}
+            >
+              {jamOptions.map(j => (
+                <Picker.Item key={j} label={j} value={j} />
+              ))}
+            </Picker>
+            <Picker
+              selectedValue={editJamSelesai}
+              onValueChange={setEditJamSelesai}
+            >
+              {jamOptions.map(j => (
+                <Picker.Item key={j} label={j} value={j} />
+              ))}
+            </Picker>
+            <TouchableOpacity
+              disabled={editingJadwal?.absensi?.length > 0}
+              style={{
+                opacity: editingJadwal?.absensi?.length > 0 ? 0.5 : 1,
+                borderWidth: 1,
+                borderColor: '#ddd',
+                padding: 8,
+                borderRadius: 8,
+              }}
+              onPress={() => setShowTM(true)}
+            >
+              <Text>{editTanggal?.toDateString()}</Text>
+            </TouchableOpacity>
+            {editingJadwal?.absensi?.length > 0 && (
+              <Text style={{ color: 'orange', fontSize: 12, marginTop: 4 }}>
+                Jadwal sudah digunakan absensi, tanggal tidak bisa diubah
+              </Text>
+            )}
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <TouchableOpacity
+                style={{ flex: 1, padding: 10 }}
+                onPress={() => setEditVisible(false)}
+              >
+                <Text style={{ textAlign: 'center' }}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  padding: 10,
+                  backgroundColor: '#4a90e2',
+                  borderRadius: 8,
+                }}
+                onPress={submitEdit}
+              >
+                <Text style={{ color: '#fff', textAlign: 'center' }}>
+                  Simpan
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Loading visible={loading} />
 
@@ -366,33 +385,28 @@ export default function AdminJadwalScreen() {
 
           <View style={styles.box}>
             <Text style={styles.label}>Buat Jadwal</Text>
-
             <Picker selectedValue={jamMulai} onValueChange={setJamMulai}>
               {jamOptions.map(j => (
                 <Picker.Item key={j} label={j} value={j} />
               ))}
             </Picker>
-
             <Picker selectedValue={jamSelesai} onValueChange={setJamSelesai}>
               {jamOptions.map(j => (
                 <Picker.Item key={j} label={j} value={j} />
               ))}
             </Picker>
-
             <TouchableOpacity
               style={styles.dateBtn}
               onPress={() => setShowTM(true)}
             >
               <Text>{tanggalMulai?.toDateString() || 'Tanggal Mulai'}</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={styles.dateBtn}
               onPress={() => setShowTS(true)}
             >
               <Text>{tanggalSelesai?.toDateString() || 'Tanggal Selesai'}</Text>
             </TouchableOpacity>
-
             {showTM && (
               <DateTimePicker
                 value={tanggalMulai || new Date()}
@@ -403,7 +417,6 @@ export default function AdminJadwalScreen() {
                 }}
               />
             )}
-
             {showTS && (
               <DateTimePicker
                 value={tanggalSelesai || new Date()}
@@ -414,7 +427,6 @@ export default function AdminJadwalScreen() {
                 }}
               />
             )}
-
             <TouchableOpacity style={styles.btn} onPress={createBulk}>
               <Text style={styles.btnText}>Buat</Text>
             </TouchableOpacity>
@@ -427,7 +439,6 @@ export default function AdminJadwalScreen() {
                 <Text style={styles.month}>
                   {bulanNama[+month]} {year}
                 </Text>
-
                 <FlatList
                   data={list}
                   numColumns={2}
