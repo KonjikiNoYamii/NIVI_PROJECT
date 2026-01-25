@@ -1,7 +1,4 @@
-// REST API
-const API_BASE_URL = 'http://172.10.2.181:5000'
-
+// api.ts
+export const API_BASE_URL = 'http://192.168.1.23:5000';
 export const API = `${API_BASE_URL}/api`;
-
-// WEBSOCKET
 export const SOCKET_URL = `${API_BASE_URL}`;

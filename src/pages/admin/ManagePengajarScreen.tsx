@@ -171,32 +171,31 @@ const ManagePengajarScreen = () => {
   /* =======================
      ASSIGN PENGAJAR
   ======================= */
-  const handleAssignPengajar = async (pengajarId: number) => {
-    if (!selectedKelasId) {
-      Alert.alert("Error", "Pilih kelas terlebih dahulu!");
-      return;
-    }
-    setLoadingAssign(true);
-    try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.put(
-        `${API}/kelas/${selectedKelasId}/pengajar`,
-        { pengajarIds: [pengajarId] },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+const handleAssignPengajar = async (pengajarIds: number | number[]) => {
+  if (!selectedKelasId) return;
+  setLoadingAssign(true);
+  try {
+    const token = await AsyncStorage.getItem("token");
+    await axios.post(
+      `${API}/kelas/${selectedKelasId}/pengajar`,
+      { pengajarIds },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      socket.emit("kelas-pengajar-changed", { kelasId: selectedKelasId });
+    // Update state frontend secara manual
+    const newPengajar = allPengajar.filter(p => 
+      (Array.isArray(pengajarIds) ? pengajarIds : [pengajarIds]).includes(p.id)
+    );
+    setPengajarKelas(prev => [...prev, ...newPengajar]);
 
-      const pengajarBaru = allPengajar.find(p => p.id === pengajarId);
-      if (pengajarBaru) setPengajarKelas(prev => [...prev, pengajarBaru]);
-      Alert.alert("Sukses", "Pengajar berhasil ditambahkan ke kelas!");
-    } catch (err) {
-      console.log(err);
-      Alert.alert("Gagal", "Gagal menambahkan pengajar!");
-    } finally {
-      setLoadingAssign(false);
-    }
-  };
+    Alert.alert("Sukses", "Pengajar berhasil ditambahkan ke kelas!");
+  } catch (err) {
+    console.log(err);
+    Alert.alert("Gagal", "Gagal menambahkan pengajar!");
+  } finally {
+    setLoadingAssign(false);
+  }
+};
 
   /* =======================
      REMOVE PENGAJAR

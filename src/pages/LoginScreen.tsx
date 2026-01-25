@@ -6,7 +6,6 @@ import {
   Alert,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -28,8 +27,7 @@ const LoginScreen = () => {
   const navigation = useNavigation<any>();
 
   const MIN_LOADING_TIME = 2000;
-  const sleep = (ms: number) =>
-    new Promise(resolve => setTimeout<any>(resolve, ms));
+  const sleep = (ms: number) => new Promise(resolve => setTimeout<any>(resolve, ms));
 
   const validateForm = () => {
     if (!email.trim()) {
@@ -47,97 +45,59 @@ const LoginScreen = () => {
     return true;
   };
 
-  const handleLogin = async () => {
-    if (!validateForm()) return;
+const handleLogin = async () => {
+  if (!validateForm()) return;
 
-    const startTime = Date.now();
+  try {
+    setLoading(true);
+    const { data } = await axios.post(`${API}/auth/login`, { email, password });
 
-    try {
-      setLoading(true);
-
-      const res = await axios.post(`${API}/auth/login`, {
-        email,
-        password,
-      });
-
-      if (res.data.status === 'NOT_ACTIVE') {
-        Alert.alert('Akun Belum Aktivasi', 'Silakan buat password Anda', [
-          {
-            text: 'Lanjutkan',
-            onPress: () =>
-              navigation.replace('ActivateAccount', {
-                token: res.data.token,
-              }),
-          },
-        ]);
-        return;
-      }
-
-      const { token, user } = res.data;
-
-      await AsyncStorage.multiSet([
-        ['token', token],
-        ['role', user.role],
-        ['userId', String(user.id)],
-        ['kelasId', String(user.kelasId)], // penting ini
-        ['userName', user.name ?? ''],
-        ['userEmail', user.email ?? ''],
-      ]);
-    } catch (err: any) {
-      Alert.alert(
-        'Login Gagal',
-        err.response?.data?.message || 'Terjadi kesalahan',
-      );
-      return;
-    } finally {
-      const elapsed = Date.now() - startTime;
-
-      if (elapsed < MIN_LOADING_TIME) {
-        await sleep(MIN_LOADING_TIME - elapsed);
-      }
-
-      setLoading(false);
-      navigation.replace('AuthGate');
-    }
-  };
-
-  const handleRequestActivation = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Masukkan email untuk request aktivasi');
-      return;
+    const { status, user, token } = data.data;
+    if (status === 'NEED_ACTIVATION') {
+      // langsung navigasi ke aktivasi dengan email
+      console.log(data);
+      
+      return navigation.navigate('ActivateAccount', { email });
     }
 
-    const startTime = Date.now();
+    await AsyncStorage.multiSet([
+      ['token', token],
+      ['role', user.role],
+      ['userId', String(user.id)],
+      ['kelasId', user.kelasId?.toString() || ''],
+      ['userName', user.name || ''],
+      ['userEmail', user.email || ''],
+    ]);
 
-    try {
-      setLoading(true);
+    navigation.replace('AuthGate');
+  } catch (err: any) {
+    Alert.alert('Login Gagal', err.response?.data?.message || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
-      const res = await axios.post(`${API}/auth/request-activation`, { email });
+// Request OTP tanpa Authorization
+const handleRequestActivation = async () => {
+  if (!email.trim()) {
+    Alert.alert('Error', 'Masukkan email untuk request OTP');
+    return;
+  }
+  try {
+    setLoading(true);
+    await axios.post(`${API}/auth/request-activation-otp`, { email}); // header bebas
+    Alert.alert('Berhasil', 'OTP berhasil dikirim ke email Anda', [
+      { text: 'Lanjutkan', onPress: () => navigation.navigate('ActivateAccount', { email }) },
+    ]);
+  } catch (err: any) {
+    Alert.alert('Error', err.response?.data?.message || 'Gagal request OTP');
+  } finally {
+    setLoading(false);
+  }
+};
 
-      Alert.alert('Berhasil', res.data.message, [
-        {
-          text: 'OK',
-          onPress: () =>
-            navigation.navigate('ActivateAccount', {
-              token: res.data.token,
-            }),
-        },
-      ]);
-    } catch (err: any) {
-      Alert.alert(
-        'Error',
-        err.response?.data?.message || 'Gagal request aktivasi',
-      );
-    } finally {
-      const elapsed = Date.now() - startTime;
 
-      if (elapsed < MIN_LOADING_TIME) {
-        await sleep(MIN_LOADING_TIME - elapsed);
-      }
 
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -151,12 +111,10 @@ const LoginScreen = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/logo.png')}
-                style={{ width: 120, height: 120, borderRadius: 60 }}
-              />
-            </View>
+            <Image
+              source={require('../assets/logo.png')}
+              style={{ width: 120, height: 120, borderRadius: 60 }}
+            />
             <Text style={styles.welcomeText}>Selamat Datang!!</Text>
             <Text style={styles.subtitle}>
               Masuk ke akun Anda untuk melanjutkan
@@ -236,10 +194,22 @@ const LoginScreen = () => {
               disabled={loading}
             >
               <Text style={styles.requestButtonText}>
-                Belum Aktivasi? Request Aktivasi
+                Belum Aktivasi? Request OTP
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+  style={styles.requestButton}
+  onPress={() => navigation.navigate('ForgotPassword')}
+>
+  <Text style={styles.requestButtonText}>
+    Lupa Password?
+  </Text>
+</TouchableOpacity>
+
           </View>
+
+          
         </ScrollView>
       </KeyboardAvoidingView>
       <Loading visible={loading} />
@@ -248,36 +218,10 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: '#ffffffe8',
-  },
-  container: {
-    flex: 1,
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    padding: 24,
-    justifyContent: 'center',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  logoIcon: {
-    fontSize: 40,
-    marginRight: 12,
-  },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#2c3e50',
-  },
+  safe: { flex: 1, backgroundColor: '#ffffffe8' },
+  container: { flex: 1 },
+  scrollContainer: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  header: { alignItems: 'center', marginBottom: 40 },
   welcomeText: {
     fontSize: 24,
     fontWeight: '600',
@@ -285,11 +229,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    textAlign: 'center',
-  },
+  subtitle: { fontSize: 16, color: '#7f8c8d', textAlign: 'center' },
   form: {
     backgroundColor: '#ffffff',
     borderRadius: 20,
@@ -300,9 +240,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 5,
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
+  inputGroup: { marginBottom: 20 },
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -319,27 +257,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     paddingHorizontal: 16,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#2c3e50',
-  },
-  passwordToggle: {
-    padding: 8,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    fontSize: 18,
-    color: '#3498db',
-    fontWeight: '600',
-  },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, paddingVertical: 16, fontSize: 16, color: '#2c3e50' },
+  passwordToggle: { padding: 8 },
   loginButton: {
     backgroundColor: '#3498db',
     padding: 18,
@@ -353,68 +273,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  loginButtonDisabled: {
-    backgroundColor: '#b0d4f0',
-  },
-  buttonIcon: {
-    marginRight: 10,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#dfe6e9',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: '#95a5a6',
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  registerText: {
-    fontSize: 14,
-    color: '#7f8c8d',
-  },
-  registerLink: {
-    fontSize: 14,
-    color: '#3498db',
-    fontWeight: '600',
-  },
-  footer: {
-    marginTop: 40,
-    paddingHorizontal: 20,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#95a5a6',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  requestButton: {
-    marginTop: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-
-  requestButtonText: {
-    fontSize: 15,
-    color: '#3498db',
-    fontWeight: '600',
-  },
+  loginButtonDisabled: { backgroundColor: '#b0d4f0' },
+  loginButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  requestButton: { marginTop: 16, paddingVertical: 14, alignItems: 'center' },
+  requestButtonText: { fontSize: 15, color: '#3498db', fontWeight: '600' },
 });
 
 export default LoginScreen;

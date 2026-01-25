@@ -102,6 +102,7 @@ export default function SantriBottomNavigator() {
           ),
         }}
       />
+
     </Tab.Navigator>
   );
 }
