@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,22 +9,27 @@ import {
   ActivityIndicator,
   RefreshControl,
   ScrollView,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Icon } from "react-native-elements";
-import { API } from "../../services/api";
+  Image,
+  Modal,
+} from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Icon } from 'react-native-elements';
+import { API } from '../../services/api';
 
 interface Santri {
   id: number;
   name: string;
+  profile?: {
+    fotoUrl?: string | null;
+  } | null;
 }
 
 interface Absensi {
   id: number;
   userId: number;
   tanggal: string;
-  status: "hadir" | "izin" | "sakit" | "alpha";
+  status: 'hadir' | 'izin' | 'sakit' | 'alpha';
 }
 
 interface Kelas {
@@ -39,6 +44,24 @@ const KelasScreen: React.FC = () => {
   const [selectedKelas, setSelectedKelas] = useState<Kelas | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [editModal, setEditModal] = useState(false);
+  const [selectedAbsensi, setSelectedAbsensi] = useState<Absensi | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<
+    'hadir' | 'izin' | 'sakit' | 'alpha'
+  >('hadir');
+  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
+
+  // 🔹 DI ATAS renderAbsensiItem
+  const sortedAbsensi = useMemo(() => {
+    if (!selectedKelas?.absensi) return [];
+
+    return [...selectedKelas.absensi].sort((a, b) => {
+      const timeA = new Date(a.tanggal).getTime();
+      const timeB = new Date(b.tanggal).getTime();
+
+      return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [selectedKelas?.absensi, sortOrder]);
 
   useEffect(() => {
     fetchKelas();
@@ -47,13 +70,23 @@ const KelasScreen: React.FC = () => {
   const fetchKelas = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("token");
+      const token = await AsyncStorage.getItem('token');
+
       const res = await axios.get<{ success: boolean; data: Kelas[] }>(
         `${API}/kelas`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
+
       if (res.data.success) {
         setKelasList(res.data.data);
+
+        // 🔥 PENTING: sync ulang selectedKelas
+        if (selectedKelas) {
+          const updated = res.data.data.find(k => k.id === selectedKelas.id);
+          if (updated) {
+            setSelectedKelas(updated);
+          }
+        }
       }
     } catch (error) {
       console.error(error);
@@ -70,31 +103,46 @@ const KelasScreen: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'hadir': return 'check-circle';
-      case 'izin': return 'user-clock';
-      case 'sakit': return 'heartbeat';
-      case 'alpha': return 'times-circle';
-      default: return 'question-circle';
+      case 'hadir':
+        return 'check-circle';
+      case 'izin':
+        return 'user-clock';
+      case 'sakit':
+        return 'heartbeat';
+      case 'alpha':
+        return 'times-circle';
+      default:
+        return 'question-circle';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'hadir': return '#10b981';
-      case 'izin': return '#f59e0b';
-      case 'sakit': return '#3b82f6';
-      case 'alpha': return '#ef4444';
-      default: return '#94a3b8';
+      case 'hadir':
+        return '#10b981';
+      case 'izin':
+        return '#f59e0b';
+      case 'sakit':
+        return '#3b82f6';
+      case 'alpha':
+        return '#ef4444';
+      default:
+        return '#94a3b8';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'hadir': return 'Hadir';
-      case 'izin': return 'Izin';
-      case 'sakit': return 'Sakit';
-      case 'alpha': return 'Alpha';
-      default: return 'Tidak Hadir';
+      case 'hadir':
+        return 'Hadir';
+      case 'izin':
+        return 'Izin';
+      case 'sakit':
+        return 'Sakit';
+      case 'alpha':
+        return 'Alpha';
+      default:
+        return 'Tidak Hadir';
     }
   };
 
@@ -117,30 +165,48 @@ const KelasScreen: React.FC = () => {
             </Text>
           </View>
           <View style={styles.kelasInfoItem}>
-            <Icon name="calendar" type="font-awesome" size={12} color="#64748b" />
+            <Icon
+              name="calendar"
+              type="font-awesome"
+              size={12}
+              color="#64748b"
+            />
             <Text style={styles.kelasInfoText}>
               {item.absensi.length} Absensi
             </Text>
           </View>
         </View>
       </View>
-      <Icon name="chevron-right" type="font-awesome" size={16} color="#cbd5e1" />
+      <Icon
+        name="chevron-right"
+        type="font-awesome"
+        size={16}
+        color="#cbd5e1"
+      />
     </TouchableOpacity>
   );
 
   const renderAbsensiItem = ({ item }: { item: Santri }) => {
-    const absensiUser = selectedKelas?.absensi.filter(
-      (a) => a.userId === item.id
-    );
+    const absensiUser = sortedAbsensi.filter(a => a.userId === item.id);
 
     return (
       <View style={styles.absensiCard}>
         <View style={styles.absensiHeader}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {item.name.charAt(0).toUpperCase()}
-            </Text>
+            {item.profile?.fotoUrl ? (
+              <Image
+                source={{
+                  uri: `${API}${item.profile.fotoUrl}`,
+                }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {item.name.charAt(0).toUpperCase()}
+              </Text>
+            )}
           </View>
+
           <View style={styles.santriInfo}>
             <Text style={styles.santriName}>{item.name}</Text>
             <Text style={styles.santriId}>ID: {item.id}</Text>
@@ -151,35 +217,74 @@ const KelasScreen: React.FC = () => {
           {absensiUser && absensiUser.length > 0 ? (
             <FlatList
               data={absensiUser}
-              keyExtractor={(a) => a.id.toString()}
+              scrollEnabled={false} // 🔥 PENTING
+              keyExtractor={a => a.id.toString()}
               renderItem={({ item: absen }) => (
                 <View style={styles.absensiRecord}>
-                  <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(absen.status)}20` }]}>
-                    <Icon 
-                      name={getStatusIcon(absen.status)} 
-                      type="font-awesome" 
-                      size={14} 
-                      color={getStatusColor(absen.status)} 
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(absen.status)}20` },
+                    ]}
+                  >
+                    <Icon
+                      name={getStatusIcon(absen.status)}
+                      type="font-awesome"
+                      size={14}
+                      color={getStatusColor(absen.status)}
                     />
-                    <Text style={[styles.statusText, { color: getStatusColor(absen.status) }]}>
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: getStatusColor(absen.status) },
+                      ]}
+                    >
                       {getStatusText(absen.status)}
                     </Text>
                   </View>
-                  <Text style={styles.absensiDate}>
-                    {new Date(absen.tanggal).toLocaleDateString('id-ID', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric'
-                    })}
-                  </Text>
+
+                  {/* KANAN: TANGGAL + EDIT */}
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={styles.absensiDate}>
+                      {new Date(absen.tanggal).toLocaleDateString('id-ID', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </Text>
+
+                    {/* TOMBOL EDIT (KHUSUS PENGAJAR) */}
+                    <TouchableOpacity
+                      style={{ marginTop: 4 }}
+                      onPress={() => {
+                        setSelectedAbsensi(absen);
+                        setSelectedStatus(absen.status);
+                        setEditModal(true);
+                      }}
+                    >
+                      <Icon
+                        name="edit"
+                        type="font-awesome"
+                        size={14}
+                        color="#64748b"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
             />
           ) : (
             <View style={styles.noAbsensiContainer}>
-              <Icon name="calendar-times" type="font-awesome" size={20} color="#cbd5e1" />
-              <Text style={styles.noAbsensiText}>Belum ada catatan absensi</Text>
+              <Icon
+                name="calendar-times"
+                type="font-awesome"
+                size={20}
+                color="#cbd5e1"
+              />
+              <Text style={styles.noAbsensiText}>
+                Belum ada catatan absensi
+              </Text>
             </View>
           )}
         </View>
@@ -189,10 +294,10 @@ const KelasScreen: React.FC = () => {
 
   const getAbsensiSummary = () => {
     if (!selectedKelas) return { hadir: 0, izin: 0, sakit: 0, alpha: 0 };
-    
+
     const today = new Date().toDateString();
-    const todayAbsensi = selectedKelas.absensi.filter(a => 
-      new Date(a.tanggal).toDateString() === today
+    const todayAbsensi = selectedKelas.absensi.filter(
+      a => new Date(a.tanggal).toDateString() === today,
     );
 
     return {
@@ -218,11 +323,11 @@ const KelasScreen: React.FC = () => {
     // Pilih kelas
     return (
       <SafeAreaView style={styles.safe}>
-        <ScrollView 
+        <ScrollView
           style={styles.container}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
+            <RefreshControl
+              refreshing={refreshing}
               onRefresh={onRefresh}
               colors={['#3498db']}
               tintColor="#3498db"
@@ -240,7 +345,12 @@ const KelasScreen: React.FC = () => {
 
           {kelasList.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Icon name="school" type="font-awesome" size={60} color="#e2e8f0" />
+              <Icon
+                name="school"
+                type="font-awesome"
+                size={60}
+                color="#e2e8f0"
+              />
               <Text style={styles.emptyTitle}>Tidak ada kelas</Text>
               <Text style={styles.emptySubtitle}>
                 Belum ada data kelas yang tersedia
@@ -249,7 +359,7 @@ const KelasScreen: React.FC = () => {
           ) : (
             <FlatList
               data={kelasList}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={item => item.id.toString()}
               renderItem={renderKelasItem}
               scrollEnabled={false}
             />
@@ -261,25 +371,95 @@ const KelasScreen: React.FC = () => {
 
   // Tampilan absensi per kelas yang dipilih
   const absensiSummary = getAbsensiSummary();
-  const totalAbsensiToday = absensiSummary.hadir + absensiSummary.izin + absensiSummary.sakit + absensiSummary.alpha;
+  const totalAbsensiToday =
+    absensiSummary.hadir +
+    absensiSummary.izin +
+    absensiSummary.sakit +
+    absensiSummary.alpha;
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
+        {/* ===== MODAL EDIT ABSENSI ===== */}
+        <Modal
+          visible={editModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setEditModal(false)} // Android back
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalBox}>
+              {/* HEADER MODAL */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
+
+                {/* TOMBOL X */}
+                <TouchableOpacity onPress={() => setEditModal(false)}>
+                  <Icon
+                    name="close"
+                    type="font-awesome"
+                    size={18}
+                    color="#64748b"
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* ISI MODAL */}
+              {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
+                <TouchableOpacity
+                  key={s}
+                  style={[
+                    styles.statusOption,
+                    selectedStatus === s && styles.statusSelected,
+                  ]}
+                  onPress={() => setSelectedStatus(s as any)}
+                >
+                  <Text>{s.toUpperCase()}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={async () => {
+                  const token = await AsyncStorage.getItem('token');
+
+                  await axios.put(
+                    `${API}/absensi/${selectedAbsensi?.id}`,
+                    { status: selectedStatus },
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+
+                  setEditModal(false);
+                  fetchKelas();
+                }}
+              >
+                <Text style={styles.saveText}>Simpan</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
         {/* Header */}
         <View style={styles.absensiHeaderr}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => setSelectedKelas(null)}
+            activeOpacity={0.7}
           >
-            <Icon name="arrow-left" type="font-awesome" size={20} color="#64748b" />
+            <Icon
+              name="arrow-left"
+              type="font-awesome"
+              size={18}
+              color="#334155"
+            />
             <Text style={styles.backText}>Kembali</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.kelasTitleContainer}>
             <Text style={styles.absensiTitle}>{selectedKelas.namaKelas}</Text>
             <Text style={styles.absensiSubtitle}>
-              {selectedKelas.santri.length} Santri • {totalAbsensiToday} Absensi Hari Ini
+              {selectedKelas.santri.length} Santri • {totalAbsensiToday} Absensi
+              Hari Ini
             </Text>
           </View>
         </View>
@@ -289,34 +469,42 @@ const KelasScreen: React.FC = () => {
           <Text style={styles.summaryTitle}>Rekap Hari Ini</Text>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#10b98120' }]}>
+              <View
+                style={[styles.summaryBadge, { backgroundColor: '#10b98120' }]}
+              >
                 <Text style={[styles.summaryNumber, { color: '#10b981' }]}>
                   {absensiSummary.hadir}
                 </Text>
               </View>
               <Text style={styles.summaryLabel}>Hadir</Text>
             </View>
-            
+
             <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#f59e0b20' }]}>
+              <View
+                style={[styles.summaryBadge, { backgroundColor: '#f59e0b20' }]}
+              >
                 <Text style={[styles.summaryNumber, { color: '#f59e0b' }]}>
                   {absensiSummary.izin}
                 </Text>
               </View>
               <Text style={styles.summaryLabel}>Izin</Text>
             </View>
-            
+
             <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#3b82f620' }]}>
+              <View
+                style={[styles.summaryBadge, { backgroundColor: '#3b82f620' }]}
+              >
                 <Text style={[styles.summaryNumber, { color: '#3b82f6' }]}>
                   {absensiSummary.sakit}
                 </Text>
               </View>
               <Text style={styles.summaryLabel}>Sakit</Text>
             </View>
-            
+
             <View style={styles.summaryItem}>
-              <View style={[styles.summaryBadge, { backgroundColor: '#ef444420' }]}>
+              <View
+                style={[styles.summaryBadge, { backgroundColor: '#ef444420' }]}
+              >
                 <Text style={[styles.summaryNumber, { color: '#ef4444' }]}>
                   {absensiSummary.alpha}
                 </Text>
@@ -325,12 +513,33 @@ const KelasScreen: React.FC = () => {
             </View>
           </View>
         </View>
+                <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              sortOrder === 'latest' && styles.activeButton,
+            ]}
+            onPress={() => setSortOrder('latest')}
+          >
+            <Text>Terbaru</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              sortOrder === 'oldest' && styles.activeButton,
+            ]}
+            onPress={() => setSortOrder('oldest')}
+          >
+            <Text>Terlama</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* List Absensi */}
         {selectedKelas.santri.length > 0 ? (
           <FlatList
             data={selectedKelas.santri}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={item => item.id.toString()}
             renderItem={renderAbsensiItem}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.absensiList}
@@ -339,8 +548,15 @@ const KelasScreen: React.FC = () => {
             }
             ListEmptyComponent={
               <View style={styles.emptyAbsensiContainer}>
-                <Icon name="users" type="font-awesome" size={50} color="#e2e8f0" />
-                <Text style={styles.emptyAbsensiText}>Tidak ada santri di kelas ini</Text>
+                <Icon
+                  name="users"
+                  type="font-awesome"
+                  size={50}
+                  color="#e2e8f0"
+                />
+                <Text style={styles.emptyAbsensiText}>
+                  Tidak ada santri di kelas ini
+                </Text>
               </View>
             }
           />
@@ -644,6 +860,76 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     textAlign: 'center',
     paddingHorizontal: 40,
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  statusOption: {
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: '#f1f5f9',
+  },
+  statusSelected: {
+    backgroundColor: '#dbeafe',
+  },
+  saveButton: {
+    marginTop: 12,
+    backgroundColor: '#2563eb',
+    padding: 12,
+    borderRadius: 8,
+  },
+  saveText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+filterContainer: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  marginTop: 4,     // ⬅️ kecil & nempel
+  marginBottom: 20 // ⬅️ masih ada napas
+},
+
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 5,
+  },
+  activeButton: {
+    backgroundColor: '#4F46E5',
+  },
+  filterText: {
+    color: '#111827',
+    fontWeight: '600',
   },
 });
 

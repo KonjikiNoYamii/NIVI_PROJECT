@@ -9,7 +9,9 @@ import SantriDrawer from "./SantriDrawer";
 import PengajarDrawer from "./PengajarDrawer";
 import AdminDrawer from "./AdminDrawer";
 import ActivateAccountScreen from "../pages/ActivateAccountScreen";
-import ActivateRequestScreen from "../pages/ActivateRequestScreen";
+import ForgotPasswordScreen from "../pages/ForgotPassword";
+import ResetPasswordScreen from "../pages/ResetPassword";
+import NilaiTugasScreen from "../pages/pengajar/NilaiTugasScreen";
 
 const Stack = createStackNavigator();
 
@@ -19,11 +21,13 @@ export default function RootNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="AuthGate" component={AuthGate} />
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="ActivateRequest" component={ActivateRequestScreen}/>
         <Stack.Screen name="ActivateAccount" component={ActivateAccountScreen}/>
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}/>
+        <Stack.Screen name="ResetPassword" component={ResetPasswordScreen}/>
         <Stack.Screen name="SantriApp" component={SantriDrawer} />
         <Stack.Screen name="PengajarApp" component={PengajarDrawer} />
         <Stack.Screen name="AdminApp" component={AdminDrawer} />
+        <Stack.Screen name="Nilai" component={NilaiTugasScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

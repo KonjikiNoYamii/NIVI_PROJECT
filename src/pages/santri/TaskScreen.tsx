@@ -17,18 +17,13 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../services/api';
 
-
 interface Task {
   id: number;
   subject: string;
   title: string;
   description?: string;
   deadline: string;
-status:
-  | 'belum_submit'
-  | 'pending'
-  | 'reviewed'
-  | 'rejected';
+  status: 'belum_submit' | 'pending' | 'reviewed' | 'rejected';
   submission_link?: string | null;
   submitted_at?: string | null;
 }
@@ -53,19 +48,22 @@ const TaskScreen: React.FC = () => {
         },
       });
 
-const formatted: Task[] = res.data.data.map((t: any) => ({
-  id: t.id,
-  subject: 'Tugas',
-  title: t.title,
-  description: t.description,
-  deadline: t.deadline,
+      const formatted: Task[] = res.data.data.map((t: any) => {
+        const submission = t.submission?.[0]; // submission santri ini
 
-  status: t.status ?? 'belum_submit',
+        return {
+          id: t.id,
+          subject: t.mataPelajaran?.nama ?? 'Mata Pelajaran',
+          title: t.title,
+          description: t.description,
+          deadline: t.deadline,
 
-  submission_link: t.submission_link ?? null,
-  submitted_at: t.submitted_at ?? null,
-}));
+          status: submission?.status ?? 'belum_submit',
 
+          submission_link: submission?.linkUrl ?? null,
+          submitted_at: submission?.submittedAt ?? null,
+        };
+      });
 
       setTasks(formatted);
     } catch {
@@ -124,122 +122,114 @@ const formatted: Task[] = res.data.data.map((t: any) => ({
     }, [fetchTasks]),
   );
 
-  const renderItem = ({ item }: { item: Task }) => {
-    const late = isLate(item.deadline) && item.status === 'pending';
+// Bagian renderItem di TaskScreen
 
-    const getStatusLabel = (status: Task['status']) => {
-switch (status) {
-  case 'belum_submit':
-    return 'Belum Dikumpulkan';
-  case 'pending':
-    return 'Menunggu Penilaian';
-  case 'reviewed':
-    return 'Sudah Dinilai';
-  case 'rejected':
-    return 'Ditolak';
-}
+const renderItem = ({ item }: { item: Task }) => {
+  const late = isLate(item.deadline) && item.status === 'pending';
 
-};
-
-const getStatusColor = (status: Task['status']) => {
-  switch (status) {
-    case 'belum_submit':
-      return '#3498db';
-    case 'reviewed':
-      return '#2ecc71';
-    case 'rejected':
-      return '#e74c3c';
-    default:
-      return '#95a5a6';
-  }
-};
-
-
-    return (
-      <View style={styles.card}>
-        <View style={styles.headerRow}>
-          <Text style={styles.subject}>{item.subject}</Text>
-          <Text style={[styles.deadline, late && styles.late]}>
-            {new Date(item.deadline).toLocaleDateString('id-ID')}
-          </Text>
-        </View>
-
-        <Text style={styles.title}>{item.title}</Text>
-        
-        {item.description && (
-          <Text style={styles.desc}>{item.description}</Text>
-        )}
-
-{item.status === 'belum_submit' && (
-  <TouchableOpacity
-    style={[styles.submitBtn, late && styles.lateBtn]}
-    onPress={() => setSelectedTask(item)}
-  >
-    <Text style={styles.submitText}>
-      {late ? 'Kumpulkan (Terlambat)' : 'Kumpulkan'}
-    </Text>
-  </TouchableOpacity>
-)}
-
-
-{item.status !== 'belum_submit' && (
-  <View style={styles.submittedContainer}>
-    <Text style={styles.submittedText}>
-      {getStatusLabel(item.status)}
-    </Text>
-  </View>
-)}
-
-
-        {item.submission_link && (
-          <TouchableOpacity
-            style={styles.linkContainer}
-            onPress={() => openLink(item.submission_link!)}
-          >
-            <Text style={styles.linkText}>Lihat Pengumpulan</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
+  // Fungsi label status baru
+  const getStatusLabel = (status: Task['status']) => {
+    switch (status) {
+      case 'belum_submit':
+        return 'Belum Dikumpulkan';
+      case 'pending':
+        return 'Menunggu Penilaian';
+      case 'reviewed':
+        return 'Diterima'; // Hanya diterima, belum dinilai
+      case 'rejected':
+        return 'Ditolak';
+    }
   };
 
   return (
-<SafeAreaView style={styles.safe}>
-  {loading ? (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#3498db" />
-      <Text style={styles.loadingText}>Memuat tugas...</Text>
-    </View>
-  ) : (
-    <FlatList
-      data={tasks}
-      keyExtractor={i => i.id.toString()}
-      renderItem={renderItem}
-      refreshing={refreshing}
-      onRefresh={() => fetchTasks(false)}
-      contentContainerStyle={
-        tasks.length === 0
-          ? { flex: 1, justifyContent: 'center' }
-          : undefined
-      }
-      ListEmptyComponent={
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>📭</Text>
-          <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
-          <Text style={styles.emptySubtitle}>
-            Saat ini belum ada tugas yang diberikan oleh pengajar.
-          </Text>
+    <View style={styles.card}>
+      <View style={styles.headerRow}>
+        <Text style={styles.subject}>{item.subject}</Text>
+        <Text style={[styles.deadline, late && styles.late]}>
+          {new Date(item.deadline).toLocaleDateString('id-ID')}
+        </Text>
+      </View>
 
-          <TouchableOpacity
-            style={styles.reloadBtn}
-            onPress={() => fetchTasks(true)}
-          >
-            <Text style={styles.reloadText}>Muat Ulang</Text>
-          </TouchableOpacity>
+      <Text style={styles.title}>{item.title}</Text>
+      {item.description && <Text style={styles.desc}>{item.description}</Text>}
+
+      {/* Tombol kumpulkan hanya muncul jika belum submit */}
+      {item.status === 'belum_submit' && (
+        <TouchableOpacity
+          style={[styles.submitBtn, late && styles.lateBtn]}
+          onPress={() => setSelectedTask(item)}
+        >
+          <Text style={styles.submitText}>
+            {late ? 'Kumpulkan (Terlambat)' : 'Kumpulkan'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Label status */}
+      {item.status !== 'belum_submit' && (
+        <View style={styles.submittedContainer}>
+          <Text style={styles.submittedText}>
+            {getStatusLabel(item.status)}
+          </Text>
+          {item.submitted_at && (
+            <Text style={styles.submittedDate}>
+              {new Date(item.submitted_at).toLocaleString('id-ID')}
+            </Text>
+          )}
         </View>
-      }
-    />
-  )}
+      )}
+
+      {/* Link tugas */}
+      {item.submission_link && (
+        <TouchableOpacity
+          style={styles.linkContainer}
+          onPress={() => openLink(item.submission_link!)}
+        >
+          <Text style={styles.linkText}>Lihat Pengumpulan</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
+
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3498db" />
+          <Text style={styles.loadingText}>Memuat tugas...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={tasks}
+          keyExtractor={i => i.id.toString()}
+          renderItem={renderItem}
+          refreshing={refreshing}
+          onRefresh={() => fetchTasks(false)}
+          contentContainerStyle={
+            tasks.length === 0
+              ? { flex: 1, justifyContent: 'center' }
+              : undefined
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyIcon}>📭</Text>
+              <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
+              <Text style={styles.emptySubtitle}>
+                Saat ini belum ada tugas yang diberikan oleh pengajar.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.reloadBtn}
+                onPress={() => fetchTasks(true)}
+              >
+                <Text style={styles.reloadText}>Muat Ulang</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      )}
 
       <Modal visible={!!selectedTask} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -315,6 +305,7 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingBottom: 80,
   },
   container: {
     flex: 1,

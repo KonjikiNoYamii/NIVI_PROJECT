@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API } from "../../services/api";
-import { Icon } from 'react-native-elements';
+import { API, SOCKET_URL } from "../../services/api";
+import { Icon } from "react-native-elements";
+import io from "socket.io-client";
 
 /* =======================
    INTERFACE
@@ -32,23 +33,24 @@ interface Pengajar {
 }
 
 /* =======================
+   SOCKET
+======================= */
+const socket = io(SOCKET_URL, { transports: ["websocket"] });
+
+/* =======================
    COMPONENT
 ======================= */
 const ManagePengajarScreen = () => {
-  // create pengajar
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // kelas
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [selectedKelasId, setSelectedKelasId] = useState<number | null>(null);
 
-  // pengajar
   const [allPengajar, setAllPengajar] = useState<Pengajar[]>([]);
   const [pengajarKelas, setPengajarKelas] = useState<Pengajar[]>([]);
 
-  // loading
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [loadingPengajarKelas, setLoadingPengajarKelas] = useState(false);
   const [fetchingInit, setFetchingInit] = useState(true);
@@ -63,7 +65,6 @@ const ManagePengajarScreen = () => {
           axios.get(`${API}/kelas`),
           axios.get(`${API}/users/pengajar`),
         ]);
-
         setKelasList(kelasRes.data.data ?? kelasRes.data ?? []);
         setAllPengajar(pengajarRes.data.data ?? pengajarRes.data ?? []);
       } catch (err) {
@@ -73,7 +74,6 @@ const ManagePengajarScreen = () => {
         setFetchingInit(false);
       }
     };
-
     fetchInit();
   }, []);
 
@@ -85,28 +85,19 @@ const ManagePengajarScreen = () => {
       setPengajarKelas([]);
       return;
     }
-
     const fetchPengajarByKelas = async () => {
       setLoadingPengajarKelas(true);
       try {
         const token = await AsyncStorage.getItem("token");
-        const res = await axios.get(
-          `${API}/admin/kelas/${selectedKelasId}/pengajar`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
+        const res = await axios.get(`${API}/admin/kelas/${selectedKelasId}/pengajar`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const raw = res.data?.data ?? res.data;
-
         const list = Array.isArray(raw)
           ? raw
           : Array.isArray(raw?.pengajar)
           ? raw.pengajar
           : [];
-
         setPengajarKelas(list);
       } catch (err) {
         console.log(err);
@@ -115,8 +106,38 @@ const ManagePengajarScreen = () => {
         setLoadingPengajarKelas(false);
       }
     };
-
     fetchPengajarByKelas();
+  }, [selectedKelasId]);
+
+  /* =======================
+     SOCKET LISTENERS
+  ======================= */
+  useEffect(() => {
+    socket.on("kelas-created", (kelas: Kelas) => {
+      setKelasList(prev => [...prev, kelas]);
+    });
+
+    socket.on("kelas-updated", (kelas: Kelas) => {
+      setKelasList(prev => prev.map(k => k.id === kelas.id ? kelas : k));
+    });
+
+    socket.on("kelas-deleted", ({ id }: { id: number }) => {
+      setKelasList(prev => prev.filter(k => k.id !== id));
+      if (selectedKelasId === id) setSelectedKelasId(null);
+    });
+
+    socket.on("kelas-pengajar-updated", (updatedKelas: { id: number; pengajar: Pengajar[] }) => {
+      if (selectedKelasId === updatedKelas.id) {
+        setPengajarKelas(updatedKelas.pengajar ?? []);
+      }
+    });
+
+    return () => {
+      socket.off("kelas-created");
+      socket.off("kelas-updated");
+      socket.off("kelas-deleted");
+      socket.off("kelas-pengajar-updated");
+    };
   }, [selectedKelasId]);
 
   /* =======================
@@ -127,7 +148,6 @@ const ManagePengajarScreen = () => {
       Alert.alert("Error", "Nama dan email wajib diisi!");
       return;
     }
-
     setCreating(true);
     try {
       const token = await AsyncStorage.getItem("token");
@@ -136,7 +156,6 @@ const ManagePengajarScreen = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const newPengajar = res.data.data ?? res.data;
-
       setAllPengajar(prev => [...prev, newPengajar]);
       setName("");
       setEmail("");
@@ -152,45 +171,37 @@ const ManagePengajarScreen = () => {
   /* =======================
      ASSIGN PENGAJAR
   ======================= */
-  const handleAssignPengajar = async (pengajarId: number) => {
-    if (!selectedKelasId) {
-      Alert.alert("Error", "Pilih kelas terlebih dahulu!");
-      return;
-    }
+const handleAssignPengajar = async (pengajarIds: number | number[]) => {
+  if (!selectedKelasId) return;
+  setLoadingAssign(true);
+  try {
+    const token = await AsyncStorage.getItem("token");
+    await axios.post(
+      `${API}/kelas/${selectedKelasId}/pengajar`,
+      { pengajarIds },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    setLoadingAssign(true);
-    try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.put(
-        `${API}/kelas/${selectedKelasId}/pengajar`,
-        { pengajarIds: [pengajarId] },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    // Update state frontend secara manual
+    const newPengajar = allPengajar.filter(p => 
+      (Array.isArray(pengajarIds) ? pengajarIds : [pengajarIds]).includes(p.id)
+    );
+    setPengajarKelas(prev => [...prev, ...newPengajar]);
 
-      const pengajarBaru = allPengajar.find(p => p.id === pengajarId);
-      if (pengajarBaru) {
-        setPengajarKelas(prev => [...prev, pengajarBaru]);
-      }
-
-      Alert.alert("Sukses", "Pengajar berhasil ditambahkan ke kelas!");
-    } catch (err) {
-      console.log(err);
-      Alert.alert("Gagal", "Gagal menambahkan pengajar!");
-    } finally {
-      setLoadingAssign(false);
-    }
-  };
+    Alert.alert("Sukses", "Pengajar berhasil ditambahkan ke kelas!");
+  } catch (err) {
+    console.log(err);
+    Alert.alert("Gagal", "Gagal menambahkan pengajar!");
+  } finally {
+    setLoadingAssign(false);
+  }
+};
 
   /* =======================
      REMOVE PENGAJAR
   ======================= */
   const handleRemovePengajar = async (pengajarId: number) => {
     if (!selectedKelasId) return;
-
     Alert.alert(
       "Konfirmasi",
       "Apakah Anda yakin ingin menghapus pengajar dari kelas ini?",
@@ -203,14 +214,11 @@ const ManagePengajarScreen = () => {
             try {
               const token = await AsyncStorage.getItem("token");
               await axios.delete(`${API}/admin/kelas/pengajar`, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                data: {
-                  kelasId: selectedKelasId,
-                  pengajarId,
-                },
+                headers: { Authorization: `Bearer ${token}` },
+                data: { kelasId: selectedKelasId, pengajarId },
               });
+
+              socket.emit("kelas-pengajar-changed", { kelasId: selectedKelasId });
 
               setPengajarKelas(prev => prev.filter(p => p.id !== pengajarId));
               Alert.alert("Sukses", "Pengajar dihapus dari kelas!");
@@ -224,9 +232,6 @@ const ManagePengajarScreen = () => {
     );
   };
 
-  /* =======================
-     RENDER
-  ======================= */
   if (fetchingInit) {
     return (
       <SafeAreaView style={styles.safeArea}>
