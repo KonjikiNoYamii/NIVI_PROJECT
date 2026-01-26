@@ -1,5 +1,5 @@
 // SantriAbsensiScreen.tsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,28 +11,28 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import Loading from "../../components/loading";
-import { API } from "../../services/api";
-import { NIVI } from "../../theme/niviTheme";
-import { Icon } from "react-native-elements";
-import { TextInput } from "react-native-gesture-handler";
-import { socket } from "../../services/socket";
+} from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Loading from '../../components/loading';
+import { API } from '../../services/api';
+import { NIVI } from '../../theme/niviTheme';
+import { Icon } from 'react-native-elements';
+import { TextInput } from 'react-native-gesture-handler';
+import { socket } from '../../services/socket';
 
 const getToken = async () => {
-  const token = await AsyncStorage.getItem("token");
-  if (!token) throw new Error("Token tidak ditemukan");
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan');
   return token;
 };
 
-type StatusAbsensi = "hadir" | "izin" | "sakit";
+type StatusAbsensi = 'hadir' | 'izin' | 'sakit';
 
 const statusColors: any = {
-  hadir: "#34D399", // hijau
-  izin: "#FACC15",  // kuning
-  sakit: "#F87171", // merah
+  hadir: '#34D399', // hijau
+  izin: '#FACC15', // kuning
+  sakit: '#F87171', // merah
 };
 
 export default function SantriAbsensiScreen() {
@@ -40,10 +40,10 @@ export default function SantriAbsensiScreen() {
   const [loading, setLoading] = useState(false);
   const [statusAbsen, setStatusAbsen] = useState<StatusAbsensi | null>(null);
   const [showIzinModal, setShowIzinModal] = useState(false);
-  const [alasanIzin, setAlasanIzin] = useState("");
+  const [alasanIzin, setAlasanIzin] = useState('');
   const [izinPending, setIzinPending] = useState(false);
 
-  const statusOptions: StatusAbsensi[] = ["hadir", "izin", "sakit"];
+  const statusOptions: StatusAbsensi[] = ['hadir', 'izin', 'sakit'];
 
   // ==================== FETCH ABSENSI ====================
   const fetchAbsensiHariIni = useCallback(async () => {
@@ -55,7 +55,7 @@ export default function SantriAbsensiScreen() {
       });
       setAbsensiHariIni(res.data.data || []);
     } catch {
-      Alert.alert("Error", "Gagal mengambil data absensi");
+      Alert.alert('Error', 'Gagal mengambil data absensi');
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export default function SantriAbsensiScreen() {
       const res = await axios.get(`${API}/izin/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setIzinPending(res.data.some((i: any) => i.status === "menunggu"));
+      setIzinPending(res.data.some((i: any) => i.status === 'menunggu'));
     } catch {}
   }, []);
 
@@ -78,26 +78,35 @@ export default function SantriAbsensiScreen() {
   }, [fetchAbsensiHariIni, fetchIzinPending]);
 
   useEffect(() => {
-  // connect socket saat screen dibuka
-  socket.connect();
+    socket.connect();
 
-  socket.on("connect", () => {
-    console.log("WEBSOCKET CONNECTED:", socket.id);
-  });
+    socket.on('connect', () => {
+      console.log('WEBSOCKET CONNECTED:', socket.id);
+    });
 
-  // contoh listener realtime absensi
-  socket.on("absensi-update", (data) => {
-    console.log("Realtime absensi:", data);
-    setAbsensiHariIni(data);
-  });
+    // Ambil kelas user dari AsyncStorage atau dari state user
+    const joinKelas = async () => {
+      const kelasStr = await AsyncStorage.getItem('kelasIds');
+      const kelasIds = kelasStr ? JSON.parse(kelasStr) : [];
+      if (kelasIds.length) {
+        socket.emit('join-kelas', kelasIds);
+        console.log('Joined kelas:', kelasIds);
+      }
+    };
 
-  return () => {
-    socket.off("connect");
-    socket.off("absensi-update");
-    socket.disconnect();
-  };
-}, []);
+    joinKelas();
 
+    socket.on('absensi-update', data => {
+      console.log('Realtime absensi:', data);
+      setAbsensiHariIni(data);
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('absensi-update');
+      socket.disconnect();
+    };
+  }, []);
 
   // ==================== SUBMIT ABSEN ====================
   const submitAbsen = async (status: StatusAbsensi) => {
@@ -107,16 +116,16 @@ export default function SantriAbsensiScreen() {
       await axios.post(
         `${API}/absensi/absen`,
         { status },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setStatusAbsen(status);
-      Alert.alert("Sukses", "Absen berhasil");
+      Alert.alert('Sukses', 'Absen berhasil');
 
       // Refresh data
       await fetchAbsensiHariIni();
       await fetchIzinPending();
     } catch (err: any) {
-      Alert.alert("Error", err.response?.data?.message || "Gagal absen");
+      Alert.alert('Error', err.response?.data?.message || 'Gagal absen');
     } finally {
       setLoading(false);
     }
@@ -125,7 +134,7 @@ export default function SantriAbsensiScreen() {
   // ==================== SUBMIT IZIN ====================
   const submitIzin = async () => {
     if (!alasanIzin.trim()) {
-      Alert.alert("Peringatan", "Alasan izin wajib diisi");
+      Alert.alert('Peringatan', 'Alasan izin wajib diisi');
       return;
     }
 
@@ -138,22 +147,25 @@ export default function SantriAbsensiScreen() {
           alasan: alasanIzin,
           tanggal: new Date(),
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       Alert.alert(
-        "Izin Diajukan",
-        "Izin berhasil diajukan dan menunggu persetujuan"
+        'Izin Diajukan',
+        'Izin berhasil diajukan dan menunggu persetujuan',
       );
 
       setShowIzinModal(false);
-      setAlasanIzin("");
+      setAlasanIzin('');
 
       // Refresh izin pending & absensi
       await fetchIzinPending();
       await fetchAbsensiHariIni();
     } catch (err: any) {
-      Alert.alert("Error", err.response?.data?.message || "Gagal mengajukan izin");
+      Alert.alert(
+        'Error',
+        err.response?.data?.message || 'Gagal mengajukan izin',
+      );
     } finally {
       setLoading(false);
     }
@@ -161,22 +173,31 @@ export default function SantriAbsensiScreen() {
 
   // ==================== STATISTIK ====================
   const stats: any = { hadir: 0, izin: 0, sakit: 0 };
-  absensiHariIni.forEach((a) => {
+  absensiHariIni.forEach(a => {
     stats[a.status] = (stats[a.status] || 0) + 1;
   });
   const total = absensiHariIni.length;
-  const percent = (v: number) => (total === 0 ? 0 : Math.round((v / total) * 100));
+  const percent = (v: number) =>
+    total === 0 ? 0 : Math.round((v / total) * 100);
 
   // ==================== RENDER ====================
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 80 }}
+    >
       <Loading visible={loading} />
 
       {/* ==================== MODAL IZIN ==================== */}
-      <Modal visible={showIzinModal} transparent animationType="fade" statusBarTranslucent>
+      <Modal
+        visible={showIzinModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Ajukan Izin</Text>
@@ -192,20 +213,22 @@ export default function SantriAbsensiScreen() {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: "#E5E7EB" }]}
+                style={[styles.modalBtn, { backgroundColor: '#E5E7EB' }]}
                 onPress={() => {
                   setShowIzinModal(false);
-                  setAlasanIzin("");
+                  setAlasanIzin('');
                 }}
               >
-                <Text style={{ color: "#374151" }}>Batal</Text>
+                <Text style={{ color: '#374151' }}>Batal</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: "#FACC15" }]}
+                style={[styles.modalBtn, { backgroundColor: '#FACC15' }]}
                 onPress={submitIzin}
               >
-                <Text style={{ color: "#78350F", fontWeight: "600" }}>Ajukan</Text>
+                <Text style={{ color: '#78350F', fontWeight: '600' }}>
+                  Ajukan
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -217,7 +240,7 @@ export default function SantriAbsensiScreen() {
 
       {/* ==================== BUTTON ABSEN ==================== */}
       <View style={styles.buttonGroup}>
-        {statusOptions.map((s) => {
+        {statusOptions.map(s => {
           const bgColor = statusColors[s];
           const isActive = statusAbsen === s;
 
@@ -226,11 +249,14 @@ export default function SantriAbsensiScreen() {
               key={s}
               activeOpacity={0.8}
               onPress={() => {
-                if (s === "izin") {
+                if (s === 'izin') {
                   if (!izinPending) {
                     setShowIzinModal(true);
                   } else {
-                    Alert.alert("Peringatan", "Masih ada izin menunggu, tunggu persetujuan");
+                    Alert.alert(
+                      'Peringatan',
+                      'Masih ada izin menunggu, tunggu persetujuan',
+                    );
                   }
                 } else {
                   submitAbsen(s);
@@ -241,12 +267,12 @@ export default function SantriAbsensiScreen() {
                 {
                   backgroundColor: isActive
                     ? bgColor
-                    : s === "izin"
+                    : s === 'izin'
                     ? izinPending
-                      ? "#FACC1555"
+                      ? '#FACC1555'
                       : `${bgColor}33`
                     : `${bgColor}33`,
-                  shadowColor: "#000",
+                  shadowColor: '#000',
                   shadowOffset: { width: 0, height: 3 },
                   shadowOpacity: 0.3,
                   shadowRadius: 4,
@@ -255,7 +281,13 @@ export default function SantriAbsensiScreen() {
               ]}
             >
               <Icon
-                name={s === "hadir" ? "check-circle" : s === "izin" ? "clock" : "times-circle"}
+                name={
+                  s === 'hadir'
+                    ? 'check-circle'
+                    : s === 'izin'
+                    ? 'clock'
+                    : 'times-circle'
+                }
                 type="font-awesome"
                 color="#fff"
                 size={16}
@@ -270,14 +302,19 @@ export default function SantriAbsensiScreen() {
       {/* ==================== STATISTIK ==================== */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Icon name="chart-bar" type="font-awesome" size={18} color={NIVI.primary} />
+          <Icon
+            name="chart-bar"
+            type="font-awesome"
+            size={18}
+            color={NIVI.primary}
+          />
           <Text style={styles.sectionTitle}>Statistik Absensi</Text>
         </View>
         {total === 0 ? (
           <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
         ) : (
           <View style={styles.statsGrid}>
-            {statusOptions.map((key) => (
+            {statusOptions.map(key => (
               <View key={key} style={styles.statCard}>
                 <Text style={[styles.statValue, { color: statusColors[key] }]}>
                   {stats[key as keyof typeof stats]}
@@ -294,7 +331,9 @@ export default function SantriAbsensiScreen() {
                     ]}
                   />
                 </View>
-                <Text style={styles.percent}>{percent(stats[key as keyof typeof stats])}%</Text>
+                <Text style={styles.percent}>
+                  {percent(stats[key as keyof typeof stats])}%
+                </Text>
               </View>
             ))}
           </View>
@@ -304,7 +343,12 @@ export default function SantriAbsensiScreen() {
       {/* ==================== RIWAYAT ABSENSI ==================== */}
       <View style={styles.sectionCard}>
         <View style={styles.sectionHeader}>
-          <Icon name="calendar-alt" type="font-awesome" size={18} color={NIVI.primary} />
+          <Icon
+            name="calendar-alt"
+            type="font-awesome"
+            size={18}
+            color={NIVI.primary}
+          />
           <Text style={styles.sectionTitle}>Riwayat Absensi</Text>
         </View>
         {absensiHariIni.length === 0 ? (
@@ -312,14 +356,29 @@ export default function SantriAbsensiScreen() {
         ) : (
           <FlatList
             data={absensiHariIni}
-            keyExtractor={(i) => i.id.toString()}
+            keyExtractor={i => i.id.toString()}
             renderItem={({ item }) => (
               <View style={styles.card}>
-                <Text style={styles.jadwal}>
-                  {item.jadwal?.hari || "Tidak ada jadwal"} |{" "}
-                  {item.jadwal?.jamMulai}-{item.jadwal?.jamSelesai}
+                <Text
+                  style={[
+                    styles.jadwal,
+                    item.status === 'izin' || item.status === 'disetujui'
+                      ? { color: '#FACC15' }
+                      : {},
+                  ]}
+                >
+                  {item.status === 'izin' || item.status === 'disetujui'
+                    ? `Izin | ${new Date(item.tanggal).toLocaleDateString(
+                        'id-ID',
+                      )}`
+                    : `${item.jadwal?.hari || 'Tidak ada jadwal'} | ${
+                        item.jadwal?.jamMulai || ''
+                      }-${item.jadwal?.jamSelesai || ''}`}
                 </Text>
-                <Text style={[styles.status, { color: statusColors[item.status] }]}>
+
+                <Text
+                  style={[styles.status, { color: statusColors[item.status] }]}
+                >
                   Status: {item.status.toUpperCase()}
                 </Text>
               </View>
@@ -334,16 +393,25 @@ export default function SantriAbsensiScreen() {
 // ==================== STYLES ====================
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: NIVI.background, padding: 16 },
-  title: { fontSize: 22, fontWeight: "700", color: NIVI.textPrimary, marginBottom: 16 },
-  buttonGroup: { flexDirection: "row", justifyContent: "space-around", marginBottom: 16 },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: NIVI.textPrimary,
+    marginBottom: 16,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
   btn: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     minWidth: 90,
-    alignItems: "center",
+    alignItems: 'center',
   },
-  btnText: { color: "#fff", fontWeight: "600" },
+  btnText: { color: '#fff', fontWeight: '600' },
 
   sectionCard: {
     backgroundColor: NIVI.card,
@@ -353,60 +421,90 @@ const styles = StyleSheet.create({
     borderColor: NIVI.border,
     marginBottom: 16,
   },
-  sectionHeader: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "600", color: NIVI.textPrimary, marginLeft: 10 },
-  emptyText: { textAlign: "center", paddingVertical: 16, color: NIVI.textMuted },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: NIVI.textPrimary,
+    marginLeft: 10,
+  },
+  emptyText: {
+    textAlign: 'center',
+    paddingVertical: 16,
+    color: NIVI.textMuted,
+  },
 
-  statsGrid: { flexDirection: "row", justifyContent: "space-between" },
-  statCard: { width: "32%" },
-  statValue: { fontSize: 24, fontWeight: "700", marginBottom: 4 },
+  statsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
+  statCard: { width: '32%' },
+  statValue: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
   statLabel: { fontSize: 14, color: NIVI.textSecondary, marginBottom: 6 },
-  bar: { height: 6, backgroundColor: "#E5E7EB", borderRadius: 3, overflow: "hidden" },
-  fill: { height: "100%", borderRadius: 3 },
-  percent: { fontSize: 12, fontWeight: "600", marginTop: 4, color: NIVI.textMuted },
+  bar: {
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  fill: { height: '100%', borderRadius: 3 },
+  percent: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+    color: NIVI.textMuted,
+  },
 
-  card: { backgroundColor: NIVI.card, borderRadius: 12, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: NIVI.border },
+  card: {
+    backgroundColor: NIVI.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: NIVI.border,
+  },
   jadwal: { fontSize: 14, color: NIVI.textSecondary, marginBottom: 4 },
-  status: { fontSize: 16, fontWeight: "600" },
+  status: { fontSize: 16, fontWeight: '600' },
   modalOverlay: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalCard: {
-    width: "90%",
-    backgroundColor: "#fff",
+    width: '90%',
+    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: '700',
     marginBottom: 12,
-    color: "#111827",
+    color: '#111827',
   },
   modalLabel: {
     fontSize: 14,
-    color: "#374151",
+    color: '#374151',
     marginBottom: 6,
   },
   textArea: {
     minHeight: 80,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: '#D1D5DB',
     borderRadius: 12,
     padding: 12,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
     marginBottom: 16,
   },
   modalActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   modalBtn: {
     paddingVertical: 10,
