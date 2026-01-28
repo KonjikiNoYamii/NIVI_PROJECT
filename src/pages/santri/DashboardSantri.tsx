@@ -8,6 +8,8 @@ import {
   Alert,
   ScrollView,
   SafeAreaView,
+  StatusBar,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { absensiService, Absensi } from "../../services/absensi";
@@ -59,10 +61,7 @@ const DashboardSantri = () => {
       await loadAbsensi();
       Alert.alert("Berhasil", "Absensi berhasil dikirim");
     } catch (e: any) {
-      Alert.alert(
-        "Gagal",
-        e.response?.data?.message || "Tidak bisa melakukan absen saat ini"
-      );
+      Alert.alert("Gagal", e.response?.data?.message || "Terjadi kesalahan server");
     } finally {
       setSubmitting(false);
     }
@@ -78,39 +77,102 @@ const DashboardSantri = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Memuat data absensi...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <HeaderDashboard getTimeStatus={getTimeStatus} />
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Dashboard Santri</Text>
+        <Text style={styles.headerSubtitle}>
+          Selamat {getTimeStatus().toLowerCase()}!
+        </Text>
+      </View>
+
+      <View style={styles.card}>
         <AbsensiCard
           absensi={absensi}
           submitting={submitting}
           handleAbsen={handleAbsen}
           MAX_ABSEN={MAX_ABSEN}
         />
+      </View>
 
+      <View style={styles.listCard}>
         <HistoryCard absensi={absensi} />
+      </View>
+
+      <View style={styles.listCard}>
         <InfoCard MAX_ABSEN={MAX_ABSEN} />
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
 };
 
+/* ================== STYLE ================== */
+
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { flex: 1, padding: 16 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 16, fontSize: 16, color: "#64748b" },
+  container: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+  },
+
+  header: {
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
+    fontSize: 14,
+  },
+
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: -28,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+
+  listCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
 });
 
 export default DashboardSantri;

@@ -9,6 +9,9 @@ import {
   TextInput,
   ScrollView,
   Modal,
+  StatusBar,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -16,7 +19,6 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import { API, SOCKET_URL } from '../../services/api';
-import Loading from '../../components/loading';
 
 /* ================= UTIL ================= */
 
@@ -43,7 +45,7 @@ const bulanNama = [
 
 /* ================= SCREEN ================= */
 
-export default function AdminJadwalScreen() {
+function AdminJadwalScreen() {
   const [kelasList, setKelasList] = useState<any[]>([]);
   const [selectedKelas, setSelectedKelas] = useState<number | null>(null);
   const [jadwal, setJadwal] = useState<any[]>([]);
@@ -274,199 +276,324 @@ export default function AdminJadwalScreen() {
     };
   }, [selectedKelas, fetchJadwal, fetchAbsensiSetting, socket]);
 
+  /* ================= STATE HANDLING ================= */
+
+  if (loading && !selectedKelas) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    );
+  }
+
   /* ================= UI ================= */
 
   return (
-    <ScrollView style={styles.container}>
-      <Modal visible={editVisible} transparent animationType="slide">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.3)',
-            justifyContent: 'center',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: '#fff',
-              margin: 20,
-              borderRadius: 12,
-              padding: 16,
-            }}
-          >
-            <Text style={{ fontWeight: '600', fontSize: 16 }}>Edit Jadwal</Text>
-            <Picker
-              selectedValue={editJamMulai}
-              onValueChange={setEditJamMulai}
-            >
-              {jamOptions.map(j => (
-                <Picker.Item key={j} label={j} value={j} />
-              ))}
-            </Picker>
-            <Picker
-              selectedValue={editJamSelesai}
-              onValueChange={setEditJamSelesai}
-            >
-              {jamOptions.map(j => (
-                <Picker.Item key={j} label={j} value={j} />
-              ))}
-            </Picker>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Manajemen Jadwal</Text>
+        <Text style={styles.headerSubtitle}>
+          Kelola jadwal dan batas absensi kelas
+        </Text>
+      </View>
+
+      <Modal visible={editVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Jadwal</Text>
+              <TouchableOpacity 
+                onPress={() => setEditVisible(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Jam Mulai</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={editJamMulai}
+                onValueChange={setEditJamMulai}
+                style={styles.picker}
+              >
+                {jamOptions.map(j => (
+                  <Picker.Item key={j} label={j} value={j} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Jam Selesai</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={editJamSelesai}
+                onValueChange={setEditJamSelesai}
+                style={styles.picker}
+              >
+                {jamOptions.map(j => (
+                  <Picker.Item key={j} label={j} value={j} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Tanggal</Text>
             <TouchableOpacity
               disabled={editingJadwal?.absensi?.length > 0}
-              style={{
-                opacity: editingJadwal?.absensi?.length > 0 ? 0.5 : 1,
-                borderWidth: 1,
-                borderColor: '#ddd',
-                padding: 8,
-                borderRadius: 8,
-              }}
+              style={[
+                styles.dateInput,
+                editingJadwal?.absensi?.length > 0 && styles.disabledInput
+              ]}
               onPress={() => setShowTM(true)}
+              activeOpacity={0.85}
             >
-              <Text>{editTanggal?.toDateString()}</Text>
+              <Text style={[
+                styles.dateInputText,
+                editingJadwal?.absensi?.length > 0 && styles.disabledText
+              ]}>
+                {editTanggal?.toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || 'Pilih Tanggal'}
+              </Text>
             </TouchableOpacity>
+
             {editingJadwal?.absensi?.length > 0 && (
-              <Text style={{ color: 'orange', fontSize: 12, marginTop: 4 }}>
+              <Text style={styles.warningText}>
                 Jadwal sudah digunakan absensi, tanggal tidak bisa diubah
               </Text>
             )}
-            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={{ flex: 1, padding: 10 }}
+                style={styles.cancelButton}
                 onPress={() => setEditVisible(false)}
+                activeOpacity={0.85}
               >
-                <Text style={{ textAlign: 'center' }}>Batal</Text>
+                <Text style={styles.cancelButtonText}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{
-                  flex: 1,
-                  padding: 10,
-                  backgroundColor: '#4a90e2',
-                  borderRadius: 8,
-                }}
+                style={[styles.saveButton, loading && styles.disabled]}
                 onPress={submitEdit}
+                disabled={loading}
+                activeOpacity={0.85}
               >
-                <Text style={{ color: '#fff', textAlign: 'center' }}>
-                  Simpan
-                </Text>
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Simpan</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      <Loading visible={loading} />
+      {showTM && (
+        <DateTimePicker
+          value={tanggalMulai || new Date()}
+          mode="date"
+          onChange={(_, d) => {
+            setShowTM(false);
+            if (d) setTanggalMulai(d);
+          }}
+        />
+      )}
+      {showTS && (
+        <DateTimePicker
+          value={tanggalSelesai || new Date()}
+          mode="date"
+          onChange={(_, d) => {
+            setShowTS(false);
+            if (d) setTanggalSelesai(d);
+          }}
+        />
+      )}
 
-      <Text style={styles.title}>Manajemen Jadwal</Text>
-
-      <Picker
-        selectedValue={selectedKelas ?? undefined}
-        onValueChange={onKelasChange}
-      >
-        <Picker.Item label="Pilih Kelas" value={null} />
-        {kelasList.map(k => (
-          <Picker.Item key={k.id} label={k.namaKelas} value={k.id} />
-        ))}
-      </Picker>
+      {/* FORM */}
+      <View style={styles.card}>
+        <Text style={styles.label}>Pilih Kelas</Text>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={selectedKelas ?? undefined}
+            onValueChange={onKelasChange}
+            style={styles.picker}
+            dropdownIconColor="#6b7280"
+          >
+            <Picker.Item label="Pilih Kelas" value={null} />
+            {kelasList.map(k => (
+              <Picker.Item key={k.id} label={k.namaKelas} value={k.id} />
+            ))}
+          </Picker>
+        </View>
+      </View>
 
       {selectedKelas && (
         <>
-          <View style={styles.box}>
+          {/* BATAS ABSEN */}
+          <View style={styles.card}>
             <Text style={styles.label}>Batas Absen</Text>
+            <Text style={styles.cardSubtitle}>
+              Tentukan jumlah maksimal absen yang diizinkan
+            </Text>
             <TextInput
               style={styles.input}
               value={maxAbsen}
               onChangeText={setMaxAbsen}
               keyboardType="numeric"
+              placeholder="Contoh: 3"
+              placeholderTextColor="#9ca3af"
             />
-            <TouchableOpacity style={styles.btn} onPress={saveMaxAbsen}>
-              <Text style={styles.btnText}>Simpan</Text>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.disabled]}
+              onPress={saveMaxAbsen}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>SIMPAN BATAS ABSEN</Text>
+              )}
             </TouchableOpacity>
           </View>
 
-          <View style={styles.box}>
-            <Text style={styles.label}>Buat Jadwal</Text>
-            <Picker selectedValue={jamMulai} onValueChange={setJamMulai}>
-              {jamOptions.map(j => (
-                <Picker.Item key={j} label={j} value={j} />
-              ))}
-            </Picker>
-            <Picker selectedValue={jamSelesai} onValueChange={setJamSelesai}>
-              {jamOptions.map(j => (
-                <Picker.Item key={j} label={j} value={j} />
-              ))}
-            </Picker>
+          {/* BUAT JADWAL */}
+          <View style={styles.card}>
+            <Text style={styles.label}>Buat Jadwal Baru</Text>
+            <Text style={styles.cardSubtitle}>
+              Tambah jadwal untuk rentang tanggal tertentu
+            </Text>
+
+            <Text style={styles.inputLabel}>Jam Mulai</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={jamMulai}
+                onValueChange={setJamMulai}
+                style={styles.picker}
+                dropdownIconColor="#6b7280"
+              >
+                {jamOptions.map(j => (
+                  <Picker.Item key={j} label={j} value={j} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.inputLabel}>Jam Selesai</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={jamSelesai}
+                onValueChange={setJamSelesai}
+                style={styles.picker}
+                dropdownIconColor="#6b7280"
+              >
+                {jamOptions.map(j => (
+                  <Picker.Item key={j} label={j} value={j} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.inputLabel}>Tanggal Mulai</Text>
             <TouchableOpacity
-              style={styles.dateBtn}
+              style={styles.dateInput}
               onPress={() => setShowTM(true)}
+              activeOpacity={0.85}
             >
-              <Text>{tanggalMulai?.toDateString() || 'Tanggal Mulai'}</Text>
+              <Text style={styles.dateInputText}>
+                {tanggalMulai?.toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || 'Pilih Tanggal Mulai'}
+              </Text>
             </TouchableOpacity>
+
+            <Text style={styles.inputLabel}>Tanggal Selesai</Text>
             <TouchableOpacity
-              style={styles.dateBtn}
+              style={styles.dateInput}
               onPress={() => setShowTS(true)}
+              activeOpacity={0.85}
             >
-              <Text>{tanggalSelesai?.toDateString() || 'Tanggal Selesai'}</Text>
+              <Text style={styles.dateInputText}>
+                {tanggalSelesai?.toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || 'Pilih Tanggal Selesai'}
+              </Text>
             </TouchableOpacity>
-            {showTM && (
-              <DateTimePicker
-                value={tanggalMulai || new Date()}
-                mode="date"
-                onChange={(_, d) => {
-                  setShowTM(false);
-                  if (d) setTanggalMulai(d);
-                }}
-              />
-            )}
-            {showTS && (
-              <DateTimePicker
-                value={tanggalSelesai || new Date()}
-                mode="date"
-                onChange={(_, d) => {
-                  setShowTS(false);
-                  if (d) setTanggalSelesai(d);
-                }}
-              />
-            )}
-            <TouchableOpacity style={styles.btn} onPress={createBulk}>
-              <Text style={styles.btnText}>Buat</Text>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.disabled]}
+              onPress={createBulk}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>BUAT JADWAL</Text>
+              )}
             </TouchableOpacity>
           </View>
 
+
+          {/* LIST JADWAL PER BULAN */}
           {Object.entries(jadwalPerBulan).map(([key, list]) => {
             const [year, month] = key.split('-');
             return (
-              <View key={key}>
-                <Text style={styles.month}>
+              <View style={styles.listCard} key={key}>
+                <Text style={styles.listTitle}>
                   {bulanNama[+month]} {year}
                 </Text>
-                <FlatList
-                  data={list}
-                  numColumns={2}
-                  scrollEnabled={false}
-                  keyExtractor={i => i.id.toString()}
-                  renderItem={({ item }) => (
-                    <View style={styles.card}>
-                      <Text>{item.hari}</Text>
-                      <Text>
-                        {item.jamMulai} - {item.jamSelesai}
-                      </Text>
-                      <TouchableOpacity onPress={() => deleteJadwal(item.id)}>
-                        <Text style={styles.delete}>Hapus</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setEditingJadwal(item);
-                          setEditJamMulai(item.jamMulai);
-                          setEditJamSelesai(item.jamSelesai);
-                          setEditTanggal(new Date(item.tanggal));
-                          setEditVisible(true);
-                        }}
-                      >
-                        <Text style={{ color: '#4a90e2' }}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                />
+                
+                {list.length === 0 ? (
+                  <Text style={styles.emptyText}>Belum ada jadwal</Text>
+                ) : (
+                  <FlatList
+                    data={list}
+                    numColumns={2}
+                    scrollEnabled={false}
+                    keyExtractor={i => i.id.toString()}
+                    renderItem={({ item }) => (
+                      <View style={styles.listItem}>
+                        <Text style={styles.itemDay}>{item.hari}</Text>
+                        <Text style={styles.itemTime}>
+                          {item.jamMulai} - {item.jamSelesai}
+                        </Text>
+                        <View style={styles.itemActions}>
+                          <TouchableOpacity 
+                            onPress={() => deleteJadwal(item.id)}
+                            style={styles.deleteButton}
+                            activeOpacity={0.85}
+                          >
+                            <Text style={styles.deleteText}>Hapus</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setEditingJadwal(item);
+                              setEditJamMulai(item.jamMulai);
+                              setEditJamSelesai(item.jamSelesai);
+                              setEditTanggal(new Date(item.tanggal));
+                              setEditVisible(true);
+                            }}
+                            style={styles.editButton}
+                            activeOpacity={0.85}
+                          >
+                            <Text style={styles.editText}>Edit</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  />
+                )}
               </View>
             );
           })}
@@ -476,60 +603,327 @@ export default function AdminJadwalScreen() {
   );
 }
 
-/* ================= STYLE ================= */
+/* ================== STYLE ================== */
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 16 },
-  title: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
 
-  box: {
-    borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 14,
+
+
+
+  container: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
   },
 
-  label: { fontWeight: '500', marginBottom: 6 },
-
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 8,
+  header: {
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
 
-  btn: {
-    backgroundColor: '#4a90e2',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 10,
-    alignItems: 'center',
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
   },
 
-  btnText: { color: '#fff', fontWeight: '500' },
-
-  dateBtn: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 8,
+  headerSubtitle: {
     marginTop: 6,
-  },
-
-  month: {
-    marginTop: 18,
-    fontWeight: '600',
+    color: "#c7d2fe",
+    fontSize: 14,
   },
 
   card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+  },
+
+  cardSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 16,
+    fontWeight: "500",
+  },
+
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+    marginTop: 12,
+  },
+
+  input: {
+    backgroundColor: "#f9fafb",
     borderWidth: 1,
-    borderColor: '#eee',
-    borderRadius: 10,
-    padding: 10,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    fontSize: 14,
+    color: "#111827",
+  },
+
+   pickerContainer: {
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+
+   picker: {
+    backgroundColor: "#f9fafb",
+    color: "#111827", 
+  },
+
+  dateInput: {
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+
+  dateInputText: {
+    fontSize: 14,
+    color: "#111827",
+  },
+
+  disabledInput: {
+    backgroundColor: "#f3f4f6",
+    opacity: 0.7,
+  },
+
+  disabledText: {
+    color: "#9ca3af",
+  },
+
+  button: {
+    backgroundColor: "#2563eb",
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  disabled: {
+    opacity: 0.7,
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+
+  listCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+
+  listTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 12,
+    color: "#111827",
+  },
+
+  listItem: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    padding: 16,
     margin: 6,
     flex: 1,
   },
 
-  delete: { color: '#e74c3c', marginTop: 4 },
+  itemDay: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1f2933",
+    marginBottom: 4,
+  },
+
+  itemTime: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 12,
+  },
+
+  itemActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+
+  deleteButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#fee2e2",
+    borderRadius: 8,
+  },
+
+  deleteText: {
+    color: "#dc2626",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  editButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: "#dbeafe",
+    borderRadius: 8,
+  },
+
+  editText: {
+    color: "#2563eb",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  emptyText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+    paddingVertical: 20,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+  },
+
+  // Modal Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+
+  modalBox: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  modalCloseText: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: '600',
+  },
+
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+
+  warningText: {
+    fontSize: 12,
+    color: '#f59e0b',
+    marginTop: 4,
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+
+  cancelButtonText: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+
+  saveButton: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#2563eb',
+  },
+
+  saveButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
+  },
 });
+
+export default AdminJadwalScreen;

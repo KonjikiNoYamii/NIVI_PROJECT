@@ -1,4 +1,4 @@
-// SantriAbsensiScreen.tsx
+// SantriAbsensiScreen.tsx - Fokus pada tombol tanpa shadow
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,9 +31,9 @@ const getToken = async () => {
 type StatusAbsensi = 'hadir' | 'izin' | 'sakit';
 
 const statusColors: any = {
-  hadir: '#34D399', // hijau
-  izin: '#FACC15', // kuning
-  sakit: '#F87171', // merah
+  hadir: '#10B981',
+  izin: '#F59E0B',
+  sakit: '#EF4444',
 };
 
 export default function SantriAbsensiScreen() {
@@ -119,7 +120,7 @@ export default function SantriAbsensiScreen() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setStatusAbsen(status);
-      Alert.alert('Sukses', 'Absen berhasil');
+      Alert.alert('Berhasil', 'Absen berhasil');
 
       // Refresh data
       await fetchAbsensiHariIni();
@@ -134,7 +135,7 @@ export default function SantriAbsensiScreen() {
   // ==================== SUBMIT IZIN ====================
   const submitIzin = async () => {
     if (!alasanIzin.trim()) {
-      Alert.alert('Peringatan', 'Alasan izin wajib diisi');
+      Alert.alert('Validasi', 'Alasan izin wajib diisi');
       return;
     }
 
@@ -150,10 +151,7 @@ export default function SantriAbsensiScreen() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      Alert.alert(
-        'Izin Diajukan',
-        'Izin berhasil diajukan dan menunggu persetujuan',
-      );
+      Alert.alert('Berhasil', 'Izin berhasil diajukan dan menunggu persetujuan');
 
       setShowIzinModal(false);
       setAlasanIzin('');
@@ -162,10 +160,7 @@ export default function SantriAbsensiScreen() {
       await fetchIzinPending();
       await fetchAbsensiHariIni();
     } catch (err: any) {
-      Alert.alert(
-        'Error',
-        err.response?.data?.message || 'Gagal mengajukan izin',
-      );
+      Alert.alert('Gagal', err.response?.data?.message || 'Terjadi kesalahan server');
     } finally {
       setLoading(false);
     }
@@ -185,8 +180,18 @@ export default function SantriAbsensiScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 80 }}
+      showsVerticalScrollIndicator={false}
     >
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
       <Loading visible={loading} />
+
+      {/* ==================== HEADER ==================== */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Absensi Hari Ini</Text>
+        <Text style={styles.headerSubtitle}>
+          Lakukan absensi sesuai status Anda
+        </Text>
+      </View>
 
       {/* ==================== MODAL IZIN ==================== */}
       <Modal
@@ -200,122 +205,167 @@ export default function SantriAbsensiScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Ajukan Izin</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Ajukan Izin</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  setShowIzinModal(false);
+                  setAlasanIzin('');
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.modalLabel}>Alasan Izin</Text>
             <TextInput
               value={alasanIzin}
               onChangeText={setAlasanIzin}
               placeholder="Contoh: Keperluan keluarga"
+              placeholderTextColor="#9ca3af"
               multiline
               style={styles.textArea}
             />
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#E5E7EB' }]}
+                style={styles.modalCancelButton}
                 onPress={() => {
                   setShowIzinModal(false);
                   setAlasanIzin('');
                 }}
+                activeOpacity={0.85}
               >
-                <Text style={{ color: '#374151' }}>Batal</Text>
+                <Text style={styles.modalCancelButtonText}>Batal</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalBtn, { backgroundColor: '#FACC15' }]}
+                style={styles.modalSubmitButton}
                 onPress={submitIzin}
+                activeOpacity={0.85}
               >
-                <Text style={{ color: '#78350F', fontWeight: '600' }}>
-                  Ajukan
-                </Text>
+                <Text style={styles.modalSubmitButtonText}>AJUKAN IZIN</Text>
               </TouchableOpacity>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ==================== TITLE ==================== */}
-      <Text style={styles.title}>Absensi Hari Ini</Text>
+      {/* ==================== BUTTON ABSEN CARD ==================== */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Status Absensi</Text>
+        
+        <View style={styles.buttonGroup}>
+          {statusOptions.map(s => {
+            const bgColor = statusColors[s];
+            const isActive = statusAbsen === s;
+            const isDisabled = s === 'izin' && izinPending;
 
-      {/* ==================== BUTTON ABSEN ==================== */}
-      <View style={styles.buttonGroup}>
-        {statusOptions.map(s => {
-          const bgColor = statusColors[s];
-          const isActive = statusAbsen === s;
-
-          return (
-            <TouchableOpacity
-              key={s}
-              activeOpacity={0.8}
-              onPress={() => {
-                if (s === 'izin') {
-                  if (!izinPending) {
-                    setShowIzinModal(true);
+            return (
+              <TouchableOpacity
+                key={s}
+                activeOpacity={0.85}
+                onPress={() => {
+                  if (s === 'izin') {
+                    if (!izinPending) {
+                      setShowIzinModal(true);
+                    } else {
+                      Alert.alert('Peringatan', 'Masih ada izin menunggu, tunggu persetujuan');
+                    }
                   } else {
-                    Alert.alert(
-                      'Peringatan',
-                      'Masih ada izin menunggu, tunggu persetujuan',
-                    );
+                    submitAbsen(s);
                   }
-                } else {
-                  submitAbsen(s);
-                }
-              }}
-              style={[
-                styles.btn,
-                {
-                  backgroundColor: isActive
-                    ? bgColor
-                    : s === 'izin'
-                    ? izinPending
-                      ? '#FACC1555'
-                      : `${bgColor}33`
-                    : `${bgColor}33`,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
-                  elevation: 4,
-                },
-              ]}
-            >
-              <Icon
-                name={
-                  s === 'hadir'
-                    ? 'check-circle'
-                    : s === 'izin'
-                    ? 'clock'
-                    : 'times-circle'
-                }
-                type="font-awesome"
-                color="#fff"
-                size={16}
-                containerStyle={{ marginRight: 6 }}
-              />
-              <Text style={styles.btnText}>{s.toUpperCase()}</Text>
-            </TouchableOpacity>
-          );
-        })}
+                }}
+                disabled={isDisabled}
+                style={[
+                  styles.btn,
+                  isActive && styles.btnActive,
+                  {
+                    backgroundColor: isActive
+                      ? bgColor
+                      : isDisabled
+                      ? '#f3f4f6'
+                      : `${bgColor}0A`,
+                    borderColor: isActive
+                      ? bgColor
+                      : isDisabled
+                      ? '#e5e7eb'
+                      : `${bgColor}30`,
+                  },
+                ]}
+              >
+                <View style={[
+                  styles.btnIconContainer,
+                  isActive && styles.btnIconContainerActive,
+                  isDisabled && styles.btnIconContainerDisabled,
+                ]}>
+                  <Icon
+                    name={
+                      s === 'hadir'
+                        ? 'check-circle'
+                        : s === 'izin'
+                        ? 'clock'
+                        : 'heartbeat'
+                    }
+                    type="font-awesome"
+                    color={
+                      isActive
+                        ? '#FFFFFF'
+                        : isDisabled
+                        ? '#d1d5db'
+                        : bgColor
+                    }
+                    size={24}
+                  />
+                </View>
+                <Text style={[
+                  styles.btnText,
+                  isActive && styles.btnTextActive,
+                  isDisabled && styles.btnTextDisabled,
+                  { color: isActive ? '#FFFFFF' : isDisabled ? '#9ca3af' : bgColor }
+                ]}>
+                  {s.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
-      {/* ==================== STATISTIK ==================== */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Icon
-            name="chart-bar"
-            type="font-awesome"
-            size={18}
-            color={NIVI.primary}
-          />
-          <Text style={styles.sectionTitle}>Statistik Absensi</Text>
-        </View>
+      {/* ==================== STATISTIK CARD ==================== */}
+      <View style={styles.listCard}>
+        <Text style={styles.listTitle}>Statistik Absensi</Text>
+        
         {total === 0 ? (
-          <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
+          </View>
         ) : (
           <View style={styles.statsGrid}>
             {statusOptions.map(key => (
-              <View key={key} style={styles.statCard}>
+              <View 
+                key={key} 
+                style={styles.statCard}
+              >
+                <View style={[
+                  styles.statIconContainer,
+                  { backgroundColor: `${statusColors[key]}15` }
+                ]}>
+                  <Icon
+                    name={
+                      key === 'hadir'
+                        ? 'check-circle'
+                        : key === 'izin'
+                        ? 'clock'
+                        : 'heartbeat'
+                    }
+                    type="font-awesome"
+                    color={statusColors[key]}
+                    size={20}
+                  />
+                </View>
                 <Text style={[styles.statValue, { color: statusColors[key] }]}>
                   {stats[key as keyof typeof stats]}
                 </Text>
@@ -340,47 +390,57 @@ export default function SantriAbsensiScreen() {
         )}
       </View>
 
-      {/* ==================== RIWAYAT ABSENSI ==================== */}
-      <View style={styles.sectionCard}>
-        <View style={styles.sectionHeader}>
-          <Icon
-            name="calendar-alt"
-            type="font-awesome"
-            size={18}
-            color={NIVI.primary}
-          />
-          <Text style={styles.sectionTitle}>Riwayat Absensi</Text>
-        </View>
+      {/* ==================== RIWAYAT ABSENSI CARD ==================== */}
+      <View style={styles.listCard}>
+        <Text style={styles.listTitle}>Riwayat Absensi</Text>
+        
         {absensiHariIni.length === 0 ? (
-          <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
+          </View>
         ) : (
           <FlatList
             data={absensiHariIni}
             keyExtractor={i => i.id.toString()}
+            scrollEnabled={false}
             renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Text
-                  style={[
-                    styles.jadwal,
-                    item.status === 'izin' || item.status === 'disetujui'
-                      ? { color: '#FACC15' }
-                      : {},
-                  ]}
-                >
-                  {item.status === 'izin' || item.status === 'disetujui'
-                    ? `Izin | ${new Date(item.tanggal).toLocaleDateString(
-                        'id-ID',
-                      )}`
-                    : `${item.jadwal?.hari || 'Tidak ada jadwal'} | ${
-                        item.jadwal?.jamMulai || ''
-                      }-${item.jadwal?.jamSelesai || ''}`}
-                </Text>
-
-                <Text
-                  style={[styles.status, { color: statusColors[item.status] }]}
-                >
-                  Status: {item.status.toUpperCase()}
-                </Text>
+              <View style={styles.listItem}>
+                <View style={[
+                  styles.statusIndicator,
+                  { backgroundColor: `${statusColors[item.status]}15` }
+                ]}>
+                  <Icon
+                    name={
+                      item.status === 'hadir'
+                        ? 'check-circle'
+                        : item.status === 'izin'
+                        ? 'clock'
+                        : 'heartbeat'
+                    }
+                    type="font-awesome"
+                    color={statusColors[item.status]}
+                    size={16}
+                  />
+                </View>
+                <View style={styles.listItemContent}>
+                  <Text
+                    style={[
+                      styles.jadwal,
+                      item.status === 'izin' || item.status === 'disetujui'
+                        ? { color: '#F59E0B' }
+                        : {},
+                    ]}
+                  >
+                    {item.status === 'izin' || item.status === 'disetujui'
+                      ? `Izin | ${new Date(item.tanggal).toLocaleDateString('id-ID')}`
+                      : `${item.jadwal?.hari || 'Tidak ada jadwal'} | ${item.jadwal?.jamMulai || ''}-${item.jadwal?.jamSelesai || ''}`}
+                  </Text>
+                  <Text
+                    style={[styles.status, { color: statusColors[item.status] }]}
+                  >
+                    {item.status.toUpperCase()}
+                  </Text>
+                </View>
               </View>
             )}
           />
@@ -392,124 +452,352 @@ export default function SantriAbsensiScreen() {
 
 // ==================== STYLES ====================
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: NIVI.background, padding: 16 },
-  title: {
+  container: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
+  // HEADER
+  header: {
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+
+  headerTitle: {
+    color: "#fff",
     fontSize: 22,
-    fontWeight: '700',
-    color: NIVI.textPrimary,
+    fontWeight: "800",
+  },
+
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
+    fontSize: 14,
+  },
+
+  // CARD
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: -28,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
     marginBottom: 16,
   },
+
+  // BUTTON GROUP
   buttonGroup: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    gap: 12,
   },
+
   btn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    flex: 1,
+    paddingVertical: 20,
+    paddingHorizontal: 0,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    borderWidth: 2,
+  },
+
+  btnActive: {
+    // No shadow
+  },
+
+  btnIconContainer: {
+    marginBottom: 10,
+    padding: 12,
     borderRadius: 12,
-    minWidth: 90,
-    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
-  btnText: { color: '#fff', fontWeight: '600' },
 
-  sectionCard: {
-    backgroundColor: NIVI.card,
+  btnIconContainerActive: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+
+  btnIconContainerDisabled: {
+    backgroundColor: '#f3f4f6',
+  },
+
+  btnText: { 
+    fontWeight: '700',
+    fontSize: 13,
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+
+  btnTextActive: {
+    fontWeight: '800',
+  },
+
+  btnTextDisabled: {
+    opacity: 0.5,
+  },
+
+  // LIST CARD
+  listCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 16,
     borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: NIVI.border,
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: NIVI.textPrimary,
-    marginLeft: 10,
-  },
-  emptyText: {
-    textAlign: 'center',
-    paddingVertical: 16,
-    color: NIVI.textMuted,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
 
-  statsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  statCard: { width: '32%' },
-  statValue: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
-  statLabel: { fontSize: 14, color: NIVI.textSecondary, marginBottom: 6 },
-  bar: {
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-    overflow: 'hidden',
+  listTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 12,
+    color: "#111827",
   },
-  fill: { height: '100%', borderRadius: 3 },
+
+  // STATISTICS
+  statsGrid: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+
+  statCard: { 
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+
+  statIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+
+  statValue: { 
+    fontSize: 24, 
+    fontWeight: '800', 
+    marginBottom: 4,
+  },
+
+  statLabel: { 
+    fontSize: 12, 
+    color: '#6b7280', 
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+
+  bar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+    width: '100%',
+    marginBottom: 6,
+  },
+
+  fill: { 
+    height: '100%', 
+    borderRadius: 2,
+  },
+
   percent: {
     fontSize: 12,
     fontWeight: '600',
-    marginTop: 4,
-    color: NIVI.textMuted,
+    marginTop: 2,
+    color: '#9ca3af',
   },
 
-  card: {
-    backgroundColor: NIVI.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: NIVI.border,
+  // LIST ITEMS
+  listItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: "#e5e7eb",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  jadwal: { fontSize: 14, color: NIVI.textSecondary, marginBottom: 4 },
-  status: { fontSize: 16, fontWeight: '600' },
+
+  listItemContent: {
+    flex: 1,
+  },
+
+  statusIndicator: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+
+  jadwal: { 
+    fontSize: 14, 
+    color: '#4b5563', 
+    marginBottom: 4,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+
+  status: { 
+    fontSize: 13, 
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  // EMPTY STATE
+  emptyContainer: {
+    paddingVertical: 20,
+    alignItems: "center",
+  },
+
+  emptyText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+  },
+
+  // MODAL
   modalOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
+
   modalCard: {
-    width: '90%',
+    width: '100%',
+    maxWidth: 400,
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 18,
+    padding: 0,
+    overflow: 'hidden',
   },
+
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 12,
     color: '#111827',
+    flex: 1,
   },
+
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+
+  modalCloseButtonText: {
+    fontSize: 20,
+    color: '#6b7280',
+    fontWeight: '700',
+  },
+
   modalLabel: {
     fontSize: 14,
     color: '#374151',
-    marginBottom: 6,
+    marginBottom: 10,
+    fontWeight: '600',
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
+
   textArea: {
-    minHeight: 80,
+    minHeight: 100,
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#e5e7eb',
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     textAlignVertical: 'top',
-    marginBottom: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    fontSize: 14,
+    lineHeight: 20,
+    backgroundColor: '#f9fafb',
+    color: '#111827',
   },
+
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
   },
-  modalBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    marginLeft: 10,
+
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginRight: 12,
+  },
+
+  modalCancelButtonText: {
+    color: '#6b7280',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+
+  modalSubmitButton: {
+    flex: 2,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
+  },
+
+  modalSubmitButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
 });

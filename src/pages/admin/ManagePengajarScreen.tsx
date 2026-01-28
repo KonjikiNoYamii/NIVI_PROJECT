@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   ScrollView,
   SafeAreaView,
+  StatusBar,
+  Platform,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -69,7 +71,7 @@ const ManagePengajarScreen = () => {
         setAllPengajar(pengajarRes.data.data ?? pengajarRes.data ?? []);
       } catch (err) {
         console.log(err);
-        Alert.alert("Error", "Gagal mengambil data awal!");
+        Alert.alert("Error", "Gagal mengambil data awal");
       } finally {
         setFetchingInit(false);
       }
@@ -101,7 +103,7 @@ const ManagePengajarScreen = () => {
         setPengajarKelas(list);
       } catch (err) {
         console.log(err);
-        Alert.alert("Error", "Gagal mengambil pengajar kelas!");
+        Alert.alert("Error", "Gagal mengambil pengajar kelas");
       } finally {
         setLoadingPengajarKelas(false);
       }
@@ -145,7 +147,7 @@ const ManagePengajarScreen = () => {
   ======================= */
   const handleCreatePengajar = async () => {
     if (!name || !email) {
-      Alert.alert("Error", "Nama dan email wajib diisi!");
+      Alert.alert("Validasi", "Nama dan email wajib diisi");
       return;
     }
     setCreating(true);
@@ -159,10 +161,10 @@ const ManagePengajarScreen = () => {
       setAllPengajar(prev => [...prev, newPengajar]);
       setName("");
       setEmail("");
-      Alert.alert("Sukses", "Pengajar berhasil dibuat!");
+      Alert.alert("Berhasil", "Pengajar berhasil dibuat");
     } catch (err: any) {
       console.log(err);
-      Alert.alert("Gagal", err.response?.data?.message ?? "Terjadi kesalahan!");
+      Alert.alert("Gagal", err.response?.data?.message ?? "Terjadi kesalahan server");
     } finally {
       setCreating(false);
     }
@@ -188,10 +190,10 @@ const handleAssignPengajar = async (pengajarIds: number | number[]) => {
     );
     setPengajarKelas(prev => [...prev, ...newPengajar]);
 
-    Alert.alert("Sukses", "Pengajar berhasil ditambahkan ke kelas!");
+    Alert.alert("Berhasil", "Pengajar berhasil ditambahkan ke kelas");
   } catch (err) {
     console.log(err);
-    Alert.alert("Gagal", "Gagal menambahkan pengajar!");
+    Alert.alert("Gagal", "Gagal menambahkan pengajar");
   } finally {
     setLoadingAssign(false);
   }
@@ -204,7 +206,7 @@ const handleAssignPengajar = async (pengajarIds: number | number[]) => {
     if (!selectedKelasId) return;
     Alert.alert(
       "Konfirmasi",
-      "Apakah Anda yakin ingin menghapus pengajar dari kelas ini?",
+      "Apakah yakin ingin menghapus pengajar dari kelas ini?",
       [
         { text: "Batal", style: "cancel" },
         { 
@@ -221,10 +223,10 @@ const handleAssignPengajar = async (pengajarIds: number | number[]) => {
               socket.emit("kelas-pengajar-changed", { kelasId: selectedKelasId });
 
               setPengajarKelas(prev => prev.filter(p => p.id !== pengajarId));
-              Alert.alert("Sukses", "Pengajar dihapus dari kelas!");
+              Alert.alert("Berhasil", "Pengajar dihapus dari kelas");
             } catch (err) {
               console.log(err);
-              Alert.alert("Gagal", "Gagal menghapus pengajar!");
+              Alert.alert("Gagal", "Gagal menghapus pengajar");
             }
           }
         }
@@ -234,398 +236,337 @@ const handleAssignPengajar = async (pengajarIds: number | number[]) => {
 
   if (fetchingInit) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Memuat data...</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Manajemen Pengajar</Text>
-          <Text style={styles.subtitle}>Kelola data pengajar dan penugasan kelas</Text>
-        </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
-        {/* Card Tambah Pengajar */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="user-plus" type="font-awesome" size={20} color="#3498db" />
-            <Text style={styles.cardTitle}>Tambah Pengajar Baru</Text>
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Nama Lengkap</Text>
-            <View style={styles.inputContainer}>
-              <Icon name="user" type="font-awesome" size={16} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                placeholder="Masukkan nama pengajar"
-                value={name}
-                onChangeText={setName}
-                style={styles.input}
-                editable={!creating}
-              />
-            </View>
-          </View>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Manajemen Pengajar</Text>
+        <Text style={styles.headerSubtitle}>
+          Kelola data pengajar dan penugasan kelas
+        </Text>
+      </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <View style={styles.inputContainer}>
-              <Icon name="envelope" type="font-awesome" size={16} color="#94a3b8" style={styles.inputIcon} />
-              <TextInput
-                placeholder="Masukkan email pengajar"
-                value={email}
-                onChangeText={setEmail}
-                style={styles.input}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!creating}
-              />
-            </View>
-          </View>
+      {/* FORM CARD */}
+      <View style={styles.card}>
+        <Text style={styles.label}>Nama Lengkap</Text>
+        <TextInput
+          placeholder="Masukkan nama pengajar"
+          placeholderTextColor="#9ca3af"
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
+          editable={!creating}
+        />
 
-          <TouchableOpacity
-            style={[styles.primaryButton, creating && styles.primaryButtonDisabled]}
-            onPress={handleCreatePengajar}
-            disabled={creating}
-          >
-            {creating ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <>
-                <Icon name="plus" type="font-awesome" size={16} color="#fff" />
-                <Text style={styles.primaryButtonText}>Buat Pengajar</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          placeholder="Masukkan email pengajar"
+          placeholderTextColor="#9ca3af"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!creating}
+        />
 
-        {/* Card Pilih Kelas */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Icon name="graduation-cap" type="font-awesome" size={20} color="#3498db" />
-            <Text style={styles.cardTitle}>Pilih Kelas</Text>
-          </View>
-          
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.kelasScroll}
-          >
-            {kelasList.map(k => (
-              <TouchableOpacity
-                key={k.id}
-                style={[
-                  styles.kelasButton,
-                  selectedKelasId === k.id && styles.kelasButtonActive
-                ]}
-                onPress={() => setSelectedKelasId(k.id)}
-              >
-                <Icon 
-                  name="school" 
-                  type="font-awesome" 
-                  size={16} 
-                  color={selectedKelasId === k.id ? "#fff" : "#3498db"} 
-                />
-                <Text style={[
-                  styles.kelasButtonText,
-                  selectedKelasId === k.id && styles.kelasButtonTextActive
-                ]}>
-                  {k.namaKelas}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <TouchableOpacity
+          style={[styles.button, creating && styles.disabled]}
+          onPress={handleCreatePengajar}
+          disabled={creating}
+          activeOpacity={0.85}
+        >
+          {creating ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>BUAT PENGAJAR</Text>
+          )}
+        </TouchableOpacity>
+      </View>
 
-        {/* Jika kelas dipilih, tampilkan pengajar */}
-        {selectedKelasId && (
-          <>
-            {/* Card Pengajar di Kelas */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Icon name="users" type="font-awesome" size={20} color="#3498db" />
-                <Text style={styles.cardTitle}>Pengajar di Kelas</Text>
-                {loadingPengajarKelas && (
-                  <ActivityIndicator size="small" color="#3498db" style={styles.headerLoader} />
-                )}
-              </View>
-              
-              {pengajarKelas.length > 0 ? (
-                pengajarKelas.map(p => (
-                  <View key={p.id} style={styles.pengajarItem}>
-                    <View style={styles.pengajarInfo}>
-                      <Icon name="chalkboard-teacher" type="font-awesome" size={16} color="#3498db" />
-                      <View style={styles.pengajarDetails}>
-                        <Text style={styles.pengajarName}>{p.profiles?.name ?? p.email}</Text>
-                        <Text style={styles.pengajarEmail}>{p.email}</Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => handleRemovePengajar(p.id)}
-                      style={styles.removeButton}
-                    >
-                      <Icon name="trash" type="font-awesome" size={14} color="#e74c3c" />
-                    </TouchableOpacity>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.emptyState}>
-                  <Icon name="user-slash" type="font-awesome" size={32} color="#e2e8f0" />
-                  <Text style={styles.emptyText}>Belum ada pengajar di kelas ini</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Card Pengajar Tersedia */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Icon name="user-plus" type="font-awesome" size={20} color="#2ecc71" />
-                <Text style={styles.cardTitle}>Tambahkan Pengajar</Text>
-              </View>
-              
-              <Text style={styles.sectionDescription}>
-                Pilih pengajar yang tersedia untuk ditambahkan ke kelas
+      {/* KELAS CARD */}
+      <View style={styles.card}>
+        <Text style={styles.listTitle}>Pilih Kelas</Text>
+        
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.kelasScroll}
+        >
+          {kelasList.map(k => (
+            <TouchableOpacity
+              key={k.id}
+              style={[
+                styles.kelasButton,
+                selectedKelasId === k.id && styles.kelasButtonActive
+              ]}
+              onPress={() => setSelectedKelasId(k.id)}
+            >
+              <Text style={[
+                styles.kelasButtonText,
+                selectedKelasId === k.id && styles.kelasButtonTextActive
+              ]}>
+                {k.namaKelas}
               </Text>
-              
-              {allPengajar
-                .filter(p => !pengajarKelas.some(pk => pk.id === p.id))
-                .map(p => (
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Jika kelas dipilih, tampilkan pengajar */}
+      {selectedKelasId && (
+        <>
+          {/* LIST PENGAJAR DI KELAS CARD */}
+          <View style={styles.listCard}>
+            <Text style={styles.listTitle}>Pengajar di Kelas</Text>
+            {loadingPengajarKelas && (
+              <ActivityIndicator color="#2563eb" />
+            )}
+            
+            {pengajarKelas.length > 0 ? (
+              pengajarKelas.map(p => (
+                <View key={p.id} style={styles.listItem}>
+                  <View style={styles.listItemContent}>
+                    <Text style={styles.pengajarNama}>{p.profiles?.name ?? p.email}</Text>
+                    <Text style={styles.pengajarEmail}>{p.email}</Text>
+                  </View>
                   <TouchableOpacity
-                    key={p.id}
-                    style={styles.pengajarAvailableItem}
-                    onPress={() => handleAssignPengajar(p.id)}
-                    disabled={loadingAssign}
+                    onPress={() => handleRemovePengajar(p.id)}
+                    activeOpacity={0.85}
                   >
-                    <View style={styles.pengajarInfo}>
-                      <Icon name="user" type="font-awesome" size={16} color="#2ecc71" />
-                      <View style={styles.pengajarDetails}>
-                        <Text style={styles.pengajarName}>{p.profiles?.name ?? p.email}</Text>
-                        <Text style={styles.pengajarEmail}>{p.email}</Text>
-                      </View>
-                    </View>
-                    {loadingAssign ? (
-                      <ActivityIndicator size="small" color="#2ecc71" />
-                    ) : (
-                      <Icon name="plus-circle" type="font-awesome" size={20} color="#2ecc71" />
-                    )}
+                    <Text style={styles.deleteText}>Hapus</Text>
                   </TouchableOpacity>
-                ))}
-            </View>
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>Belum ada pengajar di kelas ini</Text>
+            )}
+          </View>
+
+          {/* LIST PENGAJAR TERSEDIA CARD */}
+          <View style={styles.listCard}>
+            <Text style={styles.listTitle}>Tambahkan Pengajar</Text>
+            <Text style={styles.listSubtitle}>
+              Pilih pengajar yang tersedia untuk ditambahkan ke kelas
+            </Text>
+            
+            {allPengajar
+              .filter(p => !pengajarKelas.some(pk => pk.id === p.id))
+              .map(p => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={styles.listItem}
+                  onPress={() => handleAssignPengajar(p.id)}
+                  disabled={loadingAssign}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.listItemContent}>
+                    <Text style={styles.pengajarNama}>{p.profiles?.name ?? p.email}</Text>
+                    <Text style={styles.pengajarEmail}>{p.email}</Text>
+                  </View>
+                  {loadingAssign ? (
+                    <ActivityIndicator size="small" color="#2563eb" />
+                  ) : (
+                    <Text style={styles.addText}>+ Tambah</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+          </View>
+        </>
+      )}
+    </ScrollView>
   );
 };
 
-/* =======================
-   STYLES
-======================= */
+/* ================== STYLE ================== */
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#f1f5f9",
   },
-  loadingContainer: {
+
+  center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#64748b',
-    fontWeight: '500',
-  },
+
   header: {
-    marginBottom: 24,
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
+
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
   },
-  subtitle: {
+
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
     fontSize: 14,
-    color: '#64748b',
   },
+
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: -28,
     padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginLeft: 8,
-  },
-  headerLoader: {
-    marginLeft: 'auto',
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
+
+  label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#475569',
-    marginBottom: 8,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    paddingHorizontal: 12,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
+
   input: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 14,
-    color: '#1e293b',
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3498db',
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     borderRadius: 12,
-    paddingVertical: 16,
+    padding: 14,
+    marginBottom: 16,
+    fontSize: 14,
+    color: "#111827",
+  },
+
+  button: {
+    backgroundColor: "#2563eb",
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
     marginTop: 8,
   },
-  primaryButtonDisabled: {
-    backgroundColor: '#b0d4f0',
+
+  disabled: {
+    opacity: 0.7,
   },
-  primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
+
   kelasScroll: {
     marginHorizontal: -4,
   },
+
   kelasButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: "#f3f4f6",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: "#e5e7eb",
   },
+
   kelasButtonActive: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
+    backgroundColor: "#2563eb",
+    borderColor: "#2563eb",
   },
+
   kelasButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#64748b',
-    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4b5563",
   },
+
   kelasButtonTextActive: {
-    color: '#ffffff',
+    color: "#fff",
   },
-  pengajarItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+
+  listCard: {
+    backgroundColor: "#fff",
+    margin: 16,
     padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  pengajarAvailableItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+
+  listTitle: {
+    fontSize: 16,
+    fontWeight: "800",
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+    color: "#111827",
   },
-  pengajarInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  listSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 16,
+    fontWeight: "500",
+  },
+
+  listItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderColor: "#e5e7eb",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  listItemContent: {
     flex: 1,
   },
-  pengajarDetails: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  pengajarName: {
+
+  pengajarNama: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 2,
+    fontWeight: "700",
+    color: "#1f2933",
   },
+
   pengajarEmail: {
     fontSize: 12,
-    color: '#64748b',
+    color: "#6b7280",
+    marginTop: 2,
   },
-  removeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#fee2e2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
+
+  deleteText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#ef4444",
   },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
+
+  addText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#2563eb",
   },
+
   emptyText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    marginTop: 16,
-  },
-  sectionDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 16,
-    lineHeight: 20,
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+    paddingVertical: 12,
   },
 });
 

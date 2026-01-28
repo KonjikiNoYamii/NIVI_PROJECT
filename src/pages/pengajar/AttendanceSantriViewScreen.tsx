@@ -11,6 +11,8 @@ import {
   ScrollView,
   Image,
   Modal,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -51,7 +53,6 @@ const KelasScreen: React.FC = () => {
   >('hadir');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
 
-  // 🔹 DI ATAS renderAbsensiItem
   const sortedAbsensi = useMemo(() => {
     if (!selectedKelas?.absensi) return [];
 
@@ -80,7 +81,6 @@ const KelasScreen: React.FC = () => {
       if (res.data.success) {
         setKelasList(res.data.data);
 
-        // 🔥 PENTING: sync ulang selectedKelas
         if (selectedKelas) {
           const updated = res.data.data.find(k => k.id === selectedKelas.id);
           if (updated) {
@@ -119,15 +119,15 @@ const KelasScreen: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'hadir':
-        return '#10b981';
+        return '#059669';
       case 'izin':
         return '#f59e0b';
       case 'sakit':
-        return '#3b82f6';
+        return '#2563eb';
       case 'alpha':
-        return '#ef4444';
+        return '#dc2626';
       default:
-        return '#94a3b8';
+        return '#6b7280';
     }
   };
 
@@ -146,30 +146,48 @@ const KelasScreen: React.FC = () => {
     }
   };
 
+  const getRandomColor = (id: number) => {
+    const colors = ['#2563eb', '#7c3aed', '#059669', '#f59e0b', '#dc2626'];
+    return colors[id % colors.length];
+  };
+
   const renderKelasItem = ({ item }: { item: Kelas }) => (
     <TouchableOpacity
       style={styles.kelasCard}
       onPress={() => setSelectedKelas(item)}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
     >
-      <View style={styles.kelasIconContainer}>
-        <Icon name="users" type="font-awesome" size={24} color="#3498db" />
+      <View style={[
+        styles.kelasIconContainer,
+        { backgroundColor: `${getRandomColor(item.id)}15` }
+      ]}>
+        <Icon 
+          name="users" 
+          type="font-awesome" 
+          size={22} 
+          color={getRandomColor(item.id)} 
+        />
       </View>
       <View style={styles.kelasContent}>
         <Text style={styles.kelasTitle}>{item.namaKelas}</Text>
         <View style={styles.kelasInfo}>
           <View style={styles.kelasInfoItem}>
-            <Icon name="user" type="font-awesome" size={12} color="#64748b" />
+            <Icon 
+              name="user-graduate" 
+              type="font-awesome" 
+              size={12} 
+              color="#6b7280" 
+            />
             <Text style={styles.kelasInfoText}>
               {item.santri.length} Santri
             </Text>
           </View>
           <View style={styles.kelasInfoItem}>
             <Icon
-              name="calendar"
+              name="calendar-check"
               type="font-awesome"
               size={12}
-              color="#64748b"
+              color="#6b7280"
             />
             <Text style={styles.kelasInfoText}>
               {item.absensi.length} Absensi
@@ -180,8 +198,8 @@ const KelasScreen: React.FC = () => {
       <Icon
         name="chevron-right"
         type="font-awesome"
-        size={16}
-        color="#cbd5e1"
+        size={14}
+        color="#9ca3af"
       />
     </TouchableOpacity>
   );
@@ -201,9 +219,17 @@ const KelasScreen: React.FC = () => {
                 style={styles.avatarImage}
               />
             ) : (
-              <Text style={styles.avatarText}>
-                {item.name.charAt(0).toUpperCase()}
-              </Text>
+              <View style={[
+                styles.avatarFallback,
+                { backgroundColor: `${getRandomColor(item.id)}15` }
+              ]}>
+                <Text style={[
+                  styles.avatarText,
+                  { color: getRandomColor(item.id) }
+                ]}>
+                  {item.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
             )}
           </View>
 
@@ -217,60 +243,57 @@ const KelasScreen: React.FC = () => {
           {absensiUser && absensiUser.length > 0 ? (
             <FlatList
               data={absensiUser}
-              scrollEnabled={false} // 🔥 PENTING
+              scrollEnabled={false}
               keyExtractor={a => a.id.toString()}
               renderItem={({ item: absen }) => (
                 <View style={styles.absensiRecord}>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: `${getStatusColor(absen.status)}20` },
-                    ]}
-                  >
-                    <Icon
-                      name={getStatusIcon(absen.status)}
-                      type="font-awesome"
-                      size={14}
-                      color={getStatusColor(absen.status)}
-                    />
-                    <Text
+                  <View style={styles.absensiRecordLeft}>
+                    <View
                       style={[
-                        styles.statusText,
-                        { color: getStatusColor(absen.status) },
+                        styles.statusBadge,
+                        { backgroundColor: `${getStatusColor(absen.status)}15` },
                       ]}
                     >
-                      {getStatusText(absen.status)}
-                    </Text>
-                  </View>
-
-                  {/* KANAN: TANGGAL + EDIT */}
-                  <View style={{ alignItems: 'flex-end' }}>
+                      <Icon
+                        name={getStatusIcon(absen.status)}
+                        type="font-awesome"
+                        size={14}
+                        color={getStatusColor(absen.status)}
+                      />
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(absen.status) },
+                        ]}
+                      >
+                        {getStatusText(absen.status)}
+                      </Text>
+                    </View>
                     <Text style={styles.absensiDate}>
                       {new Date(absen.tanggal).toLocaleDateString('id-ID', {
-                        weekday: 'short',
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
                       })}
                     </Text>
-
-                    {/* TOMBOL EDIT (KHUSUS PENGAJAR) */}
-                    <TouchableOpacity
-                      style={{ marginTop: 4 }}
-                      onPress={() => {
-                        setSelectedAbsensi(absen);
-                        setSelectedStatus(absen.status);
-                        setEditModal(true);
-                      }}
-                    >
-                      <Icon
-                        name="edit"
-                        type="font-awesome"
-                        size={14}
-                        color="#64748b"
-                      />
-                    </TouchableOpacity>
                   </View>
+
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => {
+                      setSelectedAbsensi(absen);
+                      setSelectedStatus(absen.status);
+                      setEditModal(true);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Icon
+                      name="edit"
+                      type="font-awesome"
+                      size={14}
+                      color="#6b7280"
+                    />
+                  </TouchableOpacity>
                 </View>
               )}
             />
@@ -279,8 +302,8 @@ const KelasScreen: React.FC = () => {
               <Icon
                 name="calendar-times"
                 type="font-awesome"
-                size={20}
-                color="#cbd5e1"
+                size={16}
+                color="#d1d5db"
               />
               <Text style={styles.noAbsensiText}>
                 Belum ada catatan absensi
@@ -311,8 +334,8 @@ const KelasScreen: React.FC = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingText}>Memuat data kelas...</Text>
         </View>
       </SafeAreaView>
@@ -323,24 +346,38 @@ const KelasScreen: React.FC = () => {
     // Pilih kelas
     return (
       <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
         <ScrollView
           style={styles.container}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['#3498db']}
-              tintColor="#3498db"
+              colors={['#2563eb']}
+              tintColor="#2563eb"
             />
           }
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Daftar Kelas</Text>
-              <Text style={styles.subtitle}>
+              <Text style={styles.headerTitle}>Daftar Kelas</Text>
+              <Text style={styles.headerSubtitle}>
                 {kelasList.length} kelas tersedia
               </Text>
             </View>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={onRefresh}
+              activeOpacity={0.85}
+            >
+              <Icon
+                name="sync-alt"
+                type="font-awesome"
+                size={16}
+                color="#2563eb"
+              />
+            </TouchableOpacity>
           </View>
 
           {kelasList.length === 0 ? (
@@ -348,28 +385,24 @@ const KelasScreen: React.FC = () => {
               <Icon
                 name="school"
                 type="font-awesome"
-                size={60}
-                color="#e2e8f0"
+                size={56}
+                color="#e5e7eb"
               />
-              <Text style={styles.emptyTitle}>Tidak ada kelas</Text>
+              <Text style={styles.emptyText}>Tidak ada kelas</Text>
               <Text style={styles.emptySubtitle}>
                 Belum ada data kelas yang tersedia
               </Text>
             </View>
           ) : (
-            <FlatList
-              data={kelasList}
-              keyExtractor={item => item.id.toString()}
-              renderItem={renderKelasItem}
-              scrollEnabled={false}
-            />
+            <View style={styles.kelasListContainer}>
+              {kelasList.map(item => renderKelasItem({ item }))}
+            </View>
           )}
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  // Tampilan absensi per kelas yang dipilih
   const absensiSummary = getAbsensiSummary();
   const totalAbsensiToday =
     absensiSummary.hadir +
@@ -379,212 +412,264 @@ const KelasScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
       <View style={styles.container}>
-        {/* ===== MODAL EDIT ABSENSI ===== */}
+        {/* Modal Edit Absensi */}
         <Modal
           visible={editModal}
           transparent
           animationType="fade"
-          onRequestClose={() => setEditModal(false)} // Android back
+          onRequestClose={() => setEditModal(false)}
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalBox}>
-              {/* HEADER MODAL */}
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
-
-                {/* TOMBOL X */}
-                <TouchableOpacity onPress={() => setEditModal(false)}>
+                <View style={styles.modalTitleContainer}>
                   <Icon
-                    name="close"
+                    name="edit"
                     type="font-awesome"
                     size={18}
-                    color="#64748b"
+                    color="#2563eb"
+                    style={styles.modalTitleIcon}
+                  />
+                  <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setEditModal(false)}
+                  style={styles.modalCloseButton}
+                  activeOpacity={0.85}
+                >
+                  <Icon
+                    name="times"
+                    type="font-awesome"
+                    size={16}
+                    color="#6b7280"
                   />
                 </TouchableOpacity>
               </View>
 
-              {/* ISI MODAL */}
-              {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
+              <Text style={styles.modalSubtitle}>
+                Pilih status baru untuk absensi ini
+              </Text>
+
+              <View style={styles.statusOptionsContainer}>
+                {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
+                  <TouchableOpacity
+                    key={s}
+                    style={[
+                      styles.statusOption,
+                      selectedStatus === s && {
+                        backgroundColor: `${getStatusColor(s)}15`,
+                        borderColor: getStatusColor(s),
+                      },
+                    ]}
+                    onPress={() => setSelectedStatus(s as any)}
+                    activeOpacity={0.85}
+                  >
+                    <Icon
+                      name={getStatusIcon(s)}
+                      type="font-awesome"
+                      size={16}
+                      color={selectedStatus === s ? getStatusColor(s) : '#6b7280'}
+                      style={styles.statusOptionIcon}
+                    />
+                    <Text style={[
+                      styles.statusOptionText,
+                      selectedStatus === s && { color: getStatusColor(s), fontWeight: '700' }
+                    ]}>
+                      {s.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalActions}>
                 <TouchableOpacity
-                  key={s}
-                  style={[
-                    styles.statusOption,
-                    selectedStatus === s && styles.statusSelected,
-                  ]}
-                  onPress={() => setSelectedStatus(s as any)}
+                  style={styles.cancelButton}
+                  onPress={() => setEditModal(false)}
+                  activeOpacity={0.85}
                 >
-                  <Text>{s.toUpperCase()}</Text>
+                  <Text style={styles.cancelButtonText}>Batal</Text>
                 </TouchableOpacity>
-              ))}
+                <TouchableOpacity
+                  style={[styles.saveButton, loading && styles.disabled]}
+                  onPress={async () => {
+                    const token = await AsyncStorage.getItem('token');
 
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={async () => {
-                  const token = await AsyncStorage.getItem('token');
+                    await axios.put(
+                      `${API}/absensi/${selectedAbsensi?.id}`,
+                      { status: selectedStatus },
+                      { headers: { Authorization: `Bearer ${token}` } },
+                    );
 
-                  await axios.put(
-                    `${API}/absensi/${selectedAbsensi?.id}`,
-                    { status: selectedStatus },
-                    { headers: { Authorization: `Bearer ${token}` } },
-                  );
-
-                  setEditModal(false);
-                  fetchKelas();
-                }}
-              >
-                <Text style={styles.saveText}>Simpan</Text>
-              </TouchableOpacity>
+                    setEditModal(false);
+                    fetchKelas();
+                  }}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Icon
+                        name="check"
+                        type="font-awesome"
+                        size={14}
+                        color="#FFFFFF"
+                        style={styles.saveButtonIcon}
+                      />
+                      <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
 
-        {/* Header */}
-        <View style={styles.absensiHeaderr}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => setSelectedKelas(null)}
-            activeOpacity={0.7}
-          >
-            <Icon
-              name="arrow-left"
-              type="font-awesome"
-              size={18}
-              color="#334155"
-            />
-            <Text style={styles.backText}>Kembali</Text>
-          </TouchableOpacity>
+        {/* Header dengan Blok Biru yang Sama Ukuran */}
+        <View style={styles.header}>
+          <View style={styles.headerTopSection}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => setSelectedKelas(null)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.backButtonContent}>
+                <Icon
+                  name="arrow-left"
+                  type="font-awesome"
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.backText}>Kembali ke Daftar</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <View style={styles.headerRightSection}>
+              <TouchableOpacity
+                style={styles.headerActionButton}
+                onPress={onRefresh}
+                activeOpacity={0.85}
+              >
+                <Icon
+                  name="sync-alt"
+                  type="font-awesome"
+                  size={16}
+                  color="#fff"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <View style={styles.kelasTitleContainer}>
             <Text style={styles.absensiTitle}>{selectedKelas.namaKelas}</Text>
-            <Text style={styles.absensiSubtitle}>
-              {selectedKelas.santri.length} Santri • {totalAbsensiToday} Absensi
-              Hari Ini
-            </Text>
-          </View>
-        </View>
-
-        {/* Absensi Summary */}
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryTitle}>Rekap Hari Ini</Text>
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <View
-                style={[styles.summaryBadge, { backgroundColor: '#10b98120' }]}
-              >
-                <Text style={[styles.summaryNumber, { color: '#10b981' }]}>
-                  {absensiSummary.hadir}
-                </Text>
-              </View>
-              <Text style={styles.summaryLabel}>Hadir</Text>
-            </View>
-
-            <View style={styles.summaryItem}>
-              <View
-                style={[styles.summaryBadge, { backgroundColor: '#f59e0b20' }]}
-              >
-                <Text style={[styles.summaryNumber, { color: '#f59e0b' }]}>
-                  {absensiSummary.izin}
-                </Text>
-              </View>
-              <Text style={styles.summaryLabel}>Izin</Text>
-            </View>
-
-            <View style={styles.summaryItem}>
-              <View
-                style={[styles.summaryBadge, { backgroundColor: '#3b82f620' }]}
-              >
-                <Text style={[styles.summaryNumber, { color: '#3b82f6' }]}>
-                  {absensiSummary.sakit}
-                </Text>
-              </View>
-              <Text style={styles.summaryLabel}>Sakit</Text>
-            </View>
-
-            <View style={styles.summaryItem}>
-              <View
-                style={[styles.summaryBadge, { backgroundColor: '#ef444420' }]}
-              >
-                <Text style={[styles.summaryNumber, { color: '#ef4444' }]}>
-                  {absensiSummary.alpha}
-                </Text>
-              </View>
-              <Text style={styles.summaryLabel}>Alpha</Text>
-            </View>
-          </View>
-        </View>
-                <View style={styles.filterContainer}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              sortOrder === 'latest' && styles.activeButton,
-            ]}
-            onPress={() => setSortOrder('latest')}
-          >
-            <Text>Terbaru</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              sortOrder === 'oldest' && styles.activeButton,
-            ]}
-            onPress={() => setSortOrder('oldest')}
-          >
-            <Text>Terlama</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* List Absensi */}
-        {selectedKelas.santri.length > 0 ? (
-          <FlatList
-            data={selectedKelas.santri}
-            keyExtractor={item => item.id.toString()}
-            renderItem={renderAbsensiItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.absensiList}
-            ListHeaderComponent={
-              <Text style={styles.listTitle}>Daftar Santri</Text>
-            }
-            ListEmptyComponent={
-              <View style={styles.emptyAbsensiContainer}>
+            <View style={styles.absensiSubtitleContainer}>
+              <View style={styles.subtitleItem}>
                 <Icon
-                  name="users"
+                  name="user-graduate"
                   type="font-awesome"
-                  size={50}
-                  color="#e2e8f0"
+                  size={13}
+                  color="#c7d2fe"
                 />
-                <Text style={styles.emptyAbsensiText}>
-                  Tidak ada santri di kelas ini
+                <Text style={styles.absensiSubtitle}>
+                  {selectedKelas.santri.length} Santri
                 </Text>
               </View>
-            }
-          />
-        ) : (
-          <View style={styles.emptyAbsensiContainer}>
-            <Icon name="users" type="font-awesome" size={60} color="#e2e8f0" />
-            <Text style={styles.emptyAbsensiTitle}>Tidak ada santri</Text>
-            <Text style={styles.emptyAbsensiSubtitle}>
-              Belum ada santri yang terdaftar di kelas ini
-            </Text>
+              <View style={styles.subtitleItem}>
+                <Icon
+                  name="calendar-check"
+                  type="font-awesome"
+                  size={13}
+                  color="#c7d2fe"
+                />
+                <Text style={styles.absensiSubtitle}>
+                  {totalAbsensiToday} Absensi Hari Ini
+                </Text>
+              </View>
+            </View>
           </View>
-        )}
+        </View>
+
+        {/* Summary Section */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Rekap Absensi Hari Ini</Text>
+          
+          <View style={styles.summaryGrid}>
+            {[
+              { key: 'hadir', label: 'Hadir', color: '#059669' },
+              { key: 'izin', label: 'Izin', color: '#f59e0b' },
+              { key: 'sakit', label: 'Sakit', color: '#2563eb' },
+              { key: 'alpha', label: 'Alpha', color: '#dc2626' },
+            ].map(({ key, label, color }) => (
+              <View key={key} style={styles.summaryItem}>
+                <View style={[styles.summaryBadge, { backgroundColor: `${color}15` }]}>
+                  <Text style={[styles.summaryNumber, { color }]}>
+                    {absensiSummary[key as keyof typeof absensiSummary]}
+                  </Text>
+                </View>
+                <Text style={styles.summaryLabel}>{label}</Text>
+              </View>
+            ))}
+          </View>
+          
+          <TouchableOpacity 
+            onPress={() => setSortOrder(sortOrder === 'latest' ? 'oldest' : 'latest')}
+            style={styles.sortButton}
+            activeOpacity={0.85}
+          >
+            <Icon
+              name={sortOrder === 'latest' ? 'sort-amount-down' : 'sort-amount-up'}
+              type="font-awesome"
+              size={14}
+              color="#2563eb"
+            />
+            <Text style={styles.sortButtonText}>
+              Urutkan: {sortOrder === 'latest' ? 'Terbaru' : 'Terlama'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Santri List */}
+        <View style={styles.listCard}>
+          <Text style={styles.listTitle}>Daftar Santri</Text>
+
+          {selectedKelas.santri.length === 0 ? (
+            <Text style={styles.emptyText}>Belum ada santri di kelas ini</Text>
+          ) : (
+            <>
+              <Text style={styles.listSubtitle}>
+                Total: {selectedKelas.santri.length} santri
+              </Text>
+              <FlatList
+                data={selectedKelas.santri}
+                keyExtractor={item => item.id.toString()}
+                renderItem={renderAbsensiItem}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.absensiList}
+              />
+            </>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
+/* ================== STYLE ================== */
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f1f5f9",
   },
   container: {
     flex: 1,
-    padding: 16,
   },
+  
   // Loading State
-  loadingContainer: {
+  center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -592,63 +677,134 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    color: '#64748b',
+    color: '#6b7280',
     fontWeight: '500',
   },
-  // Header
+  
+  // Header - SAMA UKURAN UNTUK KEDUA VIEW
   header: {
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
+    fontSize: 14,
+  },
+  headerTopSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1e293b',
-    letterSpacing: -0.5,
+  backButton: {
+    flex: 1,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
+  backButtonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
+  backText: {
+    fontSize: 15,
+    color: '#fff',
+    marginLeft: 10,
+    fontWeight: '600',
+  },
+  headerRightSection: {
+    marginLeft: 16,
+  },
+  headerActionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  refreshButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    marginTop: 4,
+  },
+  kelasTitleContainer: {
+    marginTop: 8,
+  },
+  absensiTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  absensiSubtitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 20,
+  },
+  subtitleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  absensiSubtitle: {
+    fontSize: 15,
+    color: '#c7d2fe',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  
   // Kelas List
+  kelasListContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
   kelasCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: '#fff',
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#e5e7eb",
   },
   kelasIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#ebf5fb',
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 18,
   },
   kelasContent: {
     flex: 1,
   },
   kelasTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 6,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1f2933',
+    marginBottom: 8,
   },
   kelasInfo: {
     flexDirection: 'row',
@@ -657,77 +813,58 @@ const styles = StyleSheet.create({
   kelasInfoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 20,
   },
   kelasInfoText: {
-    fontSize: 12,
-    color: '#64748b',
-    marginLeft: 4,
-  },
-  // Empty States
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#cbd5e1',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    paddingHorizontal: 40,
-  },
-  // Absensi Header
-  absensiHeader: {
-    marginBottom: 24,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backText: {
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: 13,
+    color: '#6b7280',
     marginLeft: 8,
     fontWeight: '500',
   },
-  kelasTitleContainer: {
-    paddingLeft: 4,
+  
+  // Empty States
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 24,
   },
-  absensiTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 4,
+  emptyText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+    marginTop: 12,
   },
-  absensiSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#9ca3af',
+    textAlign: 'center',
+    fontWeight: '400',
+    lineHeight: 22,
+    paddingHorizontal: 40,
   },
-  // Summary Container
-  summaryContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+  
+  // Card (Summary)
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginTop: -28,
     padding: 20,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 16,
   },
   summaryGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 20,
   },
   summaryItem: {
     alignItems: 'center',
@@ -736,72 +873,115 @@ const styles = StyleSheet.create({
   summaryBadge: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   summaryNumber: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
+    color: '#6b7280',
+    fontWeight: '600',
   },
-  // Absensi List
-  absensiList: {
-    paddingBottom: 20,
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignSelf: 'flex-start',
+  },
+  sortButtonText: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  
+  // Santri List Card
+  listCard: {
+    backgroundColor: "#fff",
+    margin: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    flex: 1,
   },
   listTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
+    fontWeight: "800",
     marginBottom: 12,
+    color: "#111827",
+  },
+  listSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 16,
+    fontWeight: "500",
+  },
+  
+  // Absensi List
+  absensiList: {
+    paddingBottom: 40,
   },
   absensiCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 14,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#e5e7eb",
   },
-  absensiHeaderr: {
+  absensiHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: '#f3f4f6',
   },
   avatarContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#3498db',
+    marginRight: 16,
+  },
+  avatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
   },
   avatarText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
   },
   santriInfo: {
     flex: 1,
   },
   santriName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 2,
+    fontWeight: '700',
+    color: '#1f2933',
+    marginBottom: 4,
   },
   santriId: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#6b7280',
+    fontWeight: '500',
   },
   absensiContent: {
     paddingTop: 4,
@@ -810,126 +990,171 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  absensiRecordLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
+    minWidth: 100,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: 8,
   },
   absensiDate: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#6b7280',
+    fontWeight: '500',
+    marginLeft: 16,
+  },
+  editButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   noAbsensiContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   noAbsensiText: {
     fontSize: 14,
-    color: '#94a3b8',
-    marginLeft: 8,
+    color: '#9ca3af',
+    marginLeft: 10,
+    fontWeight: '500',
     fontStyle: 'italic',
   },
-  emptyAbsensiContainer: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyAbsensiText: {
-    fontSize: 16,
-    color: '#cbd5e1',
-    marginTop: 16,
-  },
-  emptyAbsensiTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#cbd5e1',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyAbsensiSubtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    paddingHorizontal: 40,
-  },
-  avatarImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
+  
+  // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   modalBox: {
-    width: '80%',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  statusOption: {
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 6,
-    backgroundColor: '#f1f5f9',
-  },
-  statusSelected: {
-    backgroundColor: '#dbeafe',
-  },
-  saveButton: {
-    marginTop: 12,
-    backgroundColor: '#2563eb',
-    padding: 12,
-    borderRadius: 8,
-  },
-  saveText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-filterContainer: {
-  flexDirection: 'row',
-  justifyContent: 'center',
-  marginTop: 4,     // ⬅️ kecil & nempel
-  marginBottom: 20 // ⬅️ masih ada napas
-},
-
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 5,
+  modalTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  activeButton: {
-    backgroundColor: '#4F46E5',
+  modalTitleIcon: {
+    marginRight: 10,
   },
-  filterText: {
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
     color: '#111827',
+  },
+  modalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 24,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  statusOptionsContainer: {
+    marginBottom: 24,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 10,
+  },
+  statusOptionIcon: {
+    marginRight: 12,
+  },
+  statusOptionText: {
+    fontSize: 14,
+    color: '#374151',
     fontWeight: '600',
+    flex: 1,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontWeight: '600',
+  },
+  saveButton: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#2563eb',
+  },
+  saveButtonIcon: {
+    marginRight: 8,
+  },
+  saveButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
+  },
+  disabled: {
+    opacity: 0.7,
   },
 });
 

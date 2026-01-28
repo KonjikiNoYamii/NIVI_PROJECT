@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -87,10 +89,10 @@ const PengajarSubmissionScreen = () => {
   }, []);
 
   const renderItem = ({ item }: { item: Submission }) => {
-    let statusColor = '#f39c12';
-    if (item.status === 'reviewed') statusColor = '#2ecc71';
-    else if (item.status === 'rejected') statusColor = '#e74c3c';
-    else if (item.status === 'submitted') statusColor = '#3498db';
+    let statusColor = '#f59e0b';
+    if (item.status === 'reviewed') statusColor = '#10b981';
+    else if (item.status === 'rejected') statusColor = '#ef4444';
+    else if (item.status === 'submitted') statusColor = '#3b82f6';
 
     return (
       <View style={styles.card}>
@@ -101,15 +103,20 @@ const PengajarSubmissionScreen = () => {
         </Text>
 
         {item.linkUrl && (
-          <TouchableOpacity onPress={() => openLink(item.linkUrl)}>
+          <TouchableOpacity 
+            onPress={() => openLink(item.linkUrl)}
+            activeOpacity={0.85}
+          >
             <Text style={styles.link}>📎 Buka Tugas</Text>
           </TouchableOpacity>
         )}
 
         <View style={styles.statusRow}>
-          <Text style={[styles.status, { color: statusColor }]}>
-            {item.status.toUpperCase()}
-          </Text>
+          <View style={[styles.statusBadge, { backgroundColor: `${statusColor}15` }]}>
+            <Text style={[styles.status, { color: statusColor }]}>
+              {item.status.toUpperCase()}
+            </Text>
+          </View>
 
           <View style={styles.actionRow}>
             {item.status === 'pending' && (
@@ -117,6 +124,7 @@ const PengajarSubmissionScreen = () => {
                 <TouchableOpacity
                   style={[styles.btn, styles.reject]}
                   onPress={() => updateStatus(item.id, 'rejected')}
+                  activeOpacity={0.85}
                 >
                   <Text style={styles.btnText}>Tolak</Text>
                 </TouchableOpacity>
@@ -124,6 +132,7 @@ const PengajarSubmissionScreen = () => {
                 <TouchableOpacity
                   style={[styles.btn, styles.accept]}
                   onPress={() => updateStatus(item.id, 'reviewed')}
+                  activeOpacity={0.85}
                 >
                   <Text style={styles.btnText}>Terima</Text>
                 </TouchableOpacity>
@@ -140,13 +149,16 @@ const PengajarSubmissionScreen = () => {
                     tugasTitle: item.tugas.title,
                   })
                 }
+                activeOpacity={0.85}
               >
                 <Text style={styles.btnText}>Nilai</Text>
               </TouchableOpacity>
             )}
 
             {item.isGraded && (
-              <Text style={styles.gradedLabel}>✅ Sudah Dinilai</Text>
+              <View style={styles.gradedBadge}>
+                <Text style={styles.gradedLabel}>✅ Sudah Dinilai</Text>
+              </View>
             )}
           </View>
         </View>
@@ -156,17 +168,30 @@ const PengajarSubmissionScreen = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Text style={styles.title}>Pengumpulan Tugas Santri</Text>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Pengumpulan Tugas Santri</Text>
+        <Text style={styles.headerSubtitle}>
+          Daftar pengumpulan tugas yang perlu dinilai
+        </Text>
+      </View>
 
       {loading ? (
-        <ActivityIndicator size="large" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
       ) : (
         <FlatList
           data={data}
           keyExtractor={i => i.id.toString()}
           renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <Text style={styles.empty}>Belum ada pengumpulan</Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Belum ada pengumpulan tugas</Text>
+            </View>
           }
         />
       )}
@@ -177,42 +202,153 @@ const PengajarSubmissionScreen = () => {
 export default PengajarSubmissionScreen;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f8f9fa', padding: 16 },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    color: '#2c3e50',
+  safe: { 
+    flex: 1, 
+    backgroundColor: '#f1f5f9' 
   },
-  empty: { textAlign: 'center', marginTop: 40, color: '#95a5a6' },
+  
+  header: {
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  
+  headerTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  
+  headerSubtitle: {
+    marginTop: 6,
+    color: '#c7d2fe',
+    fontSize: 14,
+  },
+  
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#ecf0f1',
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  santri: { fontSize: 16, fontWeight: '700', color: '#34495e' },
-  task: { fontSize: 14, color: '#7f8c8d', marginBottom: 6 },
-  date: { fontSize: 12, color: '#95a5a6', marginBottom: 10 },
-  link: { color: '#2980b9', fontWeight: '600', marginBottom: 12 },
+  
+  santri: { 
+    fontSize: 16, 
+    fontWeight: '800', 
+    color: '#1f2933',
+    marginBottom: 4,
+  },
+  
+  task: { 
+    fontSize: 14, 
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  
+  date: { 
+    fontSize: 12, 
+    color: '#9ca3af', 
+    marginBottom: 12,
+  },
+  
+  link: { 
+    color: '#3b82f6', 
+    fontWeight: '700', 
+    marginBottom: 16,
+    fontSize: 14,
+  },
+  
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 4,
   },
-  status: { fontWeight: '700', fontSize: 13 },
-  actionRow: { flexDirection: 'row', alignItems: 'center' },
+  
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  
+  status: { 
+    fontWeight: '800', 
+    fontSize: 12,
+  },
+  
+  actionRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  
   btn: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
-    marginLeft: 6,
+    borderRadius: 12,
+    marginLeft: 8,
   },
-  accept: { backgroundColor: '#2ecc71' },
-  reject: { backgroundColor: '#e74c3c' },
-  grade: { backgroundColor: '#3498db' },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  gradedLabel: { marginLeft: 10, color: '#27ae60', fontWeight: '700' },
+  
+  accept: { 
+    backgroundColor: '#10b981' 
+  },
+  
+  reject: { 
+    backgroundColor: '#ef4444' 
+  },
+  
+  grade: { 
+    backgroundColor: '#2563eb' 
+  },
+  
+  btnText: { 
+    color: '#fff', 
+    fontWeight: '800', 
+    fontSize: 12,
+    letterSpacing: 0.3,
+  },
+  
+  gradedBadge: {
+    backgroundColor: '#10b98115',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginLeft: 8,
+  },
+  
+  gradedLabel: { 
+    color: '#10b981', 
+    fontWeight: '800', 
+    fontSize: 12,
+  },
+  
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 60,
+    padding: 20,
+  },
+  
+  emptyText: {
+    textAlign: 'center',
+    color: '#6b7280',
+    fontSize: 14,
+  },
 });

@@ -10,11 +10,14 @@ import {
   TextInput,
   Modal,
   Linking,
+  StatusBar,
+  Platform,
+  SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../services/api';
 
 interface Task {
@@ -122,174 +125,229 @@ const TaskScreen: React.FC = () => {
     }, [fetchTasks]),
   );
 
-// Bagian renderItem di TaskScreen
+  // Bagian renderItem di TaskScreen
+  const renderItem = ({ item }: { item: Task }) => {
+    const late = isLate(item.deadline) && item.status === 'pending';
 
-const renderItem = ({ item }: { item: Task }) => {
-  const late = isLate(item.deadline) && item.status === 'pending';
+    // Fungsi label status baru
+    const getStatusLabel = (status: Task['status']) => {
+      switch (status) {
+        case 'belum_submit':
+          return 'Belum Dikumpulkan';
+        case 'pending':
+          return 'Menunggu Penilaian';
+        case 'reviewed':
+          return 'Diterima';
+        case 'rejected':
+          return 'Ditolak';
+      }
+    };
 
-  // Fungsi label status baru
-  const getStatusLabel = (status: Task['status']) => {
-    switch (status) {
-      case 'belum_submit':
-        return 'Belum Dikumpulkan';
-      case 'pending':
-        return 'Menunggu Penilaian';
-      case 'reviewed':
-        return 'Diterima'; // Hanya diterima, belum dinilai
-      case 'rejected':
-        return 'Ditolak';
-    }
+    // Fungsi warna status
+    const getStatusColor = (status: Task['status']) => {
+      switch (status) {
+        case 'belum_submit':
+          return '#dc2626';
+        case 'pending':
+          return '#f59e0b';
+        case 'reviewed':
+          return '#059669';
+        case 'rejected':
+          return '#dc2626';
+      }
+    };
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.subjectContainer}>
+            <Text style={styles.subject}>{item.subject}</Text>
+          </View>
+          <Text style={[styles.deadline, late && styles.late]}>
+            {new Date(item.deadline).toLocaleDateString('id-ID')}
+          </Text>
+        </View>
+
+        <Text style={styles.title}>{item.title}</Text>
+        {item.description && <Text style={styles.desc}>{item.description}</Text>}
+
+        <View style={styles.statusContainer}>
+          <View style={[
+            styles.statusBadge, 
+            { backgroundColor: `${getStatusColor(item.status)}15` }
+          ]}>
+            <View style={[
+              styles.statusDot, 
+              { backgroundColor: getStatusColor(item.status) }
+            ]} />
+            <Text style={[
+              styles.statusText,
+              { color: getStatusColor(item.status) }
+            ]}>
+              {getStatusLabel(item.status)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Tombol kumpulkan hanya muncul jika belum submit */}
+        {item.status === 'belum_submit' && (
+          <TouchableOpacity
+            style={[styles.button, late && styles.lateBtn]}
+            onPress={() => setSelectedTask(item)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.buttonText}>
+              {late ? 'Kumpulkan (Terlambat)' : 'Kumpulkan'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Submitted info */}
+        {item.status !== 'belum_submit' && item.submitted_at && (
+          <View style={styles.submittedContainer}>
+            <Text style={styles.submittedDate}>
+              Dikumpulkan: {new Date(item.submitted_at).toLocaleString('id-ID')}
+            </Text>
+          </View>
+        )}
+
+        {/* Link tugas */}
+        {item.submission_link && (
+          <TouchableOpacity
+            style={styles.linkContainer}
+            onPress={() => openLink(item.submission_link!)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.linkText}>Lihat Pengumpulan</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={styles.subject}>{item.subject}</Text>
-        <Text style={[styles.deadline, late && styles.late]}>
-          {new Date(item.deadline).toLocaleDateString('id-ID')}
-        </Text>
-      </View>
-
-      <Text style={styles.title}>{item.title}</Text>
-      {item.description && <Text style={styles.desc}>{item.description}</Text>}
-
-      {/* Tombol kumpulkan hanya muncul jika belum submit */}
-      {item.status === 'belum_submit' && (
-        <TouchableOpacity
-          style={[styles.submitBtn, late && styles.lateBtn]}
-          onPress={() => setSelectedTask(item)}
-        >
-          <Text style={styles.submitText}>
-            {late ? 'Kumpulkan (Terlambat)' : 'Kumpulkan'}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Label status */}
-      {item.status !== 'belum_submit' && (
-        <View style={styles.submittedContainer}>
-          <Text style={styles.submittedText}>
-            {getStatusLabel(item.status)}
-          </Text>
-          {item.submitted_at && (
-            <Text style={styles.submittedDate}>
-              {new Date(item.submitted_at).toLocaleString('id-ID')}
-            </Text>
-          )}
-        </View>
-      )}
-
-      {/* Link tugas */}
-      {item.submission_link && (
-        <TouchableOpacity
-          style={styles.linkContainer}
-          onPress={() => openLink(item.submission_link!)}
-        >
-          <Text style={styles.linkText}>Lihat Pengumpulan</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
-
-
-  return (
     <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
       {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingText}>Memuat tugas...</Text>
         </View>
       ) : (
-        <FlatList
-          data={tasks}
-          keyExtractor={i => i.id.toString()}
-          renderItem={renderItem}
-          refreshing={refreshing}
-          onRefresh={() => fetchTasks(false)}
-          contentContainerStyle={
-            tasks.length === 0
-              ? { flex: 1, justifyContent: 'center' }
-              : undefined
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>📭</Text>
-              <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
-              <Text style={styles.emptySubtitle}>
-                Saat ini belum ada tugas yang diberikan oleh pengajar.
+        <View style={styles.container}>
+          {/* HEADER BLOK BIRU */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.headerTitle}>Daftar Tugas</Text>
+              <Text style={styles.headerSubtitle}>
+                {tasks.length} tugas tersedia
               </Text>
-
-              <TouchableOpacity
-                style={styles.reloadBtn}
-                onPress={() => fetchTasks(true)}
-              >
-                <Text style={styles.reloadText}>Muat Ulang</Text>
-              </TouchableOpacity>
             </View>
-          }
-        />
+          </View>
+
+          <FlatList
+            data={tasks}
+            keyExtractor={i => i.id.toString()}
+            renderItem={renderItem}
+            refreshing={refreshing}
+            onRefresh={() => fetchTasks(false)}
+            contentContainerStyle={
+              tasks.length === 0
+                ? { flex: 1, justifyContent: 'center' }
+                : styles.listContainer
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyIcon}>📭</Text>
+                <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
+                <Text style={styles.emptySubtitle}>
+                  Saat ini belum ada tugas yang diberikan oleh pengajar.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.reloadBtn}
+                  onPress={() => fetchTasks(true)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.reloadText}>Muat Ulang</Text>
+                </TouchableOpacity>
+              </View>
+            }
+          />
+        </View>
       )}
 
       <Modal visible={!!selectedTask} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Pengumpulan Tugas</Text>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Pengumpulan Tugas</Text>
+              <TouchableOpacity 
+                onPress={() => {
+                  setSelectedTask(null);
+                  setSubmissionLink('');
+                }}
+                style={styles.modalCloseButton}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
             {selectedTask && (
               <View style={styles.taskInfo}>
                 <Text style={styles.taskTitle}>{selectedTask.title}</Text>
                 <Text style={styles.taskDeadline}>
-                  Deadline:{' '}
-                  {new Date(selectedTask.deadline).toLocaleString('id-ID')}
+                  Deadline: {new Date(selectedTask.deadline).toLocaleString('id-ID')}
                 </Text>
               </View>
             )}
 
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Link Tugas</Text>
+              <Text style={styles.label}>Link Tugas</Text>
               <Text style={styles.inputHint}>
                 Masukkan link Google Drive / Github / dll
               </Text>
 
-              <View style={styles.textInputContainer}>
-                <TextInput
-                  placeholder="https://..."
-                  value={submissionLink}
-                  onChangeText={setSubmissionLink}
-                  style={styles.textInput}
-                  autoCapitalize="none"
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
+              <TextInput
+                placeholder="https://..."
+                placeholderTextColor="#9ca3af"
+                value={submissionLink}
+                onChangeText={setSubmissionLink}
+                style={styles.input}
+                autoCapitalize="none"
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
             </View>
 
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.cancelBtn}
+                style={styles.cancelButton}
                 onPress={() => {
                   setSelectedTask(null);
                   setSubmissionLink('');
                 }}
+                activeOpacity={0.85}
               >
-                <Text style={styles.cancelText}>Batal</Text>
+                <Text style={styles.cancelButtonText}>Batal</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.confirmBtn,
-                  submitting && styles.confirmDisabled,
-                ]}
+                style={[styles.saveButton, submitting && styles.disabled]}
                 disabled={submitting}
                 onPress={() =>
                   selectedTask && submitAssignment(selectedTask.id)
                 }
+                activeOpacity={0.85}
               >
-                <Text style={styles.confirmText}>
-                  {submitting ? 'Mengirim...' : 'Kumpulkan'}
-                </Text>
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Kumpulkan</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -301,239 +359,226 @@ const renderItem = ({ item }: { item: Task }) => {
 
 export default TaskScreen;
 
+/* ================== STYLE ================== */
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
-    paddingBottom: 80,
+    backgroundColor: "#f1f5f9",
   },
   container: {
     flex: 1,
-    padding: 16,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2c3e50',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 4,
-  },
-  refreshBtn: {
-    padding: 10,
-    borderRadius: 20,
-    backgroundColor: '#f1f2f6',
-  },
-  loadingContainer: {
+  center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#7f8c8d',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#bdc3c7',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
     fontSize: 14,
-    color: '#95a5a6',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+    color: '#6b7280',
+    fontWeight: '500',
   },
-  reloadBtn: {
-    borderWidth: 1,
-    borderColor: '#3498db',
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+
+  /* HEADER BLOK BIRU */
+  header: {
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-  reloadText: {
-    color: '#3498db',
-    fontWeight: '600',
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
   },
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
+    fontSize: 14,
+  },
+
+  // List Container
   listContainer: {
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 32,
   },
-  listHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 12,
-  },
-  // Task Card Styles
+
+  // Card Styles
   card: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    backgroundColor: "#fff",
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: "#e5e7eb",
   },
-  headerRow: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  subjectContainer: {
+    backgroundColor: "#dbeafe",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   subject: {
-    backgroundColor: '#3498db',
-    color: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+    color: "#2563eb",
     fontSize: 12,
-    fontWeight: '600',
-  },
-  deadlineContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontWeight: "600",
   },
   deadline: {
     fontSize: 12,
-    color: '#7f8c8d',
-    fontWeight: '500',
-    marginLeft: 4,
+    color: "#6b7280",
+    fontWeight: "500",
   },
   late: {
-    color: '#e74c3c',
-    fontWeight: '600',
+    color: "#dc2626",
+    fontWeight: "600",
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 6,
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1f2933",
+    marginBottom: 8,
   },
   desc: {
     fontSize: 14,
-    color: '#5d6d7e',
-    marginBottom: 12,
+    color: "#6b7280",
+    marginBottom: 16,
     lineHeight: 20,
   },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  statusContainer: {
+    marginBottom: 16,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    marginRight: 8,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: "600",
   },
-  scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff9e6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+  button: {
+    backgroundColor: "#2563eb",
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 8,
   },
-  score: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f39c12',
-    marginLeft: 4,
-  },
-  submitBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#2ecc71',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 4,
+  buttonText: {
+    color: "#fff",
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   lateBtn: {
-    backgroundColor: '#e74c3c',
-  },
-  submitText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
+    backgroundColor: "#dc2626",
   },
   submittedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#d5f4e6',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  submittedText: {
-    color: '#27ae60',
-    fontWeight: '600',
-    marginLeft: 8,
-    flex: 1,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
   },
   submittedDate: {
-    color: '#7f8c8d',
     fontSize: 12,
+    color: "#6b7280",
+    fontWeight: "500",
   },
   linkContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginTop: 12,
-    padding: 10,
-    backgroundColor: '#ebf5fb',
-    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   linkText: {
-    marginLeft: 8,
-    color: '#2980b9',
-    fontWeight: '500',
+    color: "#2563eb",
     fontSize: 14,
+    fontWeight: "600",
   },
+
+  // Empty State
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 24,
+  },
+  emptyIcon: {
+    fontSize: 56,
+    marginBottom: 16,
+    color: "#9ca3af",
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#9ca3af",
+    marginBottom: 10,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: "#9ca3af",
+    textAlign: "center",
+    fontWeight: "400",
+    lineHeight: 22,
+    paddingHorizontal: 40,
+    marginBottom: 24,
+  },
+  reloadBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#2563eb",
+  },
+  reloadText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
   // Modal Styles
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
   },
-  modal: {
-    backgroundColor: '#fff',
+  modalBox: {
     width: '100%',
-    borderRadius: 16,
-    padding: 20,
+    maxWidth: 420,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -543,99 +588,96 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: {
+    fontSize: 16,
+    color: '#6b7280',
     fontWeight: '600',
-    color: '#2c3e50',
-    flex: 1,
   },
   taskInfo: {
     marginBottom: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  taskSubject: {
-    backgroundColor: '#3498db',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 12,
-    marginBottom: 8,
+    borderBottomColor: '#f3f4f6',
   },
   taskTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontWeight: '700',
+    color: '#1f2933',
     marginBottom: 8,
   },
   taskDeadline: {
     fontSize: 14,
-    color: '#e74c3c',
+    color: '#dc2626',
     fontWeight: '500',
   },
   inputContainer: {
     marginBottom: 20,
   },
-  inputLabel: {
-    fontSize: 16,
-    color: '#2c3e50',
-    fontWeight: '600',
-    marginBottom: 4,
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
   },
   inputHint: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: '#6b7280',
     marginBottom: 12,
   },
-  textInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  input: {
+    backgroundColor: "#f9fafb",
     borderWidth: 1,
-    borderColor: '#d5dbdb',
-    borderRadius: 8,
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#2c3e50',
-    marginLeft: 8,
+    borderColor: "#e5e7eb",
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 14,
+    color: "#111827",
+    minHeight: 100,
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
+    gap: 12,
   },
-  cancelBtn: {
+  cancelButton: {
     flex: 1,
-    padding: 14,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
     borderWidth: 1,
-    borderColor: '#95a5a6',
-    marginRight: 8,
+    borderColor: '#e5e7eb',
     alignItems: 'center',
   },
-  cancelText: {
-    color: '#7f8c8d',
+  cancelButtonText: {
+    fontSize: 14,
+    color: '#4B5563',
     fontWeight: '600',
   },
-  confirmBtn: {
-    flex: 1,
-    backgroundColor: '#3498db',
-    padding: 14,
-    borderRadius: 8,
-    marginLeft: 8,
+  saveButton: {
+    flex: 2,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#2563eb',
   },
-  confirmDisabled: {
-    backgroundColor: '#b0d4f0',
-  },
-  confirmText: {
+  saveButtonText: {
+    fontSize: 14,
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  disabled: {
+    opacity: 0.7,
   },
 });
