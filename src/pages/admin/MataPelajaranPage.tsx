@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,10 @@ import {
   ScrollView,
   SafeAreaView,
   RefreshControl,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API } from "../../services/api";
+} from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API } from '../../services/api';
 
 /* ================== TYPE ================== */
 
@@ -34,8 +34,8 @@ interface MataPelajaran {
 
 const CreateMataPelajaranScreen: React.FC = () => {
   const [form, setForm] = useState<CreateMapelPayload>({
-    nama: "",
-    kode: "",
+    nama: '',
+    kode: '',
   });
 
   const [token, setToken] = useState<string | null>(null);
@@ -52,13 +52,15 @@ const CreateMataPelajaranScreen: React.FC = () => {
   useEffect(() => {
     const loadAuth = async () => {
       try {
-        const [[, storedToken], [, storedRole]] =
-          await AsyncStorage.multiGet(["token", "role"]);
+        const [[, storedToken], [, storedRole]] = await AsyncStorage.multiGet([
+          'token',
+          'role',
+        ]);
 
         setToken(storedToken);
         setRole(storedRole);
       } catch {
-        Alert.alert("Error", "Gagal mengambil data autentikasi");
+        Alert.alert('Error', 'Gagal mengambil data autentikasi');
       } finally {
         setInitLoading(false);
       }
@@ -82,7 +84,7 @@ const CreateMataPelajaranScreen: React.FC = () => {
 
       setMapelList(res.data.data || res.data);
     } catch {
-      Alert.alert("Error", "Gagal mengambil data mata pelajaran");
+      Alert.alert('Error', 'Gagal mengambil data mata pelajaran');
     } finally {
       setListLoading(false);
       setRefreshing(false);
@@ -107,20 +109,20 @@ const CreateMataPelajaranScreen: React.FC = () => {
   /* ================== FORM HANDLER ================== */
 
   const handleChange = (key: keyof CreateMapelPayload, value: string) => {
-    setForm((prev) => ({
+    setForm(prev => ({
       ...prev,
-      [key]: key === "kode" ? value.toUpperCase() : value,
+      [key]: key === 'kode' ? value.toUpperCase() : value,
     }));
   };
 
   const handleSubmit = async () => {
     if (!form.nama || !form.kode) {
-      Alert.alert("Validasi", "Nama dan kode mata pelajaran wajib diisi");
+      Alert.alert('Validasi', 'Nama dan kode mata pelajaran wajib diisi');
       return;
     }
 
     if (!token) {
-      Alert.alert("Error", "Token tidak ditemukan, silakan login ulang");
+      Alert.alert('Error', 'Token tidak ditemukan, silakan login ulang');
       return;
     }
 
@@ -130,17 +132,17 @@ const CreateMataPelajaranScreen: React.FC = () => {
       await axios.post(`${API}/mapel`, form, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
 
-      Alert.alert("Berhasil", "Mata pelajaran berhasil ditambahkan");
-      setForm({ nama: "", kode: "" });
+      Alert.alert('Berhasil', 'Mata pelajaran berhasil ditambahkan');
+      setForm({ nama: '', kode: '' });
       fetchMapel(); // 🔥 refresh list
     } catch (error: any) {
       Alert.alert(
-        "Gagal",
-        error?.response?.data?.message || "Terjadi kesalahan server"
+        'Gagal',
+        error?.response?.data?.message || 'Terjadi kesalahan server',
       );
     } finally {
       setLoading(false);
@@ -159,7 +161,7 @@ const CreateMataPelajaranScreen: React.FC = () => {
     );
   }
 
-  if (role !== "admin") {
+  if (role !== 'admin') {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
@@ -187,7 +189,7 @@ const CreateMataPelajaranScreen: React.FC = () => {
           placeholder="Masukan nama mata pelajaran"
           placeholderTextColor="#9ca3af"
           value={form.nama}
-          onChangeText={(v) => handleChange("nama", v)}
+          onChangeText={v => handleChange('nama', v)}
           style={styles.input}
         />
 
@@ -196,7 +198,7 @@ const CreateMataPelajaranScreen: React.FC = () => {
           placeholder="Contoh: MTK-01"
           placeholderTextColor="#9ca3af"
           value={form.kode}
-          onChangeText={(v) => handleChange("kode", v)}
+          onChangeText={v => handleChange('kode', v)}
           style={styles.input}
         />
 
@@ -223,7 +225,7 @@ const CreateMataPelajaranScreen: React.FC = () => {
         ) : mapelList.length === 0 ? (
           <Text style={styles.emptyText}>Belum ada mata pelajaran</Text>
         ) : (
-          mapelList.map((item) => (
+          mapelList.map(item => (
             <View key={item.id} style={styles.listItem}>
               <Text style={styles.mapelNama}>{item.nama}</Text>
               <Text style={styles.mapelKode}>{item.kode}</Text>
@@ -243,12 +245,12 @@ const CreateMataPelajaranScreen: React.FC = () => {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#2563eb']}
             tintColor="#2563eb"
@@ -270,17 +272,17 @@ export default CreateMataPelajaranScreen;
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -289,63 +291,63 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
   scrollView: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 10,
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 20,
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 6,
   },
 
   input: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
   },
 
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: '#2563eb',
     paddingVertical: 14,
     borderRadius: 14,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 8,
   },
 
@@ -354,68 +356,68 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
-    fontWeight: "800",
+    color: '#fff',
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
 
   listCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 20,
     padding: 16,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   listTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     marginBottom: 12,
-    color: "#111827",
+    color: '#111827',
   },
 
   listItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   mapelNama: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#1f2933",
+    fontWeight: '700',
+    color: '#1f2933',
   },
 
   mapelKode: {
     fontSize: 12,
-    color: "#6b7280",
+    color: '#6b7280',
     marginTop: 2,
   },
 
   emptyText: {
-    textAlign: "center",
-    color: "#6b7280",
+    textAlign: 'center',
+    color: '#6b7280',
     fontSize: 13,
     paddingVertical: 12,
   },
 
   center: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
   },
 
   errorText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#ef4444",
+    fontWeight: '700',
+    color: '#ef4444',
   },
 
   spacer: {

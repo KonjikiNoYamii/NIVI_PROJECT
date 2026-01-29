@@ -19,6 +19,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icon } from 'react-native-elements';
 import { API } from '../../services/api';
 import { socket } from '../../services/socket';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import Ionicons from '@react-native-vector-icons/ionicons';
+
 
 interface Santri {
   id: number;
@@ -118,9 +121,9 @@ const KelasScreen: React.FC = () => {
       case 'hadir':
         return 'check-circle';
       case 'izin':
-        return 'user-clock';
+        return 'clock';
       case 'sakit':
-        return 'heartbeat';
+        return 'face-dizzy';
       case 'alpha':
         return 'times-circle';
       default:
@@ -170,9 +173,8 @@ const KelasScreen: React.FC = () => {
       activeOpacity={0.85}
     >
       <View style={[styles.kelasIconContainer, { backgroundColor: `${getRandomColor(item.id)}15` }]}>
-        <Icon
+        <FontAwesome6
           name="users"
-          type="font-awesome"
           size={22}
           color={getRandomColor(item.id)}
         />
@@ -181,9 +183,8 @@ const KelasScreen: React.FC = () => {
         <Text style={styles.kelasTitle}>{item.namaKelas}</Text>
         <View style={styles.kelasInfo}>
           <View style={styles.kelasInfoItem}>
-            <Icon
-              name="user-graduate"
-              type="font-awesome"
+            <Ionicons
+              name="people-outline"
               size={12}
               color="#6b7280"
             />
@@ -192,9 +193,8 @@ const KelasScreen: React.FC = () => {
             </Text>
           </View>
           <View style={styles.kelasInfoItem}>
-            <Icon
+            <FontAwesome6
               name="calendar-check"
-              type="font-awesome"
               size={12}
               color="#6b7280"
             />
@@ -252,9 +252,8 @@ const KelasScreen: React.FC = () => {
                     <View
                       style={[styles.statusBadge, { backgroundColor: `${getStatusColor(absen.status)}15` }]}
                     >
-                      <Icon
+                      <FontAwesome6
                         name={getStatusIcon(absen.status)}
-                        type="font-awesome"
                         size={14}
                         color={getStatusColor(absen.status)}
                       />
@@ -294,11 +293,10 @@ const KelasScreen: React.FC = () => {
             />
           ) : (
             <View style={styles.noAbsensiContainer}>
-              <Icon
-                name="calendar-times"
-                type="font-awesome"
+              <FontAwesome6
+                name="clipboard"
                 size={16}
-                color="#d1d5db"
+                color="#000000"
               />
               <Text style={styles.noAbsensiText}>
                 Belum ada catatan absensi
@@ -377,9 +375,8 @@ const KelasScreen: React.FC = () => {
 
           {kelasList.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Icon
+              <FontAwesome6
                 name="school"
-                type="font-awesome"
                 size={56}
                 color="#e5e7eb"
               />
@@ -460,9 +457,8 @@ const KelasScreen: React.FC = () => {
           <Text style={styles.absensiTitle}>{selectedKelas.namaKelas}</Text>
           <View style={styles.absensiSubtitleContainer}>
             <View style={styles.subtitleItem}>
-              <Icon
-                name="user"
-                type="font-awesome"
+              <Ionicons
+                name="person-outline"
                 size={13}
                 color="#c7d2fe"
               />
@@ -471,9 +467,8 @@ const KelasScreen: React.FC = () => {
               </Text>
             </View>
             <View style={styles.subtitleItem}>
-              <Icon
+              <FontAwesome6
                 name="calendar"
-                type="font-awesome"
                 size={13}
                 color="#c7d2fe"
               />
@@ -512,7 +507,7 @@ const KelasScreen: React.FC = () => {
             activeOpacity={0.85}
           >
             <Icon
-              name={sortOrder === 'latest' ? 'sort-amount-down' : 'sort-amount-up'}
+              name={sortOrder === 'latest' ? 'sort-down' : 'sort-up'}
               type="font-awesome"
               size={14}
               color="#2563eb"
@@ -602,9 +597,8 @@ const KelasScreen: React.FC = () => {
                   onPress={() => setSelectedStatus(s as any)}
                   activeOpacity={0.85}
                 >
-                  <Icon
+                  <FontAwesome6
                     name={getStatusIcon(s)}
-                    type="font-awesome"
                     size={16}
                     color={selectedStatus === s ? getStatusColor(s) : '#6b7280'}
                     style={styles.statusOptionIcon}

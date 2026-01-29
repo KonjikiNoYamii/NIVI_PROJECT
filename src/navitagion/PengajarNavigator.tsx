@@ -9,6 +9,7 @@ import PengajarIzinScreen from '../pages/pengajar/ManageIzinSantri';
 import PengumpulanTugasScreen from '../pages/pengajar/PengumpulanTugasSantri';
 import NilaiTugasScreen from '../pages/pengajar/NilaiTugasScreen';
 import { RekapBulananScreen } from '../pages/RekapBulananScreen';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 const Tab = createBottomTabNavigator();
 
@@ -55,10 +56,12 @@ export default function PengajarBottomNavigator() {
         options={{
           tabBarLabel: 'Dashboard',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="chart-simple"
                 size={focused ? 22 : 20}
@@ -74,10 +77,12 @@ export default function PengajarBottomNavigator() {
         options={{
           tabBarLabel: 'Tugas',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="list-check"
                 size={focused ? 20 : 18}
@@ -94,10 +99,12 @@ export default function PengajarBottomNavigator() {
         options={{
           tabBarLabel: 'Absensi',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="calendar-check"
                 size={focused ? 20 : 18}
@@ -114,10 +121,12 @@ export default function PengajarBottomNavigator() {
         options={{
           tabBarLabel: 'Izin',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="file-signature"
                 size={focused ? 20 : 18}
@@ -134,10 +143,12 @@ export default function PengajarBottomNavigator() {
         options={{
           tabBarLabel: 'Kumpul',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="inbox"
                 size={focused ? 20 : 18}
@@ -148,7 +159,29 @@ export default function PengajarBottomNavigator() {
           ),
         }}
       />
+      <Tab.Screen
+        name="Rekap"
+        component={RekapBulananScreen}
+        options={{
+          tabBarLabel: 'Rekap',
+          tabBarIcon: ({ focused, color, size }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <FontAwesome6
+                name={focused ? 'file-lines' : 'file'}
+                size={focused ? 18 : 18}
+                color={focused ? '#3498db' : '#000000'}
+                solid={focused}
 
+              />
+            </View>
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }

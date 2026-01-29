@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   
   container: {
-    paddingBottom: 100, // DITAMBAHKAN: Padding untuk navigator
+    paddingBottom: 10, // DITAMBAHKAN: Padding untuk navigator
   },
   
   center: {

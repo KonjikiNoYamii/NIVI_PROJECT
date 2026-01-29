@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 100, // Spacer untuk navigator
+    paddingBottom: 30, // Spacer untuk navigator
   },
 
   header: {

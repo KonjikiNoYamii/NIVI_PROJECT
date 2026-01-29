@@ -17,6 +17,7 @@ import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { API } from '../../services/api';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 interface Submission {
   id: number;
@@ -158,7 +159,7 @@ const PengajarSubmissionScreen = () => {
 
             {item.isGraded && (
               <View style={styles.gradedBadge}>
-                <Text style={styles.gradedLabel}>✅ Sudah Dinilai</Text>
+                <Ionicons name="checkmark-circle" size={22} color="#16a34a" />
               </View>
             )}
           </View>
