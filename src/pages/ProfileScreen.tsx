@@ -12,16 +12,16 @@ import {
   TextInput,
   Platform,
   Image,
+  StatusBar,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'react-native-image-picker';
-import Ionicons from '@react-native-vector-icons/ionicons';
 import { Icon } from 'react-native-elements';
 import { API } from '../services/api';
-// API Base
 
 // Types
 interface Profile {
@@ -57,6 +57,7 @@ const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
     user: {
@@ -120,6 +121,7 @@ const ProfileScreen: React.FC = () => {
       Alert.alert('Error', 'Gagal memuat data profil');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -127,12 +129,16 @@ const ProfileScreen: React.FC = () => {
     fetchProfile();
   }, []);
 
-  const avatarUri = profileData.profile.fotoUrl
-  ? profileData.profile.fotoUrl.startsWith('http')
-    ? profileData.profile.fotoUrl
-    : `${API}${profileData.profile.fotoUrl}`
-  : DEFAULT_AVATAR_URL;
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchProfile();
+  }, []);
 
+  const avatarUri = profileData.profile.fotoUrl
+    ? profileData.profile.fotoUrl.startsWith('http')
+      ? profileData.profile.fotoUrl
+      : `${API}${profileData.profile.fotoUrl}`
+    : DEFAULT_AVATAR_URL;
 
   // Date picker
   const handleDateChange = (event: any, date?: Date) => {
@@ -155,7 +161,6 @@ const ProfileScreen: React.FC = () => {
     });
     setShowEditModal(true);
   };
-  console.log('FOTO URL =>', profileData.profile.fotoUrl);
 
   // Save profile ke server
   const saveProfileToServer = async (data: Partial<Profile>) => {
@@ -176,7 +181,6 @@ const ProfileScreen: React.FC = () => {
       );
     }
 
-    // ⬇️ INI BAGIAN PALING PENTING
     if (data.fotoUrl && data.fotoUrl.startsWith('file://')) {
       formData.append('image', {
         uri: data.fotoUrl,
@@ -274,48 +278,88 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
+  const getRoleIcon = () => {
+    switch (profileData.user.role) {
+      case 'santri':
+        return { name: 'user', color: '#10B981' };
+      case 'pengajar':
+        return { name: 'user', color: '#3B82F6' };
+      case 'admin':
+        return { name: 'user', color: '#8B5CF6' };
+      default:
+        return { name: 'user', color: '#6B7280' };
+    }
+  };
+
+  const getRoleColor = () => {
+    switch (profileData.user.role) {
+      case 'santri':
+        return '#10B981';
+      case 'pengajar':
+        return '#3B82F6';
+      case 'admin':
+        return '#8B5CF6';
+      default:
+        return '#6B7280';
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
+        <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
+          <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingText}>Memuat profil...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  const roleIcon = getRoleIcon();
+  const roleColor = getRoleColor();
+
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Profile Header Section */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarContainer}>
-            <Image source={{ uri: avatarUri }} style={styles.avatar} />
-
-            <TouchableOpacity
-              style={styles.editPhotoButton}
-              onPress={() => {
-                setEditForm({
-  ...profileData.profile,
-  fotoUrl: profileData.profile.fotoUrl || null,
-});
-
-                setShowEditModal(true);
-              }}
-            >
-              <Ionicons name="camera" size={16} color="#fff" />
-            </TouchableOpacity>
+        <View style={styles.headerSection}>
+          <View style={styles.logoContainer}>
+            <Image source={{ uri: avatarUri }} style={styles.logo} />
+            <View style={styles.logoBadge}>
+              <Icon name="user" type="font-awesome" size={20} color="#2563eb" />
+            </View>
           </View>
-
-          <Text style={styles.profileName}>
+          
+          <Text style={styles.welcomeText}>
             {profileData.profile.namaLengkap || 'Belum diisi'}
           </Text>
-          <Text style={styles.profileEmail}>{profileData.user.email}</Text>
-
-          <View style={styles.roleBadge}>
-            <Icon name="user-o" type="font-awesome" size={14} />
-            <Text style={styles.roleText}>
+          <Text style={styles.subtitle}>
+            {profileData.user.email}
+          </Text>
+          
+          <View style={[styles.roleBadge, { backgroundColor: `${roleColor}15` }]}>
+            <Icon 
+              name={roleIcon.name}
+              type="font-awesome" 
+              size={16} 
+              color={roleColor}
+            />
+            <Text style={[styles.roleText, { color: roleColor }]}>
               {profileData.user.role === 'santri'
                 ? 'Santri'
                 : profileData.user.role === 'pengajar'
@@ -325,87 +369,94 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Informasi Pribadi</Text>
-
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Icon name="phone" type="font-awesome" size={16} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Nomor Telepon</Text>
-                <Text style={styles.infoValue}>
-                  {profileData.profile.noHp || 'Tidak ada'}
-                </Text>
-              </View>
+        {/* Form Card */}
+        <View style={styles.formCard}>
+          <Text style={styles.formTitle}>Informasi Pribadi</Text>
+          
+          {/* Nomor Telepon */}
+          <View style={styles.inputGroup}>
+            <View style={styles.labelRow}>
+              <Icon name="phone" type="font-awesome" size={14} color="#6b7280" />
+              <Text style={styles.label}>Nomor Telepon</Text>
             </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="map-marker" type="font-awesome" size={16} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Alamat</Text>
-                <Text style={styles.infoValue}>
-                  {profileData.profile.alamat || 'Tidak ada'}
-                </Text>
-              </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoValue}>
+                {profileData.profile.noHp || 'Belum diisi'}
+              </Text>
             </View>
+          </View>
 
-            <View style={styles.infoRow}>
-              <Icon name="birthday-cake" type="font-awesome" size={16} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Tanggal Lahir</Text>
-                <Text style={styles.infoValue}>
-                  {formatDate(profileData.profile.tanggalLahir || '-')}
-                </Text>
-              </View>
+          {/* Alamat */}
+          <View style={styles.inputGroup}>
+            <View style={styles.labelRow}>
+              <Icon name="map-marker" type="font-awesome" size={14} color="#6b7280" />
+              <Text style={styles.label}>Alamat</Text>
             </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="venus-mars" type="font-awesome" size={16} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Jenis Kelamin</Text>
-                <Text style={styles.infoValue}>
-                  {formatGender(profileData.profile.jenisKelamin || '-')}
-                </Text>
-              </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoValue}>
+                {profileData.profile.alamat || 'Belum diisi'}
+              </Text>
             </View>
+          </View>
 
-            <View style={styles.infoRow}>
-              <Icon name="calendar" type="font-awesome" size={16} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Bergabung Sejak</Text>
-                <Text style={styles.infoValue}>
-                  {formatDate(profileData.user.createdAt)}
-                </Text>
-              </View>
+          {/* Tanggal Lahir */}
+          <View style={styles.inputGroup}>
+            <View style={styles.labelRow}>
+              <Icon name="calendar" type="font-awesome" size={14} color="#6b7280" />
+              <Text style={styles.label}>Tanggal Lahir</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoValue}>
+                {formatDate(profileData.profile.tanggalLahir || '-')}
+              </Text>
+            </View>
+          </View>
+
+          {/* Jenis Kelamin */}
+          <View style={styles.inputGroup}>
+            <View style={styles.labelRow}>
+              <Icon name="venus-mars" type="font-awesome" size={14} color="#6b7280" />
+              <Text style={styles.label}>Jenis Kelamin</Text>
+            </View>
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoValue}>
+                {formatGender(profileData.profile.jenisKelamin || '-')}
+              </Text>
             </View>
           </View>
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionsSection}>
+        <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.editButton}
             onPress={openEditModal}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Icon name="edit" type="font-awesome" size={18} color="#3498db" />
+            <Icon name="edit" type="font-awesome" size={16} color="#2563eb" />
             <Text style={styles.editButtonText}>Edit Profil</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
             <Icon
               name="sign-out"
               type="font-awesome"
-              size={18}
-              color="#e74c3c"
+              size={16}
+              color="#EF4444"
             />
             <Text style={styles.logoutButtonText}>Keluar</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            © 2026 Sistem Absensi Pesantren
+          </Text>
         </View>
       </ScrollView>
 
@@ -415,6 +466,7 @@ const ProfileScreen: React.FC = () => {
         transparent
         animationType="slide"
         onRequestClose={() => setShowEditModal(false)}
+        statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -423,12 +475,14 @@ const ProfileScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => setShowEditModal(false)}
                 disabled={updating}
+                style={styles.modalCloseButton}
+                activeOpacity={0.85}
               >
                 <Icon
                   name="times"
                   type="font-awesome"
                   size={20}
-                  color="#7f8c8d"
+                  color="#6b7280"
                 />
               </TouchableOpacity>
             </View>
@@ -436,40 +490,41 @@ const ProfileScreen: React.FC = () => {
             <ScrollView
               style={styles.modalScroll}
               showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalScrollContent}
             >
               <TouchableOpacity
                 onPress={handlePickImage}
                 style={styles.photoPicker}
                 disabled={updating}
+                activeOpacity={0.85}
               >
-                <Image
-                  source={{ uri: editForm.fotoUrl || DEFAULT_AVATAR_URL }}
-                  style={styles.modalAvatar}
-                />
-                <View style={styles.changePhotoButton}>
-                  <Icon
-                    name="camera"
-                    type="font-awesome"
-                    size={16}
-                    color="#fff"
+                <View style={styles.logoContainerModal}>
+                  <Image
+                    source={{ uri: editForm.fotoUrl || DEFAULT_AVATAR_URL }}
+                    style={styles.modalLogo}
                   />
-                  <Text style={styles.changePhotoText}>Ganti Foto</Text>
+                  <View style={styles.logoBadgeModal}>
+                    <Icon
+                      name="camera"
+                      type="font-awesome"
+                      size={16}
+                      color="#fff"
+                    />
+                  </View>
                 </View>
+                <Text style={styles.changePhotoText}>Ketuk untuk ganti foto</Text>
               </TouchableOpacity>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Nama Lengkap *</Text>
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Icon name="user" type="font-awesome" size={14} color="#6b7280" />
+                  <Text style={styles.label}>Nama Lengkap *</Text>
+                </View>
                 <View style={styles.inputContainer}>
-                  <Icon
-                    name="user"
-                    type="font-awesome"
-                    size={16}
-                    color="#95a5a6"
-                  />
                   <TextInput
-                    style={styles.textInput}
+                    style={styles.input}
                     placeholder="Masukkan nama lengkap"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor="#9ca3af"
                     value={editForm.namaLengkap ?? ''}
                     onChangeText={t =>
                       setEditForm({ ...editForm, namaLengkap: t })
@@ -479,19 +534,16 @@ const ProfileScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Nomor Telepon</Text>
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Icon name="phone" type="font-awesome" size={14} color="#6b7280" />
+                  <Text style={styles.label}>Nomor Telepon</Text>
+                </View>
                 <View style={styles.inputContainer}>
-                  <Icon
-                    name="phone"
-                    type="font-awesome"
-                    size={16}
-                    color="#95a5a6"
-                  />
                   <TextInput
-                    style={styles.textInput}
+                    style={styles.input}
                     placeholder="Masukkan nomor telepon"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor="#9ca3af"
                     value={editForm.noHp ?? ''}
                     onChangeText={t => setEditForm({ ...editForm, noHp: t })}
                     keyboardType="phone-pad"
@@ -500,19 +552,16 @@ const ProfileScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Alamat</Text>
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Icon name="map-marker" type="font-awesome" size={14} color="#6b7280" />
+                  <Text style={styles.label}>Alamat</Text>
+                </View>
                 <View style={styles.inputContainer}>
-                  <Icon
-                    name="map-marker"
-                    type="font-awesome"
-                    size={16}
-                    color="#95a5a6"
-                  />
                   <TextInput
-                    style={[styles.textInput, { height: 80 }]}
+                    style={[styles.input, { height: 80 }]}
                     placeholder="Masukkan alamat lengkap"
-                    placeholderTextColor="#bdc3c7"
+                    placeholderTextColor="#9ca3af"
                     value={editForm.alamat ?? ''}
                     onChangeText={t => setEditForm({ ...editForm, alamat: t })}
                     multiline
@@ -523,14 +572,18 @@ const ProfileScreen: React.FC = () => {
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Tanggal Lahir</Text>
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Icon name="calendar" type="font-awesome" size={14} color="#6b7280" />
+                  <Text style={styles.label}>Tanggal Lahir</Text>
+                </View>
                 <TouchableOpacity
                   onPress={() => setShowDatePicker(true)}
                   style={styles.dateInputContainer}
                   disabled={updating}
+                  activeOpacity={0.85}
                 >
-                  <Icon name="calendar" type="font-awesome" size={16} />
+                  <Icon name="calendar" type="font-awesome" size={16} color="#9ca3af" />
                   <Text style={styles.dateInputText}>
                     {editForm.tanggalLahir
                       ? formatDate(editForm.tanggalLahir)
@@ -548,8 +601,11 @@ const ProfileScreen: React.FC = () => {
                 )}
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>Jenis Kelamin</Text>
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Icon name="venus-mars" type="font-awesome" size={14} color="#6b7280" />
+                  <Text style={styles.label}>Jenis Kelamin</Text>
+                </View>
                 <View style={styles.genderContainer}>
                   <TouchableOpacity
                     style={[
@@ -561,7 +617,15 @@ const ProfileScreen: React.FC = () => {
                       setEditForm({ ...editForm, jenisKelamin: 'L' })
                     }
                     disabled={updating}
+                    activeOpacity={0.85}
                   >
+                    <Icon 
+                      name="mars" 
+                      type="font-awesome" 
+                      size={14} 
+                      color={editForm.jenisKelamin === 'L' ? '#fff' : '#6b7280'} 
+                      style={styles.genderIcon}
+                    />
                     <Text
                       style={[
                         styles.genderButtonText,
@@ -582,7 +646,15 @@ const ProfileScreen: React.FC = () => {
                       setEditForm({ ...editForm, jenisKelamin: 'P' })
                     }
                     disabled={updating}
+                    activeOpacity={0.85}
                   >
+                    <Icon 
+                      name="venus" 
+                      type="font-awesome" 
+                      size={14} 
+                      color={editForm.jenisKelamin === 'P' ? '#fff' : '#6b7280'} 
+                      style={styles.genderIcon}
+                    />
                     <Text
                       style={[
                         styles.genderButtonText,
@@ -602,6 +674,7 @@ const ProfileScreen: React.FC = () => {
                 style={styles.cancelButton}
                 onPress={() => setShowEditModal(false)}
                 disabled={updating}
+                activeOpacity={0.85}
               >
                 <Text style={styles.cancelButtonText}>Batal</Text>
               </TouchableOpacity>
@@ -612,11 +685,15 @@ const ProfileScreen: React.FC = () => {
                 ]}
                 onPress={handleUpdateProfile}
                 disabled={updating || !editForm.namaLengkap?.trim()}
+                activeOpacity={0.85}
               >
                 {updating ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+                  <>
+                    <Icon name="check" type="font-awesome" size={16} color="#fff" />
+                    <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </View>
@@ -630,151 +707,240 @@ const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f1f5f9",
   },
   container: {
     flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
+    paddingBottom: 60,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f1f5f9',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#4b5563',
     fontWeight: '500',
   },
-  // Profile Header
-  profileHeader: {
-    backgroundColor: '#ffffff',
+  
+  // Header Section (Seperti di Login)
+  headerSection: {
     alignItems: 'center',
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    marginBottom: 32,
+    marginTop: Platform.OS === 'ios' ? 20 : 10,
+  },
+  logoContainer: {
+    position: 'relative',
     marginBottom: 20,
   },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatar: {
+  logo: {
     width: 120,
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
     borderColor: '#fff',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  editPhotoButton: {
+  logoBadge: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#3498db',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    backgroundColor: '#fff',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: '#f1f5f9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  profileName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#2c3e50',
-    marginBottom: 4,
+  welcomeText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 8,
     textAlign: 'center',
   },
-  profileEmail: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginBottom: 12,
+  subtitle: {
+    fontSize: 15,
+    color: '#64748b',
     textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 16,
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ebf5fb',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 20,
-    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   roleText: {
     fontSize: 14,
-    color: '#3498db',
-    fontWeight: '600',
-    marginLeft: 6,
+    fontWeight: '700',
+    marginLeft: 10,
+    letterSpacing: 0.5,
   },
-  // Info Section
-  infoSection: {
-    paddingHorizontal: 20,
+  
+  // Form Card (Seperti di Login)
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2c3e50',
-    marginBottom: 16,
+  formTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 24,
+    textAlign: 'center',
   },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  
+  // Input Groups (Seperti di Login)
+  inputGroup: {
     marginBottom: 20,
   },
-  infoContent: {
-    flex: 1,
-    marginLeft: 12,
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  infoLabel: {
-    fontSize: 12,
-    color: '#95a5a6',
-    fontWeight: '500',
-    marginBottom: 4,
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginLeft: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 16,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#111827',
+    paddingRight: 10,
   },
   infoValue: {
-    fontSize: 15,
-    color: '#2c3e50',
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingRight: 10,
+  },
+  dateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  dateInputText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    marginLeft: 12,
+  },
+  
+  // Gender Container
+  genderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  genderButton: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  genderButtonActive: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  genderIcon: {
+    marginRight: 8,
+  },
+  genderButtonText: {
+    fontSize: 16,
+    color: '#6b7280',
     fontWeight: '500',
   },
-  // Actions Section
-  actionsSection: {
-    paddingHorizontal: 20,
-    marginBottom: 40,
+  genderButtonTextActive: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  
+  // Actions Container
+  actionsContainer: {
+    marginBottom: 24,
+    gap: 12,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ebf5fb',
+    backgroundColor: '#eff6ff',
     padding: 16,
     borderRadius: 12,
-    marginBottom: 12,
     borderWidth: 1.5,
-    borderColor: '#3498db',
+    borderColor: '#2563eb',
   },
   editButtonText: {
     fontSize: 16,
-    color: '#3498db',
+    color: '#2563eb',
     fontWeight: '600',
     marginLeft: 10,
   },
@@ -794,166 +960,146 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 10,
   },
+  
+  // Footer (Seperti di Login)
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  
   // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   modalContent: {
+    width: '100%',
+    maxWidth: 400,
     backgroundColor: '#ffffff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
+    borderRadius: 18,
+    maxHeight: '85%',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#2c3e50',
+    fontWeight: '800',
+    color: '#111827',
+  },
+  modalCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   modalScroll: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  modalScrollContent: {
+    paddingBottom: 20,
   },
   photoPicker: {
     alignItems: 'center',
-    marginVertical: 20,
+    marginBottom: 24,
   },
-  modalAvatar: {
+  logoContainerModal: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  modalLogo: {
     width: 100,
     height: 100,
     borderRadius: 50,
     backgroundColor: '#f0f0f0',
+    borderWidth: 3,
+    borderColor: '#e5e7eb',
   },
-  changePhotoButton: {
-    flexDirection: 'row',
+  logoBadgeModal: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#2563eb',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#3498db',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: 10,
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   changePhotoText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 6,
     fontSize: 14,
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  formLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#dfe6e9',
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 16,
-  },
-  textInput: {
-    flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#2c3e50',
-    marginLeft: 12,
-    paddingRight: 10,
-  },
-  dateInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#dfe6e9',
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  dateInputText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#2c3e50',
-    marginLeft: 12,
-  },
-  genderContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  genderButton: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#dfe6e9',
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa',
-    marginHorizontal: 4,
-  },
-  genderButtonActive: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
-  },
-  genderButtonText: {
-    fontSize: 16,
-    color: '#7f8c8d',
+    color: '#6b7280',
     fontWeight: '500',
-  },
-  genderButtonTextActive: {
-    color: '#ffffff',
-    fontWeight: '600',
   },
   modalActions: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+    paddingTop: 20,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 25,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#d5dbdb',
+    borderColor: '#d1d5db',
     borderRadius: 12,
-    marginRight: 10,
+    backgroundColor: '#f3f4f6',
+    marginRight: 12,
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#6b7280',
     fontWeight: '600',
   },
   saveButton: {
     flex: 2,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
-    backgroundColor: '#3498db',
+    backgroundColor: '#2563eb',
     borderRadius: 12,
-    marginLeft: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#b0d4f0',
+    backgroundColor: '#93c5fd',
   },
   saveButtonText: {
     fontSize: 16,
     color: '#ffffff',
-    fontWeight: '600',
+    fontWeight: '700',
+    marginLeft: 10,
+    letterSpacing: 0.5,
   },
 });
 

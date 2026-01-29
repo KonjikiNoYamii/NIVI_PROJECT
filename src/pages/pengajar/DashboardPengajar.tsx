@@ -9,6 +9,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { dashboardService } from '../../services/dashboard';
@@ -52,7 +54,6 @@ const DashboardPengajar = () => {
     loadDashboard();
   },[]);
 
-
   const onRefresh = () => {
     setRefreshing(true);
     loadDashboard();
@@ -68,9 +69,8 @@ const DashboardPengajar = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Memuat dashboard...</Text>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
         </View>
       </SafeAreaView>
     );
@@ -79,15 +79,10 @@ const DashboardPengajar = () => {
   if (!data) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.errorContainer}>
-          <View style={styles.errorIconContainer}>
-            <Icon name="exclamation-circle" type="font-awesome" size={48} color="#e74c3c" />
-          </View>
-          <Text style={styles.errorTitle}>Gagal memuat data</Text>
-          <Text style={styles.errorSubtitle}>Periksa koneksi internet Anda</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadDashboard}>
-            <Icon name="refresh" type="font-awesome" size={16} color="#fff" />
-            <Text style={styles.retryText}>Muat Ulang</Text>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Gagal memuat data</Text>
+          <TouchableOpacity style={styles.button} onPress={loadDashboard}>
+            <Text style={styles.buttonText}>MUAT ULANG</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -98,151 +93,143 @@ const DashboardPengajar = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.container}
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
             onRefresh={onRefresh}
-            colors={['#3498db']}
-            tintColor="#3498db"
+            colors={['#2563eb']}
+            tintColor="#2563eb"
           />
         }
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
+        {/* HEADER YANG IKUT SCROLL */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Dashboard Pengajar</Text>
-            <Text style={styles.subtitle}>Ringkasan aktivitas terbaru</Text>
-          </View>
+          <Text style={styles.headerTitle}>Dashboard Pengajar</Text>
+          <Text style={styles.headerSubtitle}>
+            Ringkasan aktivitas terbaru
+          </Text>
         </View>
 
-        {/* Stats Grid - Row 1 */}
-        <View style={styles.statsRow}>
-          {/* Santri Card */}
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#e3f2fd' }]}>
-              <Icon name="users" type="font-awesome" size={20} color="#1976d2" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.totalSantri}</Text>
-              <Text style={styles.statLabel}>Total Santri</Text>
-            </View>
-          </View>
-
-          {/* Kelas Card */}
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#e8f5e9' }]}>
-              <Icon name="chalkboard-teacher" type="font-awesome-5" size={20} color="#388e3c" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.totalKelas}</Text>
-              <Text style={styles.statLabel}>Total Kelas</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Stats Grid - Row 2 */}
-        <View style={styles.statsRow}>
-          {/* Tugas Card */}
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#f3e5f5' }]}>
-              <Icon name="tasks" type="font-awesome" size={18} color="#7b1fa2" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.tugasAktif}</Text>
-              <Text style={styles.statLabel}>Tugas Aktif</Text>
-            </View>
-          </View>
-
-          {/* Submission Card */}
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#fff3e0' }]}>
-              <Icon name="inbox" type="font-awesome" size={18} color="#f57c00" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.submissionMasuk}</Text>
-              <Text style={styles.statLabel}>Pengumpulan</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Absensi Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Absensi Hari Ini</Text>
-            <View style={styles.absensiSummary}>
-              <Text style={styles.absensiTotalLabel}>Total:</Text>
-              <Text style={styles.absensiTotal}>{absensiStats.total}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.absensiCard}>
-            <View style={styles.absensiProgress}>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: `${Math.min(absensiStats.presentPercentage, 100)}%` }
-                  ]} 
-                />
+        {/* STATS CARDS - LANGSUNG DI BAWAH HEADER */}
+        <View style={styles.statsContainer}>
+          {/* Row 1 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#dbeafe' }]}>
+                <Icon name="users" type="font-awesome" size={20} color="#1e40af" />
               </View>
-              <Text style={styles.progressText}>
-                Kehadiran: <Text style={styles.progressPercent}>{absensiStats.presentPercentage.toFixed(1)}%</Text>
-              </Text>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.totalSantri}</Text>
+                <Text style={styles.statLabel}>Total Santri</Text>
+              </View>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#dcfce7' }]}>
+                <Icon name="graduation-cap" type="font-awesome" size={20} color="#166534" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.totalKelas}</Text>
+                <Text style={styles.statLabel}>Total Kelas</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Row 2 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#f0f9ff' }]}>
+                <Icon name="tasks" type="font-awesome" size={18} color="#0369a1" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.tugasAktif}</Text>
+                <Text style={styles.statLabel}>Tugas Aktif</Text>
+              </View>
+            </View>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#fef3c7' }]}>
+                <Icon name="inbox" type="font-awesome" size={18} color="#92400e" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.submissionMasuk}</Text>
+                <Text style={styles.statLabel}>Pengumpulan</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ABSENSI SECTION */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Absensi Hari Ini</Text>
+          
+          <View style={styles.absensiHeader}>
+            <Text style={styles.absensiTotalLabel}>Total Santri:</Text>
+            <Text style={styles.absensiTotal}>{absensiStats.total}</Text>
+          </View>
+
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${Math.min(absensiStats.presentPercentage, 100)}%` }
+                ]} 
+              />
+            </View>
+            <Text style={styles.progressText}>
+              <Text style={styles.progressPercent}>{absensiStats.presentPercentage.toFixed(1)}%</Text> Kehadiran
+            </Text>
+          </View>
+
+          <View style={styles.absensiGrid}>
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.hadirBadge]}>
+                <Icon name="check-circle" type="font-awesome" size={14} color="#fff" />
+              </View>
+              <Text style={styles.absensiCount}>{data.absensi.hadir}</Text>
+              <Text style={styles.absensiLabel}>Hadir</Text>
             </View>
             
-            <View style={styles.absensiGrid}>
-              <View style={styles.absensiItem}>
-                <View style={[styles.absensiBadge, styles.hadirBadge]}>
-                  <Icon name="check-circle" type="font-awesome" size={14} color="#fff" />
-                </View>
-                <View style={styles.absensiItemContent}>
-                  <Text style={styles.absensiCount}>{data.absensi.hadir}</Text>
-                  <Text style={styles.absensiLabel}>Hadir</Text>
-                </View>
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.izinBadge]}>
+                <Icon name="clock-o" type="font-awesome" size={14} color="#fff" />
               </View>
-              
-              <View style={styles.absensiItem}>
-                <View style={[styles.absensiBadge, styles.izinBadge]}>
-                  <Icon name="clock-o" type="font-awesome" size={20} color="#fff" />
-                </View>
-                <View style={styles.absensiItemContent}>
-                  <Text style={styles.absensiCount}>{data.absensi.izin}</Text>
-                  <Text style={styles.absensiLabel}>Izin</Text>
-                </View>
+              <Text style={styles.absensiCount}>{data.absensi.izin}</Text>
+              <Text style={styles.absensiLabel}>Izin</Text>
+            </View>
+            
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.sakitBadge]}>
+                <Icon name="heartbeat" type="font-awesome" size={12} color="#fff" />
               </View>
-              
-              <View style={styles.absensiItem}>
-                <View style={[styles.absensiBadge, styles.sakitBadge]}>
-                  <Icon name="heartbeat" type="font-awesome" size={12} color="#fff" />
-                </View>
-                <View style={styles.absensiItemContent}>
-                  <Text style={styles.absensiCount}>{data.absensi.sakit}</Text>
-                  <Text style={styles.absensiLabel}>Sakit</Text>
-                </View>
+              <Text style={styles.absensiCount}>{data.absensi.sakit}</Text>
+              <Text style={styles.absensiLabel}>Sakit</Text>
+            </View>
+            
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.alphaBadge]}>
+                <Icon name="times-circle" type="font-awesome" size={12} color="#fff" />
               </View>
-              
-              <View style={styles.absensiItem}>
-                <View style={[styles.absensiBadge, styles.alphaBadge]}>
-                  <Icon name="times-circle" type="font-awesome" size={12} color="#fff" />
-                </View>
-                <View style={styles.absensiItemContent}>
-                  <Text style={styles.absensiCount}>{data.absensi.alpha}</Text>
-                  <Text style={styles.absensiLabel}>Alpha</Text>
-                </View>
-              </View>
+              <Text style={styles.absensiCount}>{data.absensi.alpha}</Text>
+              <Text style={styles.absensiLabel}>Alpha</Text>
             </View>
           </View>
         </View>
 
-        {/* Izin Pending Section */}
-        <View style={styles.section}>
+        {/* IZIN PENDING SECTION */}
+        <View style={styles.card}>
           <Text style={styles.sectionTitle}>Perlu Tindakan</Text>
+          
           <TouchableOpacity style={styles.actionCard}>
-            <View style={styles.actionIconContainer}>
-              <Icon name="clock" type="font-awesome" size={20} color="#f39c12" />
+            <View style={[styles.actionIconContainer, { backgroundColor: '#fef3c7' }]}>
+              <Icon name="clock" type="font-awesome" size={20} color="#92400e" />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Izin Menunggu Konfirmasi</Text>
@@ -251,15 +238,13 @@ const DashboardPengajar = () => {
             <View style={styles.actionBadge}>
               <Text style={styles.actionBadgeText}>{data.izinPending}</Text>
             </View>
-            <Icon name="chevron-right" type="font-awesome" size={16} color="#95a5a6" />
           </TouchableOpacity>
         </View>
 
-        {/* Summary Section */}
-        <View style={styles.summarySection}>
-          <View style={styles.summaryHeader}>
-            <Text style={styles.summaryTitle}>Ringkasan</Text>
-          </View>
+        {/* SUMMARY SECTION */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Ringkasan</Text>
+          
           <View style={styles.summaryContent}>
             <Text style={styles.summaryText}>
               {data.tugasAktif > 0 
@@ -273,315 +258,327 @@ const DashboardPengajar = () => {
             </Text>
           </View>
         </View>
+
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+/* ================== STYLE ================== */
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f1f5f9",
   },
+
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: "#f1f5f9",
   },
-  // Loading & Error States
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
+
+  scrollContent: {
+    paddingBottom: 100, // DITAMBAHKAN: Padding bottom untuk navigator
   },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    backgroundColor: '#f8fafc',
-  },
-  errorIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fee',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  errorSubtitle: {
-    fontSize: 14,
-    color: '#94a3b8',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  retryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3498db',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  // Header
+
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1e293b',
-    letterSpacing: -0.5,
+
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
   },
-  subtitle: {
+
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
     fontSize: 14,
-    color: '#64748b',
-    marginTop: 4,
   },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
+
+  statsContainer: {
+    paddingHorizontal: 16,
+    marginTop: 15,
+    marginBottom: 16,
   },
-  // Stats Grid
+
   statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
+
   statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderRadius: 16,
     padding: 16,
-    marginHorizontal: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 0.48,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#e5e7eb",
   },
+
   statIconContainer: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
+
   statContent: {
     flex: 1,
   },
+
   statValue: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#1e293b',
-    marginBottom: 2,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
   },
+
   statLabel: {
     fontSize: 12,
-    color: '#64748b',
-    fontWeight: '500',
+    color: "#6b7280",
+    fontWeight: "600",
   },
-  // Sections
-  section: {
-    marginBottom: 24,
+
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1e293b',
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 16,
   },
-  // Absensi
-  absensiSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  absensiHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
   },
+
   absensiTotalLabel: {
     fontSize: 14,
-    color: '#64748b',
-    marginRight: 4,
+    color: "#374151",
+    marginRight: 8,
   },
+
   absensiTotal: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#3498db',
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2563eb",
   },
-  absensiCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+
+  progressContainer: {
+    marginBottom: 24,
   },
-  absensiProgress: {
-    marginBottom: 20,
-  },
+
   progressBar: {
-    height: 6,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 3,
+    height: 8,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 4,
     marginBottom: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
+
   progressFill: {
-    height: '100%',
-    backgroundColor: '#10b981',
-    borderRadius: 3,
+    height: "100%",
+    backgroundColor: "#10b981",
+    borderRadius: 4,
   },
+
   progressText: {
     fontSize: 13,
-    color: '#64748b',
+    color: "#6b7280",
   },
+
   progressPercent: {
-    fontWeight: '700',
-    color: '#10b981',
+    fontWeight: "700",
+    color: "#10b981",
   },
+
   absensiGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
+
   absensiItem: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
+
   absensiBadge: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
+
   hadirBadge: {
-    backgroundColor: '#10b981',
+    backgroundColor: "#10b981",
   },
+
   izinBadge: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: "#f59e0b",
   },
+
   sakitBadge: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: "#3b82f6",
   },
+
   alphaBadge: {
-    backgroundColor: '#ef4444',
+    backgroundColor: "#ef4444",
   },
-  absensiItemContent: {
-    alignItems: 'center',
-  },
+
   absensiCount: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1e293b',
+    fontWeight: "700",
+    color: "#111827",
     marginBottom: 2,
   },
+
   absensiLabel: {
     fontSize: 11,
-    color: '#64748b',
-    fontWeight: '500',
+    color: "#6b7280",
+    fontWeight: "600",
   },
-  // Action Card
+
   actionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: "#f9fafb",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#e5e7eb",
   },
+
   actionIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fffbeb',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
+
   actionContent: {
     flex: 1,
   },
+
   actionTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#1e293b',
+    fontWeight: "600",
+    color: "#111827",
     marginBottom: 2,
   },
+
   actionSubtitle: {
     fontSize: 12,
-    color: '#64748b',
+    color: "#6b7280",
   },
+
   actionBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: "#fef3c7",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    marginRight: 12,
   },
+
   actionBadgeText: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#92400e',
+    fontWeight: "800",
+    color: "#92400e",
   },
-  // Summary Section
-  summarySection: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+
+  summaryCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 16, // DIKURANGI: dari 24 menjadi 16
     padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    marginBottom: 20,
+    borderColor: "#e5e7eb",
   },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+
   summaryTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginLeft: 5,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 12,
   },
-  summaryContent: {
-    paddingLeft: 2,
-  },
+
+  summaryContent: {},
+  
   summaryText: {
     fontSize: 14,
-    color: '#475569',
+    color: "#374151",
     lineHeight: 22,
     marginBottom: 8,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f1f5f9",
+  },
+
+  errorText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#ef4444",
+    marginBottom: 16,
+  },
+
+  button: {
+    backgroundColor: "#2563eb",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+
+  // DITAMBAHKAN: Spacer untuk navigator
+  spacer: {
+    height: 100,
   },
 });
 

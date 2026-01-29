@@ -7,6 +7,8 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  StatusBar,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -58,8 +60,8 @@ export default function DashboardAdmin() {
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.safe}>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={NIVI.primary} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingText}>Memuat Dashboard…</Text>
         </View>
       </SafeAreaView>
@@ -68,18 +70,26 @@ export default function DashboardAdmin() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh} 
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
         }
         contentContainerStyle={styles.container}
       >
-        {/* HEADER */}
+        {/* HEADER YANG IKUT SCROLL */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Dashboard Admin</Text>
-            <Text style={styles.subtitle}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Dashboard Admin</Text>
+            <Text style={styles.headerSubtitle}>
               {new Date().toLocaleDateString("id-ID", {
                 weekday: "long",
                 year: "numeric",
@@ -88,107 +98,289 @@ export default function DashboardAdmin() {
               })}
             </Text>
           </View>
+          <View style={styles.headerIcon}>
+            <Icon
+              name="user"
+              type="font-awesome"
+              size={20}
+              color="#fff"
+            />
+          </View>
         </View>
 
         {/* STAT CARDS */}
         <View style={styles.grid}>
-          <StatCard
-            title="Total Santri"
-            value={data?.totalSantri || 0}
-            icon="user-o"
-            color={NIVI.primary}
-          />
-          <StatCard
-            title="Total Pengajar"
-            value={data?.totalPengajar || 0}
-            icon="chalkboard-teacher"
-            color={NIVI.success}
-          />
-          <StatCard
-            title="Total Kelas"
-            value={data?.totalKelas || 0}
-            icon="graduation-cap"
-            color={NIVI.secondary}
-          />
-          <StatCard
-            title="Total Admin"
-            value={data?.totalAdmin || 0}
-            icon="user-lock"
-            color={NIVI.warning}
-          />
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: `${NIVI.primary || '#2563eb'}15` }]}>
+              <Icon
+                name="user-o"
+                type="font-awesome"
+                size={20}
+                color={NIVI.primary || '#2563eb'}
+              />
+            </View>
+            <Text style={styles.statValue}>{data?.totalSantri || 0}</Text>
+            <Text style={styles.statTitle}>Total Santri</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: `${NIVI.success || '#059669'}15` }]}>
+              <Icon
+                name="users"
+                type="font-awesome"
+                size={20}
+                color={NIVI.success || '#059669'}
+              />
+            </View>
+            <Text style={styles.statValue}>{data?.totalPengajar || 0}</Text>
+            <Text style={styles.statTitle}>Total Pengajar</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: `${NIVI.secondary || '#7c3aed'}15` }]}>
+              <Icon
+                name="graduation-cap"
+                type="font-awesome"
+                size={20}
+                color={NIVI.secondary || '#7c3aed'}
+              />
+            </View>
+            <Text style={styles.statValue}>{data?.totalKelas || 0}</Text>
+            <Text style={styles.statTitle}>Total Kelas</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: `${NIVI.warning || '#f59e0b'}15` }]}>
+              <Icon
+                name="user"
+                type="font-awesome"
+                size={20}
+                color={NIVI.warning || '#f59e0b'}
+              />
+            </View>
+            <Text style={styles.statValue}>{data?.totalAdmin || 0}</Text>
+            <Text style={styles.statTitle}>Total Admin</Text>
+          </View>
         </View>
 
         {/* ATTENDANCE */}
-        <View style={styles.section}>
-          <AttendanceStats data={data?.absensi} />
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Statistik Absensi</Text>
+            <Text style={styles.cardSubtitle}>Rekap kehadiran terbaru</Text>
+          </View>
+          {data?.absensi ? (
+            <AttendanceStats data={data.absensi} />
+          ) : (
+            <Text style={styles.emptyText}>Tidak ada data absensi</Text>
+          )}
         </View>
 
         {/* ACTIVITY */}
-        <View style={styles.section}>
-          <SectionCard title="Aktivitas Terkini" icon="clock">
+        <View style={styles.listCard}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.listTitle}>Aktivitas Terkini</Text>
+            <Text style={styles.cardSubtitle}>Update terbaru sistem</Text>
+          </View>
+          
+          {data ? (
             <ActivityList data={data} />
-          </SectionCard>
+          ) : (
+            <Text style={styles.emptyText}>Tidak ada aktivitas</Text>
+          )}
         </View>
+
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+/* ================== STYLE ================== */
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: NIVI.background,
+    backgroundColor: "#f1f5f9",
   },
+  
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+  
   container: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 100, // DITAMBAHKAN: Padding untuk navigator
   },
-  loading: {
+  
+  center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f1f5f9",
   },
+  
   loadingText: {
     marginTop: 16,
-    color: NIVI.textSecondary,
-    fontWeight: "500",
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
   },
 
-  /* HEADER */
+  /* HEADER - SEKARANG BAGIAN DARI SCROLLVIEW */
   header: {
+    backgroundColor: "#1e3a8a",
+    paddingTop: Platform.OS === "android" ? 48 : 64,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: NIVI.textPrimary,
+  
+  headerContent: {
+    flex: 1,
   },
-  subtitle: {
+  
+  headerTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  
+  headerSubtitle: {
+    marginTop: 6,
+    color: "#c7d2fe",
     fontSize: 14,
-    color: NIVI.textMuted,
-    marginTop: 4,
   },
+  
   headerIcon: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: `${NIVI.primary}1A`,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
 
-  /* GRID */
+  /* STAT GRID */
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 10,
     marginBottom: 24,
   },
+  
+  statCard: {
+    backgroundColor: "#fff",
+    width: "48%",
+    padding: 20,
+    borderRadius: 18,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  
+  statIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  
+  statValue: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  
+  statTitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "600",
+    textAlign: "center",
+  },
 
-  section: {
-    marginBottom: 24,
+  /* CARD */
+  card: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
+    borderRadius: 18,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  
+  cardHeader: {
+    marginBottom: 16,
+  },
+  
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  
+  cardSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    fontWeight: "500",
+  },
+
+  /* LIST CARD */
+  listCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  
+  listTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 4,
+    color: "#111827",
+  },
+
+  /* EMPTY TEXT */
+  emptyText: {
+    textAlign: "center",
+    color: "#6b7280",
+    fontSize: 13,
+    paddingVertical: 20,
+  },
+
+  /* SPACER UNTUK NAVIGATOR */
+  spacer: {
+    height: 100,
   },
 });
