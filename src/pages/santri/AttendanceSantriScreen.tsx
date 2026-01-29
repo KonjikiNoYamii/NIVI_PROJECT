@@ -250,7 +250,7 @@ export default function SantriAbsensiScreen() {
                       s === 'hadir'
                         ? 'check-circle'
                         : s === 'izin'
-                        ? 'clock'
+                        ? 'id-card'
                         : 'heartbeat'
                     }
                     type="font-awesome"
