@@ -136,7 +136,7 @@ const ManageSantriScreen = () => {
     try {
       const token = await getToken();
       await axios.put(
-        `${API}/users/${id}/activate`,
+        `${API}/users/${id}/activate/santri`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

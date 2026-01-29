@@ -60,14 +60,19 @@ const handleLogin = async () => {
       return navigation.navigate('ActivateAccount', { email });
     }
 
+    const kelasIds = user.kelasId ? [user.kelasId] : [];
+
+
     await AsyncStorage.multiSet([
-      ['token', token],
-      ['role', user.role],
-      ['userId', String(user.id)],
-      ['kelasId', user.kelasId?.toString() || ''],
-      ['userName', user.name || ''],
-      ['userEmail', user.email || ''],
-    ]);
+  ['token', token],
+  ['role', user.role],
+  ['userId', String(user.id)],
+  ['kelasId', kelasIds[0]?.toString() || ''],
+  ['kelasIds', JSON.stringify(kelasIds)],
+  ['userName', user.name || ''],
+  ['userEmail', user.email || ''],
+]);
+
 
     navigation.replace('AuthGate');
   } catch (err: any) {

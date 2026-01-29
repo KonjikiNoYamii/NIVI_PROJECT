@@ -7,6 +7,10 @@ export interface Absensi {
   id: number;
   tanggal: string;
   status: "hadir" | "izin" | "sakit" | "alpha";
+
+   aiComment?: string | null;
+  aiTone?: "positif" | "netral" | "peringatan" | null;
+  aiConfidence?: number | null;
 }
 
 export const absensiService = {

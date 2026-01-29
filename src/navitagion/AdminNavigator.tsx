@@ -6,7 +6,7 @@ import ManagePengajarScreen from '../pages/admin/ManagePengajarScreen';
 import ManageKelasScreen from '../pages/admin/ManageKelasScreen';
 import CreateMataPelajaranScreen from '../pages/admin/MataPelajaranPage';
 import AdminJadwalScreen from '../pages/admin/ManageAbsenScreen';
-
+import { RekapBulananScreen } from '../pages/RekapBulananScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -18,12 +18,18 @@ export default function AdminBottomNavigator() {
       }}
     >
       <Tab.Screen name="AdminDashboard" component={DashboardAdmin} />
-      <Tab.Screen name='ManageSantriScreen' component={ManageSantriScreen}/>
-      <Tab.Screen name='ManagePengajarScreen' component={ManagePengajarScreen}/>
-      <Tab.Screen name='ManageKelasScreen' component={ManageKelasScreen}/>
-      <Tab.Screen name='ManageMapelScreen' component={CreateMataPelajaranScreen}/>
-      <Tab.Screen name='ManageAbsenScreen' component={AdminJadwalScreen}/>
+      <Tab.Screen name="ManageSantriScreen" component={ManageSantriScreen} />
+      <Tab.Screen
+        name="ManagePengajarScreen"
+        component={ManagePengajarScreen}
+      />
+      <Tab.Screen name="ManageKelasScreen" component={ManageKelasScreen} />
+      <Tab.Screen
+        name="ManageMapelScreen"
+        component={CreateMataPelajaranScreen}
+      />
+      <Tab.Screen name="ManageAbsenScreen" component={AdminJadwalScreen} />
+      <Tab.Screen name="rekap" component={RekapBulananScreen} />
     </Tab.Navigator>
   );
 }
-    

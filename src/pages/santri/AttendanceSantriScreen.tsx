@@ -20,6 +20,7 @@ import { NIVI } from '../../theme/niviTheme';
 import { Icon } from 'react-native-elements';
 import { TextInput } from 'react-native-gesture-handler';
 import { socket } from '../../services/socket';
+import { useAiBubble } from '../../context/aiBubbleContext';
 
 const getToken = async () => {
   const token = await AsyncStorage.getItem('token');
@@ -42,6 +43,7 @@ export default function SantriAbsensiScreen() {
   const [showIzinModal, setShowIzinModal] = useState(false);
   const [alasanIzin, setAlasanIzin] = useState('');
   const [izinPending, setIzinPending] = useState(false);
+  const { bubble, clearBubble } = useAiBubble();
 
   const statusOptions: StatusAbsensi[] = ['hadir', 'izin', 'sakit'];
 
@@ -49,6 +51,8 @@ export default function SantriAbsensiScreen() {
   const fetchAbsensiHariIni = useCallback(async () => {
     setLoading(true);
     try {
+      clearBubble();
+
       const token = await getToken();
       const res = await axios.get(`${API}/absensi/me/today`, {
         headers: { Authorization: `Bearer ${token}` },

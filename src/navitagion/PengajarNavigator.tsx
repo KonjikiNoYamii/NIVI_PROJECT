@@ -6,6 +6,7 @@ import AbsensiSantriPengajarScreen from '../pages/pengajar/AttendanceSantriViewS
 import PengajarIzinScreen from '../pages/pengajar/ManageIzinSantri';
 import PengumpulanTugasScreen from '../pages/pengajar/PengumpulanTugasSantri';
 import NilaiTugasScreen from '../pages/pengajar/NilaiTugasScreen';
+import { RekapBulananScreen } from '../pages/RekapBulananScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -24,6 +25,7 @@ export default function PengajarBottomNavigator() {
       />
       <Tab.Screen name='ManageIzinSantri' component={PengajarIzinScreen}/>
       <Tab.Screen name='KumpulTugas' component={PengumpulanTugasScreen}/>
+      <Tab.Screen name='rekap' component={RekapBulananScreen}/>
     </Tab.Navigator>
   );
 }

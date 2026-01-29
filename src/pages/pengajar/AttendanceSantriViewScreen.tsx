@@ -16,6 +16,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icon } from 'react-native-elements';
 import { API } from '../../services/api';
+import { socket } from '../../services/socket';
 
 interface Santri {
   id: number;
@@ -53,18 +54,25 @@ const KelasScreen: React.FC = () => {
 
   // 🔹 DI ATAS renderAbsensiItem
   const sortedAbsensi = useMemo(() => {
-    if (!selectedKelas?.absensi) return [];
+  if (!Array.isArray(selectedKelas?.absensi)) return []; // <- pastikan benar-benar array
+  return [...selectedKelas.absensi].sort((a, b) => {
+    const timeA = new Date(a.tanggal).getTime();
+    const timeB = new Date(b.tanggal).getTime();
+    return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
+  });
+}, [selectedKelas?.absensi, sortOrder]);
 
-    return [...selectedKelas.absensi].sort((a, b) => {
-      const timeA = new Date(a.tanggal).getTime();
-      const timeB = new Date(b.tanggal).getTime();
-
-      return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
-    });
-  }, [selectedKelas?.absensi, sortOrder]);
 
   useEffect(() => {
     fetchKelas();
+  }, []);
+
+  useEffect(() => {
+    socket.connect();
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const fetchKelas = async () => {
@@ -95,6 +103,12 @@ const KelasScreen: React.FC = () => {
       setRefreshing(false);
     }
   };
+  useEffect(() => {
+    if (!kelasList.length) return;
+
+    const kelasIds = kelasList.map(k => k.id);
+    socket.emit('join-kelas', kelasIds);
+  }, [kelasList]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -145,6 +159,22 @@ const KelasScreen: React.FC = () => {
         return 'Tidak Hadir';
     }
   };
+
+  useEffect(() => {
+    const refresh = () => {
+      fetchKelas();
+    };
+
+    socket.on('absensi-updated', refresh);
+    socket.on('tugas-created', refresh);
+    socket.on('submission-created', refresh);
+
+    return () => {
+      socket.off('absensi-updated', refresh);
+      socket.off('tugas-created', refresh);
+      socket.off('submission-created', refresh);
+    };
+  }, []);
 
   const renderKelasItem = ({ item }: { item: Kelas }) => (
     <TouchableOpacity
@@ -430,7 +460,6 @@ const KelasScreen: React.FC = () => {
                   );
 
                   setEditModal(false);
-                  fetchKelas();
                 }}
               >
                 <Text style={styles.saveText}>Simpan</Text>
@@ -513,7 +542,7 @@ const KelasScreen: React.FC = () => {
             </View>
           </View>
         </View>
-                <View style={styles.filterContainer}>
+        <View style={styles.filterContainer}>
           <TouchableOpacity
             style={[
               styles.filterButton,
@@ -538,7 +567,7 @@ const KelasScreen: React.FC = () => {
         {/* List Absensi */}
         {selectedKelas.santri.length > 0 ? (
           <FlatList
-            data={selectedKelas.santri}
+            data={selectedKelas?.santri ?? []} // <- pakai fallback array kosong
             keyExtractor={item => item.id.toString()}
             renderItem={renderAbsensiItem}
             showsVerticalScrollIndicator={false}
@@ -910,12 +939,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-filterContainer: {
-  flexDirection: 'row',
-  justifyContent: 'center',
-  marginTop: 4,     // ⬅️ kecil & nempel
-  marginBottom: 20 // ⬅️ masih ada napas
-},
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 4, // ⬅️ kecil & nempel
+    marginBottom: 20, // ⬅️ masih ada napas
+  },
 
   filterButton: {
     paddingHorizontal: 16,
