@@ -71,7 +71,9 @@ export default function DashboardAdmin() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
       <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl 
@@ -83,9 +85,9 @@ export default function DashboardAdmin() {
         }
         contentContainerStyle={styles.container}
       >
-        {/* HEADER */}
+        {/* HEADER YANG IKUT SCROLL */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Dashboard Admin</Text>
             <Text style={styles.headerSubtitle}>
               {new Date().toLocaleDateString("id-ID", {
@@ -98,8 +100,8 @@ export default function DashboardAdmin() {
           </View>
           <View style={styles.headerIcon}>
             <Icon
-              name="tachometer-alt"
-              type="font-awesome-5"
+              name="user"
+              type="font-awesome"
               size={20}
               color="#fff"
             />
@@ -124,8 +126,8 @@ export default function DashboardAdmin() {
           <View style={styles.statCard}>
             <View style={[styles.statIcon, { backgroundColor: `${NIVI.success || '#059669'}15` }]}>
               <Icon
-                name="chalkboard-teacher"
-                type="font-awesome-5"
+                name="users"
+                type="font-awesome"
                 size={20}
                 color={NIVI.success || '#059669'}
               />
@@ -150,8 +152,8 @@ export default function DashboardAdmin() {
           <View style={styles.statCard}>
             <View style={[styles.statIcon, { backgroundColor: `${NIVI.warning || '#f59e0b'}15` }]}>
               <Icon
-                name="user-lock"
-                type="font-awesome-5"
+                name="user"
+                type="font-awesome"
                 size={20}
                 color={NIVI.warning || '#f59e0b'}
               />
@@ -187,6 +189,9 @@ export default function DashboardAdmin() {
             <Text style={styles.emptyText}>Tidak ada aktivitas</Text>
           )}
         </View>
+
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -199,15 +204,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f1f5f9",
   },
-  container: {
-    paddingBottom: 32,
+  
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
   },
+  
+  container: {
+    paddingBottom: 100, // DITAMBAHKAN: Padding untuk navigator
+  },
+  
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f1f5f9",
   },
+  
   loadingText: {
     marginTop: 16,
     fontSize: 14,
@@ -215,7 +228,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  /* HEADER */
+  /* HEADER - SEKARANG BAGIAN DARI SCROLLVIEW */
   header: {
     backgroundColor: "#1e3a8a",
     paddingTop: Platform.OS === "android" ? 48 : 64,
@@ -226,18 +239,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: -28,
+    marginBottom: 16,
   },
+  
+  headerContent: {
+    flex: 1,
+  },
+  
   headerTitle: {
     color: "#fff",
     fontSize: 22,
     fontWeight: "800",
   },
+  
   headerSubtitle: {
     marginTop: 6,
     color: "#c7d2fe",
     fontSize: 14,
   },
+  
   headerIcon: {
     width: 44,
     height: 44,
@@ -255,9 +275,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 32,
+    paddingTop: 10,
     marginBottom: 24,
   },
+  
   statCard: {
     backgroundColor: "#fff",
     width: "48%",
@@ -272,6 +293,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
+  
   statIcon: {
     width: 56,
     height: 56,
@@ -280,12 +302,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
+  
   statValue: {
     fontSize: 24,
     fontWeight: "800",
     color: "#111827",
     marginBottom: 4,
   },
+  
   statTitle: {
     fontSize: 13,
     color: "#6b7280",
@@ -307,15 +331,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
+  
   cardHeader: {
     marginBottom: 16,
   },
+  
   cardTitle: {
     fontSize: 16,
     fontWeight: "800",
     color: "#111827",
     marginBottom: 4,
   },
+  
   cardSubtitle: {
     fontSize: 13,
     color: "#6b7280",
@@ -326,7 +353,7 @@ const styles = StyleSheet.create({
   listCard: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginBottom: 32,
+    marginBottom: 16,
     padding: 16,
     borderRadius: 16,
     shadowColor: "#000",
@@ -336,6 +363,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
+  
   listTitle: {
     fontSize: 16,
     fontWeight: "800",
@@ -349,5 +377,10 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     fontSize: 13,
     paddingVertical: 20,
+  },
+
+  /* SPACER UNTUK NAVIGATOR */
+  spacer: {
+    height: 100,
   },
 });

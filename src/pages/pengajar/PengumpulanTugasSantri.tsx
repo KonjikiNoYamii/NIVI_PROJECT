@@ -10,6 +10,7 @@ import {
   Linking,
   StatusBar,
   Platform,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -170,31 +171,48 @@ const PengajarSubmissionScreen = () => {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
       
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Pengumpulan Tugas Santri</Text>
-        <Text style={styles.headerSubtitle}>
-          Daftar pengumpulan tugas yang perlu dinilai
-        </Text>
-      </View>
+      <View style={styles.container}>
+        {/* HEADER YANG IKUT SCROLL */}
+        <ScrollView 
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Pengumpulan Tugas Santri</Text>
+            <Text style={styles.headerSubtitle}>
+              Daftar pengumpulan tugas yang perlu dinilai
+            </Text>
+          </View>
 
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
-      ) : (
-        <FlatList
-          data={data}
-          keyExtractor={i => i.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color="#2563eb" />
+            </View>
+          ) : data.length > 0 ? (
+            <View style={styles.listContainer}>
+              <FlatList
+                data={data}
+                keyExtractor={i => i.id.toString()}
+                renderItem={renderItem}
+                scrollEnabled={false}
+                ListHeaderComponent={
+                  <Text style={styles.totalText}>
+                    Total: {data.length} pengumpulan
+                  </Text>
+                }
+              />
+            </View>
+          ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>Belum ada pengumpulan tugas</Text>
             </View>
-          }
-        />
-      )}
+          )}
+          
+          {/* SPACER UNTUK NAVIGATOR */}
+          <View style={styles.spacer} />
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -205,6 +223,20 @@ const styles = StyleSheet.create({
   safe: { 
     flex: 1, 
     backgroundColor: '#f1f5f9' 
+  },
+  
+  container: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  
+  scrollContent: {
+    paddingBottom: 100, // DITAMBAHKAN: Padding untuk navigator
   },
   
   header: {
@@ -228,10 +260,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   
-  listContent: {
+  listContainer: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 32,
+    marginTop: 16,
+  },
+  
+  totalText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '600',
+    marginBottom: 16,
   },
   
   card: {
@@ -243,6 +281,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   
   santri: { 
@@ -282,6 +322,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   
   status: { 
@@ -326,6 +368,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#10b98130',
   },
   
   gradedLabel: { 
@@ -338,6 +382,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 200,
+    marginTop: 16,
   },
   
   emptyContainer: {
@@ -350,5 +396,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#6b7280',
     fontSize: 14,
+  },
+  
+  // DITAMBAHKAN: Spacer untuk navigator
+  spacer: {
+    height: 100,
   },
 });

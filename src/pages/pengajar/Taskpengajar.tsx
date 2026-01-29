@@ -193,155 +193,164 @@ const TaskPengajar: React.FC = () => {
      RENDER
   ======================= */
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Buat Tugas Baru</Text>
-        <Text style={styles.headerSubtitle}>
-          Form pembuatan tugas untuk santri
-        </Text>
-      </View>
-
-      {/* FORM CARD */}
-      <View style={styles.card}>
-        {/* JUDUL */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Judul Tugas</Text>
-          <TextInput
-            placeholder="Masukkan judul tugas"
-            placeholderTextColor="#9ca3af"
-            value={formData.title}
-            onChangeText={t => handleInputChange('title', t)}
-            style={styles.input}
-          />
-        </View>
-
-        {/* MATA PELAJARAN */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Mata Pelajaran</Text>
-          <TouchableOpacity
-            style={[
-              styles.selectInput,
-              !formData.mapelId && styles.selectInputEmpty
-            ]}
-            onPress={() => setShowMapelModal(true)}
-            activeOpacity={0.85}
-          >
-            <Text style={[
-              styles.selectText,
-              !formData.mapelId && styles.placeholderText
-            ]}>
-              {selectedMapel?.nama || 'Pilih mata pelajaran'}
-            </Text>
-            <Icon 
-              name="chevron-down" 
-              type="font-awesome" 
-              size={16} 
-              color="#6b7280" 
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* DESKRIPSI */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Deskripsi</Text>
-          <TextInput
-            style={styles.textArea}
-            multiline
-            numberOfLines={4}
-            value={formData.description}
-            onChangeText={t => handleInputChange('description', t)}
-            placeholder="Tulis deskripsi tugas"
-            placeholderTextColor="#9ca3af"
-            textAlignVertical="top"
-          />
-          <Text style={styles.charCount}>
-            {formData.description.length}/500
+      
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* HEADER YANG IKUT SCROLL */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Buat Tugas Baru</Text>
+          <Text style={styles.headerSubtitle}>
+            Form pembuatan tugas untuk santri
           </Text>
         </View>
 
-        {/* DEADLINE */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Deadline</Text>
+        {/* FORM CARD */}
+        <View style={styles.card}>
+          {/* JUDUL */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Judul Tugas</Text>
+            <TextInput
+              placeholder="Masukkan judul tugas"
+              placeholderTextColor="#9ca3af"
+              value={formData.title}
+              onChangeText={t => handleInputChange('title', t)}
+              style={styles.input}
+            />
+          </View>
+
+          {/* MATA PELAJARAN */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Mata Pelajaran</Text>
+            <TouchableOpacity
+              style={[
+                styles.selectInput,
+                !formData.mapelId && styles.selectInputEmpty
+              ]}
+              onPress={() => setShowMapelModal(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={[
+                styles.selectText,
+                !formData.mapelId && styles.placeholderText
+              ]}>
+                {selectedMapel?.nama || 'Pilih mata pelajaran'}
+              </Text>
+              <Icon 
+                name="chevron-down" 
+                type="font-awesome" 
+                size={16} 
+                color="#6b7280" 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* DESKRIPSI */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Deskripsi</Text>
+            <TextInput
+              style={styles.textArea}
+              multiline
+              numberOfLines={4}
+              value={formData.description}
+              onChangeText={t => handleInputChange('description', t)}
+              placeholder="Tulis deskripsi tugas"
+              placeholderTextColor="#9ca3af"
+              textAlignVertical="top"
+            />
+            <Text style={styles.charCount}>
+              {formData.description.length}/500
+            </Text>
+          </View>
+
+          {/* DEADLINE */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Deadline</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowDateModal(true)}
+              activeOpacity={0.85}
+            >
+              <Icon 
+                name="calendar" 
+                type="font-awesome" 
+                size={16} 
+                color="#2563eb" 
+                style={styles.dateIcon}
+              />
+              <Text style={styles.dateText}>
+                {selectedDate.toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Text>
+              <Icon 
+                name="chevron-right" 
+                type="font-awesome" 
+                size={16} 
+                color="#9ca3af" 
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* KELAS */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Pilih Kelas</Text>
+            {loadingKelas ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator color="#2563eb" />
+              </View>
+            ) : (
+              <View style={styles.kelasGrid}>
+                {kelasList.map(k => (
+                  <TouchableOpacity
+                    key={k.id}
+                    style={[
+                      styles.kelasCard,
+                      formData.kelasId === k.id && styles.kelasCardSelected,
+                    ]}
+                    onPress={() => handleInputChange('kelasId', k.id)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[
+                      styles.kelasText,
+                      formData.kelasId === k.id && styles.kelasTextSelected
+                    ]}>
+                      {k.namaKelas}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* SUBMIT BUTTON */}
           <TouchableOpacity
-            style={styles.dateInput}
-            onPress={() => setShowDateModal(true)}
+            style={[
+              styles.button,
+              submitting && styles.disabled
+            ]}
+            onPress={handleSubmit}
+            disabled={submitting}
             activeOpacity={0.85}
           >
-            <Icon 
-              name="calendar" 
-              type="font-awesome" 
-              size={16} 
-              color="#2563eb" 
-              style={styles.dateIcon}
-            />
-            <Text style={styles.dateText}>
-              {selectedDate.toLocaleDateString('id-ID', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </Text>
-            <Icon 
-              name="chevron-right" 
-              type="font-awesome" 
-              size={16} 
-              color="#9ca3af" 
-            />
+            {submitting ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>BUAT TUGAS</Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* KELAS */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Pilih Kelas</Text>
-          {loadingKelas ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator color="#2563eb" />
-            </View>
-          ) : (
-            <View style={styles.kelasGrid}>
-              {kelasList.map(k => (
-                <TouchableOpacity
-                  key={k.id}
-                  style={[
-                    styles.kelasCard,
-                    formData.kelasId === k.id && styles.kelasCardSelected,
-                  ]}
-                  onPress={() => handleInputChange('kelasId', k.id)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[
-                    styles.kelasText,
-                    formData.kelasId === k.id && styles.kelasTextSelected
-                  ]}>
-                    {k.namaKelas}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* SUBMIT BUTTON */}
-        <TouchableOpacity
-          style={[
-            styles.button,
-            submitting && styles.disabled
-          ]}
-          onPress={handleSubmit}
-          disabled={submitting}
-          activeOpacity={0.85}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>BUAT TUGAS</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
+      </ScrollView>
 
       {/* MAPEL MODAL */}
       <Modal 
@@ -454,7 +463,7 @@ const TaskPengajar: React.FC = () => {
           </View>
         </Modal>
       )}
-    </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -462,9 +471,18 @@ const TaskPengajar: React.FC = () => {
    STYLES
 ======================= */
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#f1f5f9",
+  },
+
+  scrollContent: {
+    paddingBottom: 100, // Ditambahkan padding bottom yang cukup untuk navigator
   },
 
   header: {
@@ -491,13 +509,15 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginTop: -28,
+    marginTop: 16,
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   inputGroup: {
@@ -632,6 +652,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     marginTop: 8,
+    marginBottom: 10, // Ditambahkan margin bottom
   },
 
   disabled: {
@@ -642,6 +663,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "800",
     letterSpacing: 0.5,
+  },
+
+  spacer: {
+    height: 100, // Tambahkan spacer untuk memberi ruang navigator
   },
 
   modalOverlay: {

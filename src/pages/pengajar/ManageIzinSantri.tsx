@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -211,75 +212,98 @@ export default function PengajarIzinScreen() {
 
   if (initLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (role !== "pengajar") {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Akses Ditolak</Text>
-        <Text style={styles.errorSubtext}>
-          Hanya pengajar yang dapat mengakses halaman ini
-        </Text>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Akses Ditolak</Text>
+          <Text style={styles.errorSubtext}>
+            Hanya pengajar yang dapat mengakses halaman ini
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   /* ================== UI ================== */
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
-        <Text style={styles.headerSubtitle}>
-          Kelola pengajuan izin santri dengan mudah
-        </Text>
-      </View>
-
-      {/* CONTENT */}
       <ScrollView 
-        style={styles.contentContainer}
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {loading && izinList.length === 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={styles.loadingText}>Memuat data izin...</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={izinList}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderItem}
-            scrollEnabled={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
-                <Text style={styles.emptySubtext}>
-                  Semua izin santri telah diproses
+        {/* HEADER YANG IKUT SCROLL */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
+          <Text style={styles.headerSubtitle}>
+            Kelola pengajuan izin santri dengan mudah
+          </Text>
+        </View>
+
+        {/* CONTENT */}
+        <View style={styles.contentContainer}>
+          {loading && izinList.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2563eb" />
+              <Text style={styles.loadingText}>Memuat data izin...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={izinList}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderItem}
+              scrollEnabled={false}
+              ListHeaderComponent={
+                <Text style={styles.totalText}>
+                  Total: {izinList.length} pengajuan izin
                 </Text>
-              </View>
-            }
-          />
-        )}
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
+                  <Text style={styles.emptySubtext}>
+                    Semua izin santri telah diproses
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </View>
+
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 /* ================== STYLE ================== */
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#f1f5f9",
+  },
+
+  scrollContent: {
+    paddingBottom: 100, // DITAMBAHKAN: Padding untuk navigator
   },
 
   header: {
@@ -304,21 +328,22 @@ const styles = StyleSheet.create({
   },
 
   contentContainer: {
-    flex: 1,
-    backgroundColor: "#f1f5f9",
+    paddingHorizontal: 16,
+    marginTop: 16, // DITAMBAHKAN: Margin agar tidak nabrak header
   },
 
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 20, // Tambahkan padding top agar tidak nabrak header
-    paddingBottom: 40,
+  totalText: {
+    fontSize: 14,
+    color: "#6b7280",
+    fontWeight: "600",
+    marginBottom: 16,
   },
 
   loadingContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    minHeight: 300,
+    minHeight: 200,
+    marginTop: 20,
   },
 
   loadingText: {
@@ -331,11 +356,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 18,
     padding: 20,
-    marginBottom: 16, // Ganti marginTop dengan marginBottom
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   cardHeader: {
@@ -454,6 +481,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 60,
     paddingHorizontal: 20,
+    marginTop: 20,
   },
 
   emptyText: {
@@ -488,5 +516,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6b7280",
     textAlign: "center",
+  },
+
+  // DITAMBAHKAN: Spacer untuk navigator
+  spacer: {
+    height: 100,
   },
 });

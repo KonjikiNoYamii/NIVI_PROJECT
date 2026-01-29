@@ -11,10 +11,11 @@ import {
   Keyboard,
   StatusBar,
   Platform,
+  SafeAreaView,
+  RefreshControl,
 } from "react-native";
 import axios from "axios";
 import { API } from "../../services/api";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 const ManageKelasScreen = () => {
   const [namaKelas, setNamaKelas] = useState("");
@@ -22,6 +23,7 @@ const ManageKelasScreen = () => {
   const [loading, setLoading] = useState(false);
   const [kelasList, setKelasList] = useState<any[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   /* ================= FETCH KELAS ================= */
   const fetchKelas = async () => {
@@ -33,12 +35,18 @@ const ManageKelasScreen = () => {
       Alert.alert("Error", "Gagal mengambil data kelas");
     } finally {
       setLoadingList(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     fetchKelas();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchKelas();
+  };
 
   /* ================= CREATE KELAS ================= */
   const handleSubmit = async () => {
@@ -95,18 +103,17 @@ const ManageKelasScreen = () => {
     );
   };
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Manajemen Kelas</Text>
+      <Text style={styles.headerSubtitle}>
+        Kelola data kelas desa belajar
+      </Text>
+    </View>
+  );
 
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Manajemen Kelas</Text>
-        <Text style={styles.headerSubtitle}>
-          Kelola data kelas desa belajar
-        </Text>
-      </View>
-
+  const renderContent = () => (
+    <>
       {/* FORM CARD */}
       <View style={styles.card}>
         <Text style={styles.label}>Nama Kelas</Text>
@@ -171,16 +178,51 @@ const ManageKelasScreen = () => {
           ))
         )}
       </View>
-    </ScrollView>
+
+      {/* SPACER UNTUK NAVIGATOR */}
+      <View style={styles.spacer} />
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {renderHeader()}
+        {renderContent()}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 /* ================== STYLE ================== */
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: "#f1f5f9",
+  },
+
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
+  scrollContent: {
+    paddingBottom: 100, // Spacer untuk navigator
   },
 
   header: {
@@ -190,6 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    marginBottom: 20,
   },
 
   headerTitle: {
@@ -204,16 +247,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  // Card untuk form
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginTop: -28,
+    marginBottom: 20,
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   label: {
@@ -257,15 +303,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  // Card untuk daftar kelas
   listCard: {
     backgroundColor: "#fff",
-    margin: 16,
+    marginHorizontal: 16,
+    marginBottom: 20,
     padding: 16,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   listTitle: {
@@ -311,6 +361,11 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     fontSize: 13,
     paddingVertical: 12,
+  },
+
+  // SPACER UNTUK NAVIGATOR
+  spacer: {
+    height: 100,
   },
 });
 

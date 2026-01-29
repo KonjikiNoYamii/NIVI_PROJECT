@@ -10,6 +10,8 @@ import {
   StatusBar,
   Platform,
   ScrollView,
+  SafeAreaView,
+  RefreshControl,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -40,6 +42,7 @@ const CreateMataPelajaranScreen: React.FC = () => {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [mapelList, setMapelList] = useState<MataPelajaran[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -82,14 +85,24 @@ const CreateMataPelajaranScreen: React.FC = () => {
       Alert.alert("Error", "Gagal mengambil data mata pelajaran");
     } finally {
       setListLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const loadData = () => {
+    if (token) {
+      fetchMapel();
     }
   };
 
   useEffect(() => {
-    if (token) {
-      fetchMapel();
-    }
+    loadData();
   }, [token]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
 
   /* ================== FORM HANDLER ================== */
 
@@ -138,34 +151,35 @@ const CreateMataPelajaranScreen: React.FC = () => {
 
   if (initLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (role !== "admin") {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Akses Ditolak</Text>
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Akses Ditolak</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  /* ================== UI ================== */
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Tambah Mata Pelajaran</Text>
+      <Text style={styles.headerSubtitle}>
+        Form pembuatan data mata pelajaran
+      </Text>
+    </View>
+  );
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tambah Mata Pelajaran</Text>
-        <Text style={styles.headerSubtitle}>
-          Form pembuatan data mata pelajaran
-        </Text>
-      </View>
-
+  const renderContent = () => (
+    <>
       {/* FORM */}
       <View style={styles.card}>
         <Text style={styles.label}>Nama Mata Pelajaran</Text>
@@ -217,7 +231,35 @@ const CreateMataPelajaranScreen: React.FC = () => {
           ))
         )}
       </View>
-    </ScrollView>
+
+      {/* SPACER UNTUK NAVIGATOR */}
+      <View style={styles.spacer} />
+    </>
+  );
+
+  /* ================== UI ================== */
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {renderHeader()}
+        {renderContent()}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -226,6 +268,11 @@ export default CreateMataPelajaranScreen;
 /* ================== STYLE ================== */
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#f1f5f9",
@@ -238,6 +285,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    marginBottom: 20,
   },
 
   headerTitle: {
@@ -252,16 +300,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
+  scrollContent: {
+    paddingBottom: 100,
+  },
+
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginTop: -28,
+    marginBottom: 20,
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   label: {
@@ -302,13 +361,16 @@ const styles = StyleSheet.create({
 
   listCard: {
     backgroundColor: "#fff",
-    margin: 16,
+    marginHorizontal: 16,
+    marginBottom: 20,
     padding: 16,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   listTitle: {
@@ -340,17 +402,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#6b7280",
     fontSize: 13,
+    paddingVertical: 12,
   },
 
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#f1f5f9",
   },
 
   errorText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "red",
+    color: "#ef4444",
+  },
+
+  spacer: {
+    height: 100,
   },
 });

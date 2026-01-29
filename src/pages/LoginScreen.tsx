@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Image,
+  StatusBar,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -45,62 +46,60 @@ const LoginScreen = () => {
     return true;
   };
 
-const handleLogin = async () => {
-  if (!validateForm()) return;
+  const handleLogin = async () => {
+    if (!validateForm()) return;
 
-  try {
-    setLoading(true);
-    const { data } = await axios.post(`${API}/auth/login`, { email, password });
+    try {
+      setLoading(true);
+      const { data } = await axios.post(`${API}/auth/login`, { email, password });
 
-    const { status, user, token } = data.data;
-    if (status === 'NEED_ACTIVATION') {
-      // langsung navigasi ke aktivasi dengan email
-      console.log(data);
-      
-      return navigation.navigate('ActivateAccount', { email });
+      const { status, user, token } = data.data;
+      if (status === 'NEED_ACTIVATION') {
+        // langsung navigasi ke aktivasi dengan email
+        console.log(data);
+        
+        return navigation.navigate('ActivateAccount', { email });
+      }
+
+      await AsyncStorage.multiSet([
+        ['token', token],
+        ['role', user.role],
+        ['userId', String(user.id)],
+        ['kelasId', user.kelasId?.toString() || ''],
+        ['userName', user.name || ''],
+        ['userEmail', user.email || ''],
+      ]);
+
+      navigation.replace('AuthGate');
+    } catch (err: any) {
+      Alert.alert('Login Gagal', err.response?.data?.message || err.message);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    await AsyncStorage.multiSet([
-      ['token', token],
-      ['role', user.role],
-      ['userId', String(user.id)],
-      ['kelasId', user.kelasId?.toString() || ''],
-      ['userName', user.name || ''],
-      ['userEmail', user.email || ''],
-    ]);
-
-    navigation.replace('AuthGate');
-  } catch (err: any) {
-    Alert.alert('Login Gagal', err.response?.data?.message || err.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Request OTP tanpa Authorization
-const handleRequestActivation = async () => {
-  if (!email.trim()) {
-    Alert.alert('Error', 'Masukkan email untuk request OTP');
-    return;
-  }
-  try {
-    setLoading(true);
-    await axios.post(`${API}/auth/request-activation-otp`, { email}); // header bebas
-    Alert.alert('Berhasil', 'OTP berhasil dikirim ke email Anda', [
-      { text: 'Lanjutkan', onPress: () => navigation.navigate('ActivateAccount', { email }) },
-    ]);
-  } catch (err: any) {
-    Alert.alert('Error', err.response?.data?.message || 'Gagal request OTP');
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+  // Request OTP tanpa Authorization
+  const handleRequestActivation = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Masukkan email untuk request OTP');
+      return;
+    }
+    try {
+      setLoading(true);
+      await axios.post(`${API}/auth/request-activation-otp`, { email}); // header bebas
+      Alert.alert('Berhasil', 'OTP berhasil dikirim ke email Anda', [
+        { text: 'Lanjutkan', onPress: () => navigation.navigate('ActivateAccount', { email }) },
+      ]);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Gagal request OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f1f5f9" />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -111,29 +110,35 @@ const handleRequestActivation = async () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.header}>
-            <Image
-              source={require('../assets/logo.png')}
-              style={{ width: 120, height: 120, borderRadius: 60 }}
-            />
-            <Text style={styles.welcomeText}>Selamat Datang!!</Text>
+            {/* Logo Container */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('../assets/logo.png')}
+                style={styles.logo}
+              />
+              <View style={styles.logoBadge}>
+                <Icon name="graduation-cap" type="font-awesome" size={20} color="#2563eb" />
+              </View>
+            </View>
+            
+            <Text style={styles.welcomeText}>Selamat Datang!</Text>
             <Text style={styles.subtitle}>
               Masuk ke akun Anda untuk melanjutkan
             </Text>
           </View>
 
-          <View style={styles.form}>
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>Login</Text>
+            
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <View style={styles.labelRow}>
+                <Icon name="envelope" type="font-awesome" size={14} color="#6b7280" />
+                <Text style={styles.label}>Email</Text>
+              </View>
               <View style={styles.inputContainer}>
-                <Icon
-                  name="envelope"
-                  type="font-awesome"
-                  size={18}
-                  style={styles.inputIcon}
-                />
                 <TextInput
                   placeholder="Masukkan email"
-                  placeholderTextColor="#bdc3c7"
+                  placeholderTextColor="#9ca3af"
                   value={email}
                   onChangeText={setEmail}
                   style={styles.input}
@@ -146,17 +151,14 @@ const handleRequestActivation = async () => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
+              <View style={styles.labelRow}>
+                <Icon name="lock" type="font-awesome" size={14} color="#6b7280" />
+                <Text style={styles.label}>Password</Text>
+              </View>
               <View style={styles.inputContainer}>
-                <Icon
-                  name="lock"
-                  type="font-awesome"
-                  size={20}
-                  style={styles.inputIcon}
-                />
                 <TextInput
                   placeholder="Masukkan password"
-                  placeholderTextColor="#bdc3c7"
+                  placeholderTextColor="#9ca3af"
                   value={password}
                   onChangeText={setPassword}
                   style={styles.input}
@@ -166,12 +168,13 @@ const handleRequestActivation = async () => {
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   style={styles.passwordToggle}
+                  activeOpacity={0.85}
                 >
                   <Icon
                     name={showPassword ? 'eye-slash' : 'eye'}
                     type="font-awesome"
                     size={18}
-                    color="#fcffff"
+                    color="#6b7280"
                   />
                 </TouchableOpacity>
               </View>
@@ -184,32 +187,48 @@ const handleRequestActivation = async () => {
               ]}
               onPress={handleLogin}
               disabled={loading}
+              activeOpacity={0.85}
             >
-              <Text style={styles.loginButtonText}>Masuk</Text>
+              <Text style={styles.loginButtonText}>MASUK</Text>
+              <Icon name="sign-in" type="font-awesome" size={18} color="#fff" style={styles.buttonIcon} />
             </TouchableOpacity>
 
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ATAU</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
             <TouchableOpacity
-              style={styles.requestButton}
+              style={styles.activationButton}
               onPress={handleRequestActivation}
               disabled={loading}
+              activeOpacity={0.85}
             >
-              <Text style={styles.requestButtonText}>
+              <Icon name="key" type="font-awesome" size={16} color="#2563eb" />
+              <Text style={styles.activationButtonText}>
                 Belum Aktivasi? Request OTP
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-  style={styles.requestButton}
-  onPress={() => navigation.navigate('ForgotPassword')}
->
-  <Text style={styles.requestButtonText}>
-    Lupa Password?
-  </Text>
-</TouchableOpacity>
-
+              style={styles.forgotButton}
+              onPress={() => navigation.navigate('ForgotPassword')}
+              activeOpacity={0.85}
+            >
+              <Icon name="question-circle" type="font-awesome" size={16} color="#6b7280" />
+              <Text style={styles.forgotButtonText}>
+                Lupa Password?
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              © 2026 Sistem Absensi Pesantren
+            </Text>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
       <Loading visible={loading} />
@@ -218,65 +237,224 @@ const handleRequestActivation = async () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#ffffffe8' },
-  container: { flex: 1 },
-  scrollContainer: { flexGrow: 1, padding: 24, justifyContent: 'center' },
-  header: { alignItems: 'center', marginBottom: 40 },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-    textAlign: 'center',
+  safe: { 
+    flex: 1, 
+    backgroundColor: '#f1f5f9' 
   },
-  subtitle: { fontSize: 16, color: '#7f8c8d', textAlign: 'center' },
-  form: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 24,
+  container: { 
+    flex: 1 
+  },
+  scrollContainer: { 
+    flexGrow: 1, 
+    justifyContent: 'center',
+    padding: 20,
+  },
+  
+  // Header
+  header: { 
+    alignItems: 'center', 
+    marginBottom: 32,
+    marginTop: 20,
+  },
+  logoContainer: {
+    position: 'relative',
+    marginBottom: 20,
+  },
+  logo: { 
+    width: 120, 
+    height: 120, 
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: '#fff',
+    backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowRadius: 8,
     elevation: 5,
   },
-  inputGroup: { marginBottom: 20 },
+  logoBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#f1f5f9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  welcomeText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: { 
+    fontSize: 15, 
+    color: '#64748b', 
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  
+  // Form Card
+  formCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 24,
+  },
+  formTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  
+  // Input Groups
+  inputGroup: { 
+    marginBottom: 20 
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
-    marginLeft: 4,
+    color: '#374151',
+    marginLeft: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#dfe6e9',
+    borderColor: '#e5e7eb',
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f9fafb',
     paddingHorizontal: 16,
   },
-  inputIcon: { marginRight: 12 },
-  input: { flex: 1, paddingVertical: 16, fontSize: 16, color: '#2c3e50' },
-  passwordToggle: { padding: 8 },
+  input: { 
+    flex: 1, 
+    paddingVertical: 16, 
+    fontSize: 16, 
+    color: '#111827',
+    paddingRight: 10,
+  },
+  passwordToggle: { 
+    padding: 8 
+  },
+  
+  // Login Button
   loginButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#2563eb',
     padding: 18,
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#3498db',
+    marginTop: 8,
+    shadowColor: '#2563eb',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  loginButtonDisabled: { backgroundColor: '#b0d4f0' },
-  loginButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-  requestButton: { marginTop: 16, paddingVertical: 14, alignItems: 'center' },
-  requestButtonText: { fontSize: 15, color: '#3498db', fontWeight: '600' },
+  loginButtonDisabled: { 
+    backgroundColor: '#93c5fd' 
+  },
+  loginButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  buttonIcon: {
+    marginLeft: 10,
+  },
+  
+  // Divider
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e5e7eb',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '600',
+  },
+  
+  // Activation Button
+  activationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
+    marginBottom: 12,
+  },
+  activationButtonText: { 
+    fontSize: 15, 
+    color: '#2563eb', 
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  
+  // Forgot Password Button
+  forgotButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9fafb',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  forgotButtonText: { 
+    fontSize: 15, 
+    color: '#6b7280', 
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  
+  // Footer
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  footerText: {
+    fontSize: 13,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
 });
 
 export default LoginScreen;

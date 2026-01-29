@@ -48,9 +48,7 @@ const KelasScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [editModal, setEditModal] = useState(false);
   const [selectedAbsensi, setSelectedAbsensi] = useState<Absensi | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<
-    'hadir' | 'izin' | 'sakit' | 'alpha'
-  >('hadir');
+  const [selectedStatus, setSelectedStatus] = useState<'hadir' | 'izin' | 'sakit' | 'alpha'>('hadir');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
 
   const sortedAbsensi = useMemo(() => {
@@ -157,26 +155,23 @@ const KelasScreen: React.FC = () => {
       onPress={() => setSelectedKelas(item)}
       activeOpacity={0.85}
     >
-      <View style={[
-        styles.kelasIconContainer,
-        { backgroundColor: `${getRandomColor(item.id)}15` }
-      ]}>
-        <Icon 
-          name="users" 
-          type="font-awesome" 
-          size={22} 
-          color={getRandomColor(item.id)} 
+      <View style={[styles.kelasIconContainer, { backgroundColor: `${getRandomColor(item.id)}15` }]}>
+        <Icon
+          name="users"
+          type="font-awesome"
+          size={22}
+          color={getRandomColor(item.id)}
         />
       </View>
       <View style={styles.kelasContent}>
         <Text style={styles.kelasTitle}>{item.namaKelas}</Text>
         <View style={styles.kelasInfo}>
           <View style={styles.kelasInfoItem}>
-            <Icon 
-              name="user-graduate" 
-              type="font-awesome" 
-              size={12} 
-              color="#6b7280" 
+            <Icon
+              name="user-graduate"
+              type="font-awesome"
+              size={12}
+              color="#6b7280"
             />
             <Text style={styles.kelasInfoText}>
               {item.santri.length} Santri
@@ -213,20 +208,12 @@ const KelasScreen: React.FC = () => {
           <View style={styles.avatarContainer}>
             {item.profile?.fotoUrl ? (
               <Image
-                source={{
-                  uri: `${API}${item.profile.fotoUrl}`,
-                }}
+                source={{ uri: `${API}${item.profile.fotoUrl}` }}
                 style={styles.avatarImage}
               />
             ) : (
-              <View style={[
-                styles.avatarFallback,
-                { backgroundColor: `${getRandomColor(item.id)}15` }
-              ]}>
-                <Text style={[
-                  styles.avatarText,
-                  { color: getRandomColor(item.id) }
-                ]}>
+              <View style={[styles.avatarFallback, { backgroundColor: `${getRandomColor(item.id)}15` }]}>
+                <Text style={[styles.avatarText, { color: getRandomColor(item.id) }]}>
                   {item.name.charAt(0).toUpperCase()}
                 </Text>
               </View>
@@ -249,10 +236,7 @@ const KelasScreen: React.FC = () => {
                 <View style={styles.absensiRecord}>
                   <View style={styles.absensiRecordLeft}>
                     <View
-                      style={[
-                        styles.statusBadge,
-                        { backgroundColor: `${getStatusColor(absen.status)}15` },
-                      ]}
+                      style={[styles.statusBadge, { backgroundColor: `${getStatusColor(absen.status)}15` }]}
                     >
                       <Icon
                         name={getStatusIcon(absen.status)}
@@ -261,10 +245,7 @@ const KelasScreen: React.FC = () => {
                         color={getStatusColor(absen.status)}
                       />
                       <Text
-                        style={[
-                          styles.statusText,
-                          { color: getStatusColor(absen.status) },
-                        ]}
+                        style={[styles.statusText, { color: getStatusColor(absen.status) }]}
                       >
                         {getStatusText(absen.status)}
                       </Text>
@@ -343,7 +324,7 @@ const KelasScreen: React.FC = () => {
   }
 
   if (!selectedKelas) {
-    // Pilih kelas
+    // Pilih kelas - HEADER SAMA PERSIS DENGAN DASHBOARD
     return (
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
@@ -358,24 +339,24 @@ const KelasScreen: React.FC = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
+          {/* HEADER - SAMA DENGAN DASHBOARD PENGASAR */}
           <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Daftar Kelas</Text>
-              <Text style={styles.headerSubtitle}>
-                {kelasList.length} kelas tersedia
-              </Text>
-            </View>
+            <Text style={styles.headerTitle}>Daftar Kelas</Text>
+            <Text style={styles.headerSubtitle}>
+              {kelasList.length} kelas tersedia
+            </Text>
             <TouchableOpacity
               style={styles.refreshButton}
               onPress={onRefresh}
               activeOpacity={0.85}
             >
               <Icon
-                name="sync-alt"
+                name="refresh"
                 type="font-awesome"
                 size={16}
-                color="#2563eb"
+                color="#fff"
               />
             </TouchableOpacity>
           </View>
@@ -398,6 +379,9 @@ const KelasScreen: React.FC = () => {
               {kelasList.map(item => renderKelasItem({ item }))}
             </View>
           )}
+
+          {/* SPACER UNTUK NAVIGATOR */}
+          <View style={styles.spacer} />
         </ScrollView>
       </SafeAreaView>
     );
@@ -413,124 +397,22 @@ const KelasScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      <View style={styles.container}>
-        {/* Modal Edit Absensi */}
-        <Modal
-          visible={editModal}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setEditModal(false)}
-        >
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalBox}>
-              <View style={styles.modalHeader}>
-                <View style={styles.modalTitleContainer}>
-                  <Icon
-                    name="edit"
-                    type="font-awesome"
-                    size={18}
-                    color="#2563eb"
-                    style={styles.modalTitleIcon}
-                  />
-                  <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
-                </View>
-                <TouchableOpacity 
-                  onPress={() => setEditModal(false)}
-                  style={styles.modalCloseButton}
-                  activeOpacity={0.85}
-                >
-                  <Icon
-                    name="times"
-                    type="font-awesome"
-                    size={16}
-                    color="#6b7280"
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <Text style={styles.modalSubtitle}>
-                Pilih status baru untuk absensi ini
-              </Text>
-
-              <View style={styles.statusOptionsContainer}>
-                {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[
-                      styles.statusOption,
-                      selectedStatus === s && {
-                        backgroundColor: `${getStatusColor(s)}15`,
-                        borderColor: getStatusColor(s),
-                      },
-                    ]}
-                    onPress={() => setSelectedStatus(s as any)}
-                    activeOpacity={0.85}
-                  >
-                    <Icon
-                      name={getStatusIcon(s)}
-                      type="font-awesome"
-                      size={16}
-                      color={selectedStatus === s ? getStatusColor(s) : '#6b7280'}
-                      style={styles.statusOptionIcon}
-                    />
-                    <Text style={[
-                      styles.statusOptionText,
-                      selectedStatus === s && { color: getStatusColor(s), fontWeight: '700' }
-                    ]}>
-                      {s.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => setEditModal(false)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.cancelButtonText}>Batal</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.saveButton, loading && styles.disabled]}
-                  onPress={async () => {
-                    const token = await AsyncStorage.getItem('token');
-
-                    await axios.put(
-                      `${API}/absensi/${selectedAbsensi?.id}`,
-                      { status: selectedStatus },
-                      { headers: { Authorization: `Bearer ${token}` } },
-                    );
-
-                    setEditModal(false);
-                    fetchKelas();
-                  }}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                >
-                  {loading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <>
-                      <Icon
-                        name="check"
-                        type="font-awesome"
-                        size={14}
-                        color="#FFFFFF"
-                        style={styles.saveButtonIcon}
-                      />
-                      <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Header dengan Blok Biru yang Sama Ukuran */}
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* HEADER - SAMA DENGAN DASHBOARD PENGASAR */}
         <View style={styles.header}>
-          <View style={styles.headerTopSection}>
+          <View style={styles.headerBackContainer}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => setSelectedKelas(null)}
@@ -543,51 +425,47 @@ const KelasScreen: React.FC = () => {
                   size={18}
                   color="#fff"
                 />
-                <Text style={styles.backText}>Kembali ke Daftar</Text>
+                <Text style={styles.backText}>Kembali</Text>
               </View>
             </TouchableOpacity>
-            
-            <View style={styles.headerRightSection}>
-              <TouchableOpacity
-                style={styles.headerActionButton}
-                onPress={onRefresh}
-                activeOpacity={0.85}
-              >
-                <Icon
-                  name="sync-alt"
-                  type="font-awesome"
-                  size={16}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            </View>
+
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={onRefresh}
+              activeOpacity={0.85}
+            >
+              <Icon
+                name="refresh"
+                type="font-awesome"
+                size={16}
+                color="#fff"
+              />
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.kelasTitleContainer}>
-            <Text style={styles.absensiTitle}>{selectedKelas.namaKelas}</Text>
-            <View style={styles.absensiSubtitleContainer}>
-              <View style={styles.subtitleItem}>
-                <Icon
-                  name="user-graduate"
-                  type="font-awesome"
-                  size={13}
-                  color="#c7d2fe"
-                />
-                <Text style={styles.absensiSubtitle}>
-                  {selectedKelas.santri.length} Santri
-                </Text>
-              </View>
-              <View style={styles.subtitleItem}>
-                <Icon
-                  name="calendar-check"
-                  type="font-awesome"
-                  size={13}
-                  color="#c7d2fe"
-                />
-                <Text style={styles.absensiSubtitle}>
-                  {totalAbsensiToday} Absensi Hari Ini
-                </Text>
-              </View>
+          <Text style={styles.absensiTitle}>{selectedKelas.namaKelas}</Text>
+          <View style={styles.absensiSubtitleContainer}>
+            <View style={styles.subtitleItem}>
+              <Icon
+                name="user"
+                type="font-awesome"
+                size={13}
+                color="#c7d2fe"
+              />
+              <Text style={styles.absensiSubtitle}>
+                {selectedKelas.santri.length} Santri
+              </Text>
+            </View>
+            <View style={styles.subtitleItem}>
+              <Icon
+                name="calendar"
+                type="font-awesome"
+                size={13}
+                color="#c7d2fe"
+              />
+              <Text style={styles.absensiSubtitle}>
+                {totalAbsensiToday} Absensi Hari Ini
+              </Text>
             </View>
           </View>
         </View>
@@ -595,7 +473,7 @@ const KelasScreen: React.FC = () => {
         {/* Summary Section */}
         <View style={styles.card}>
           <Text style={styles.label}>Rekap Absensi Hari Ini</Text>
-          
+
           <View style={styles.summaryGrid}>
             {[
               { key: 'hadir', label: 'Hadir', color: '#059669' },
@@ -613,8 +491,8 @@ const KelasScreen: React.FC = () => {
               </View>
             ))}
           </View>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             onPress={() => setSortOrder(sortOrder === 'latest' ? 'oldest' : 'latest')}
             style={styles.sortButton}
             activeOpacity={0.85}
@@ -647,12 +525,130 @@ const KelasScreen: React.FC = () => {
                 keyExtractor={item => item.id.toString()}
                 renderItem={renderAbsensiItem}
                 showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
                 contentContainerStyle={styles.absensiList}
               />
             </>
           )}
         </View>
-      </View>
+
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
+      </ScrollView>
+
+      {/* Modal Edit Absensi */}
+      <Modal
+        visible={editModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModal(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleContainer}>
+                <Icon
+                  name="edit"
+                  type="font-awesome"
+                  size={18}
+                  color="#2563eb"
+                  style={styles.modalTitleIcon}
+                />
+                <Text style={styles.modalTitle}>Ubah Status Absensi</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setEditModal(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={0.85}
+              >
+                <Icon
+                  name="times"
+                  type="font-awesome"
+                  size={16}
+                  color="#6b7280"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Pilih status baru untuk absensi ini
+            </Text>
+
+            <View style={styles.statusOptionsContainer}>
+              {['hadir', 'izin', 'sakit', 'alpha'].map(s => (
+                <TouchableOpacity
+                  key={s}
+                  style={[
+                    styles.statusOption,
+                    selectedStatus === s && {
+                      backgroundColor: `${getStatusColor(s)}15`,
+                      borderColor: getStatusColor(s),
+                    },
+                  ]}
+                  onPress={() => setSelectedStatus(s as any)}
+                  activeOpacity={0.85}
+                >
+                  <Icon
+                    name={getStatusIcon(s)}
+                    type="font-awesome"
+                    size={16}
+                    color={selectedStatus === s ? getStatusColor(s) : '#6b7280'}
+                    style={styles.statusOptionIcon}
+                  />
+                  <Text style={[
+                    styles.statusOptionText,
+                    selectedStatus === s && { color: getStatusColor(s), fontWeight: '700' }
+                  ]}>
+                    {s.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setEditModal(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveButton, loading && styles.disabled]}
+                onPress={async () => {
+                  const token = await AsyncStorage.getItem('token');
+
+                  await axios.put(
+                    `${API}/absensi/${selectedAbsensi?.id}`,
+                    { status: selectedStatus },
+                    { headers: { Authorization: `Bearer ${token}` } },
+                  );
+
+                  setEditModal(false);
+                  fetchKelas();
+                }}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Icon
+                      name="check"
+                      type="font-awesome"
+                      size={14}
+                      color="#FFFFFF"
+                      style={styles.saveButtonIcon}
+                    />
+                    <Text style={styles.saveButtonText}>Simpan Perubahan</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -666,8 +662,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    backgroundColor: "#f1f5f9"
   },
-  
+  scrollContent: {
+    paddingBottom: 100,
+  },
+
   // Loading State
   center: {
     flex: 1,
@@ -680,15 +680,22 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
   },
-  
-  // Header - SAMA UKURAN UNTUK KEDUA VIEW
+
+  // HEADER - SAMA DENGAN DASHBOARD PENGASAR
   header: {
     backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
-    paddingBottom: 32,
+    paddingTop: Platform.OS === "android" ? 48 : 64, // SAMA DENGAN DASHBOARD
+    paddingBottom: 32, // SAMA DENGAN DASHBOARD
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    position: 'relative',
+  },
+  headerBackContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   headerTitle: {
     color: "#fff",
@@ -700,14 +707,21 @@ const styles = StyleSheet.create({
     color: "#c7d2fe",
     fontSize: 14,
   },
-  headerTopSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  refreshButton: {
+    position: 'absolute',
+    top: Platform.OS === "android" ? 58 : 74,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   backButton: {
-    flex: 1,
+    marginTop: Platform.OS === "android" ? 8 : 12,
   },
   backButtonContent: {
     flexDirection: 'row',
@@ -719,33 +733,8 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontWeight: '600',
   },
-  headerRightSection: {
-    marginLeft: 16,
-  },
-  headerActionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  refreshButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-    marginTop: 4,
-  },
-  kelasTitleContainer: {
-    marginTop: 8,
-  },
+  
+  // Header untuk detail kelas
   absensiTitle: {
     fontSize: 26,
     fontWeight: '800',
@@ -768,12 +757,12 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontWeight: '500',
   },
-  
+
   // Kelas List
   kelasListContainer: {
     paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 32,
+    marginTop: 16,
+    paddingBottom: 16,
   },
   kelasCard: {
     backgroundColor: '#fff',
@@ -821,12 +810,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontWeight: '500',
   },
-  
+
   // Empty States
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 80,
     paddingHorizontal: 24,
+    marginTop: 16,
   },
   emptyText: {
     textAlign: "center",
@@ -842,18 +832,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 40,
   },
-  
-  // Card (Summary)
+
+  // Card (Summary) - DITEMPAKKAN DI BAWAH HEADER
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginTop: -28,
+    marginTop: 16,
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   label: {
     fontSize: 14,
@@ -904,18 +896,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  
+
   // Santri List Card
   listCard: {
     backgroundColor: "#fff",
-    margin: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
     padding: 16,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
-    flex: 1,
   },
   listTitle: {
     fontSize: 16,
@@ -929,7 +922,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontWeight: "500",
   },
-  
+
   // Absensi List
   absensiList: {
     paddingBottom: 40,
@@ -1039,7 +1032,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontStyle: 'italic',
   },
-  
+
   // Modal
   modalBackdrop: {
     flex: 1,
@@ -1155,6 +1148,11 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.7,
+  },
+
+  // DITAMBAHKAN: Spacer untuk navigator
+  spacer: {
+    height: 100,
   },
 });
 

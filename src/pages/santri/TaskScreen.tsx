@@ -13,7 +13,7 @@ import {
   StatusBar,
   Platform,
   SafeAreaView,
-  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -225,58 +225,81 @@ const TaskScreen: React.FC = () => {
     );
   };
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      
-      {loading ? (
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View>
+        <Text style={styles.headerTitle}>Daftar Tugas</Text>
+        <Text style={styles.headerSubtitle}>
+          {tasks.length} tugas tersedia
+        </Text>
+      </View>
+    </View>
+  );
+
+  const renderListHeader = () => (
+    <View style={styles.listHeader}>
+      <Text style={styles.listTitle}>Semua Tugas</Text>
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2563eb" />
           <Text style={styles.loadingText}>Memuat tugas...</Text>
         </View>
-      ) : (
-        <View style={styles.container}>
-          {/* HEADER BLOK BIRU */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Daftar Tugas</Text>
-              <Text style={styles.headerSubtitle}>
-                {tasks.length} tugas tersedia
-              </Text>
-            </View>
-          </View>
+      </SafeAreaView>
+    );
+  }
 
-          <FlatList
-            data={tasks}
-            keyExtractor={i => i.id.toString()}
-            renderItem={renderItem}
-            refreshing={refreshing}
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      
+      <FlatList
+        data={tasks}
+        keyExtractor={i => i.id.toString()}
+        renderItem={renderItem}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
             onRefresh={() => fetchTasks(false)}
-            contentContainerStyle={
-              tasks.length === 0
-                ? { flex: 1, justifyContent: 'center' }
-                : styles.listContainer
-            }
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📭</Text>
-                <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
-                <Text style={styles.emptySubtitle}>
-                  Saat ini belum ada tugas yang diberikan oleh pengajar.
-                </Text>
-
-                <TouchableOpacity
-                  style={styles.reloadBtn}
-                  onPress={() => fetchTasks(true)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.reloadText}>Muat Ulang</Text>
-                </TouchableOpacity>
-              </View>
-            }
+            colors={['#2563eb']}
+            tintColor="#2563eb"
           />
-        </View>
-      )}
+        }
+        contentContainerStyle={
+          tasks.length === 0
+            ? { flexGrow: 1, paddingBottom: 100 }
+            : [styles.listContainer, { paddingBottom: 100 }]
+        }
+        ListHeaderComponent={
+          <>
+            {renderHeader()}
+            {renderListHeader()}
+          </>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyIcon}>📭</Text>
+            <Text style={styles.emptyTitle}>Belum Ada Tugas</Text>
+            <Text style={styles.emptySubtitle}>
+              Saat ini belum ada tugas yang diberikan oleh pengajar.
+            </Text>
+
+            <TouchableOpacity
+              style={styles.reloadBtn}
+              onPress={() => fetchTasks(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.reloadText}>Muat Ulang</Text>
+            </TouchableOpacity>
+          </View>
+        }
+        showsVerticalScrollIndicator={false}
+        style={styles.list}
+      />
 
       <Modal visible={!!selectedTask} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
@@ -382,7 +405,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  /* HEADER BLOK BIRU */
+  /* HEADER BLOK BIRU - SEKARANG DI DALAM LIST */
   header: {
     backgroundColor: "#1e3a8a",
     paddingTop: Platform.OS === "android" ? 48 : 64,
@@ -390,6 +413,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    marginBottom: 20, // Spasi antara header dan konten
   },
   headerTitle: {
     color: "#fff",
@@ -402,16 +426,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  // List Styles
+  list: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
+  listHeader: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+
+  listTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#374151",
+  },
+
   // List Container
   listContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    paddingTop: 0, // Header sudah ada marginBottom
     paddingBottom: 32,
   },
 
   // Card Styles
   card: {
     backgroundColor: "#fff",
+    marginHorizontal: 16,
     marginBottom: 16,
     padding: 20,
     borderRadius: 18,
@@ -527,6 +568,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 80,
     paddingHorizontal: 24,
+    minHeight: 400,
+    justifyContent: 'center',
   },
   emptyIcon: {
     fontSize: 56,

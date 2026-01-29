@@ -12,6 +12,8 @@ import {
   StatusBar,
   Platform,
   ActivityIndicator,
+  SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -50,6 +52,7 @@ function AdminJadwalScreen() {
   const [selectedKelas, setSelectedKelas] = useState<number | null>(null);
   const [jadwal, setJadwal] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [maxAbsen, setMaxAbsen] = useState('');
   const [settingId, setSettingId] = useState<number | null>(null);
@@ -57,8 +60,8 @@ function AdminJadwalScreen() {
   const [jamMulai, setJamMulai] = useState('08:00');
   const [jamSelesai, setJamSelesai] = useState('10:00');
 
-  const [tanggalMulai, setTanggalMulai] = useState<Date | null>(null);
-  const [tanggalSelesai, setTanggalSelesai] = useState<Date | null>(null);
+  const [tanggalMulai, setTanggalMulai] = useState<Date>(new Date());
+  const [tanggalSelesai, setTanggalSelesai] = useState<Date>(new Date());
 
   const [showTM, setShowTM] = useState(false);
   const [showTS, setShowTS] = useState(false);
@@ -68,7 +71,7 @@ function AdminJadwalScreen() {
 
   const [editJamMulai, setEditJamMulai] = useState('');
   const [editJamSelesai, setEditJamSelesai] = useState('');
-  const [editTanggal, setEditTanggal] = useState<Date | null>(null);
+  const [editTanggal, setEditTanggal] = useState<Date>(new Date());
 
   /* ================= JAM OPTION ================= */
 
@@ -95,7 +98,7 @@ function AdminJadwalScreen() {
       const res = await axios.get(`${API}/kelas`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setKelasList(res.data.data);
+      setKelasList(res.data.data || []);
     } catch (e) {
       Alert.alert('Error', 'Gagal mengambil data kelas');
     } finally {
@@ -110,7 +113,7 @@ function AdminJadwalScreen() {
       const res = await axios.get(`${API}/jadwal/kelas/${kelasId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setJadwal(res.data.data);
+      setJadwal(res.data.data || []);
     } catch {
       Alert.alert('Error', 'Gagal mengambil jadwal');
     } finally {
@@ -136,9 +139,25 @@ function AdminJadwalScreen() {
     }
   }, []);
 
+  const loadData = useCallback(async () => {
+    await fetchKelas();
+    if (selectedKelas) {
+      await Promise.all([
+        fetchJadwal(selectedKelas),
+        fetchAbsensiSetting(selectedKelas)
+      ]);
+    }
+    setRefreshing(false);
+  }, [fetchKelas, fetchJadwal, fetchAbsensiSetting, selectedKelas]);
+
   useEffect(() => {
-    fetchKelas();
-  }, [fetchKelas]);
+    loadData();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
 
   const onKelasChange = (id: number) => {
     setSelectedKelas(id);
@@ -246,7 +265,7 @@ function AdminJadwalScreen() {
         jamMulai: editJamMulai,
         jamSelesai: editJamSelesai,
       };
-      if (editingJadwal.absensi.length === 0 && editTanggal) {
+      if (editingJadwal.absensi && editingJadwal.absensi.length === 0 && editTanggal) {
         payload.tanggal = editTanggal.toISOString().split('T')[0];
       }
       await axios.put(`${API}/jadwal/${editingJadwal.id}`, payload, {
@@ -264,157 +283,46 @@ function AdminJadwalScreen() {
 
   /* ================= SOCKET LISTENER ================= */
   useEffect(() => {
-    socket.on('jadwal-changed', ({ kelasId }: { kelasId: number }) => {
+    const handleJadwalChanged = ({ kelasId }: { kelasId: number }) => {
       if (selectedKelas === kelasId) fetchJadwal(kelasId);
-    });
-    socket.on('absensi-setting-changed', ({ kelasId }: { kelasId: number }) => {
+    };
+
+    const handleAbsensiSettingChanged = ({ kelasId }: { kelasId: number }) => {
       if (selectedKelas === kelasId) fetchAbsensiSetting(kelasId);
-    });
+    };
+
+    socket.on('jadwal-changed', handleJadwalChanged);
+    socket.on('absensi-setting-changed', handleAbsensiSettingChanged);
+    
     return () => {
-      socket.off('jadwal-changed');
-      socket.off('absensi-setting-changed');
+      socket.off('jadwal-changed', handleJadwalChanged);
+      socket.off('absensi-setting-changed', handleAbsensiSettingChanged);
     };
   }, [selectedKelas, fetchJadwal, fetchAbsensiSetting, socket]);
 
   /* ================= STATE HANDLING ================= */
 
-  if (loading && !selectedKelas) {
+  if (loading && !selectedKelas && !refreshing) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
+      </SafeAreaView>
     );
   }
 
-  /* ================= UI ================= */
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Manajemen Jadwal</Text>
+      <Text style={styles.headerSubtitle}>
+        Kelola jadwal dan batas absensi kelas
+      </Text>
+    </View>
+  );
 
-  return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Manajemen Jadwal</Text>
-        <Text style={styles.headerSubtitle}>
-          Kelola jadwal dan batas absensi kelas
-        </Text>
-      </View>
-
-      <Modal visible={editVisible} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Jadwal</Text>
-              <TouchableOpacity 
-                onPress={() => setEditVisible(false)}
-                style={styles.modalCloseButton}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalSubtitle}>Jam Mulai</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={editJamMulai}
-                onValueChange={setEditJamMulai}
-                style={styles.picker}
-              >
-                {jamOptions.map(j => (
-                  <Picker.Item key={j} label={j} value={j} />
-                ))}
-              </Picker>
-            </View>
-
-            <Text style={styles.modalSubtitle}>Jam Selesai</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={editJamSelesai}
-                onValueChange={setEditJamSelesai}
-                style={styles.picker}
-              >
-                {jamOptions.map(j => (
-                  <Picker.Item key={j} label={j} value={j} />
-                ))}
-              </Picker>
-            </View>
-
-            <Text style={styles.modalSubtitle}>Tanggal</Text>
-            <TouchableOpacity
-              disabled={editingJadwal?.absensi?.length > 0}
-              style={[
-                styles.dateInput,
-                editingJadwal?.absensi?.length > 0 && styles.disabledInput
-              ]}
-              onPress={() => setShowTM(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={[
-                styles.dateInputText,
-                editingJadwal?.absensi?.length > 0 && styles.disabledText
-              ]}>
-                {editTanggal?.toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) || 'Pilih Tanggal'}
-              </Text>
-            </TouchableOpacity>
-
-            {editingJadwal?.absensi?.length > 0 && (
-              <Text style={styles.warningText}>
-                Jadwal sudah digunakan absensi, tanggal tidak bisa diubah
-              </Text>
-            )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setEditVisible(false)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.cancelButtonText}>Batal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButton, loading && styles.disabled]}
-                onPress={submitEdit}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Simpan</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {showTM && (
-        <DateTimePicker
-          value={tanggalMulai || new Date()}
-          mode="date"
-          onChange={(_, d) => {
-            setShowTM(false);
-            if (d) setTanggalMulai(d);
-          }}
-        />
-      )}
-      {showTS && (
-        <DateTimePicker
-          value={tanggalSelesai || new Date()}
-          mode="date"
-          onChange={(_, d) => {
-            setShowTS(false);
-            if (d) setTanggalSelesai(d);
-          }}
-        />
-      )}
-
+  const renderContent = () => (
+    <>
       {/* FORM */}
       <View style={styles.card}>
         <Text style={styles.label}>Pilih Kelas</Text>
@@ -544,7 +452,6 @@ function AdminJadwalScreen() {
             </TouchableOpacity>
           </View>
 
-
           {/* LIST JADWAL PER BULAN */}
           {Object.entries(jadwalPerBulan).map(([key, list]) => {
             const [year, month] = key.split('-');
@@ -599,20 +506,176 @@ function AdminJadwalScreen() {
           })}
         </>
       )}
-    </ScrollView>
+
+      {/* SPACER UNTUK NAVIGATOR */}
+      <View style={styles.spacer} />
+    </>
+  );
+
+  /* ================= UI ================= */
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {renderHeader()}
+        {renderContent()}
+      </ScrollView>
+
+      {/* MODAL EDIT */}
+      <Modal visible={editVisible} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Jadwal</Text>
+              <TouchableOpacity 
+                onPress={() => setEditVisible(false)}
+                style={styles.modalCloseButton}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Jam Mulai</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={editJamMulai}
+                onValueChange={setEditJamMulai}
+                style={styles.picker}
+              >
+                {jamOptions.map(j => (
+                  <Picker.Item key={j} label={j} value={j} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Jam Selesai</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={editJamSelesai}
+                onValueChange={setEditJamSelesai}
+                style={styles.picker}
+              >
+                {jamOptions.map(j => (
+                  <Picker.Item key={j} label={j} value={j} />
+                ))}
+              </Picker>
+            </View>
+
+            <Text style={styles.modalSubtitle}>Tanggal</Text>
+            <TouchableOpacity
+              disabled={editingJadwal?.absensi?.length > 0}
+              style={[
+                styles.dateInput,
+                editingJadwal?.absensi?.length > 0 && styles.disabledInput
+              ]}
+              onPress={() => setShowTM(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={[
+                styles.dateInputText,
+                editingJadwal?.absensi?.length > 0 && styles.disabledText
+              ]}>
+                {editTanggal?.toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                }) || 'Pilih Tanggal'}
+              </Text>
+            </TouchableOpacity>
+
+            {editingJadwal?.absensi?.length > 0 && (
+              <Text style={styles.warningText}>
+                Jadwal sudah digunakan absensi, tanggal tidak bisa diubah
+              </Text>
+            )}
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setEditVisible(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveButton, loading && styles.disabled]}
+                onPress={submitEdit}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Simpan</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* DATE TIME PICKERS - HARUS DILUAR MODAL */}
+      {showTM && (
+        <DateTimePicker
+          value={tanggalMulai || new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowTM(false);
+            if (selectedDate) {
+              setTanggalMulai(selectedDate);
+            }
+          }}
+        />
+      )}
+      {showTS && (
+        <DateTimePicker
+          value={tanggalSelesai || new Date()}
+          mode="date"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowTS(false);
+            if (selectedDate) {
+              setTanggalSelesai(selectedDate);
+            }
+          }}
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
 /* ================== STYLE ================== */
 
 const styles = StyleSheet.create({
-
-
-
-
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: "#f1f5f9",
+  },
+
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
+  scrollContent: {
+    paddingBottom: 100, // Spacer untuk navigator
   },
 
   header: {
@@ -622,6 +685,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    marginBottom: 20,
   },
 
   headerTitle: {
@@ -639,13 +703,15 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginTop: 16,
+    marginBottom: 20,
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   label: {
@@ -681,7 +747,7 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
 
-   pickerContainer: {
+  pickerContainer: {
     backgroundColor: "#f9fafb",
     borderWidth: 1,
     borderColor: "#e5e7eb",
@@ -690,7 +756,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-   picker: {
+  picker: {
     backgroundColor: "#f9fafb",
     color: "#111827", 
   },
@@ -738,13 +804,16 @@ const styles = StyleSheet.create({
 
   listCard: {
     backgroundColor: "#fff",
-    margin: 16,
+    marginHorizontal: 16,
+    marginBottom: 20,
     padding: 16,
     borderRadius: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   listTitle: {
@@ -820,6 +889,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f1f5f9",
+  },
+
+  spacer: {
+    height: 100,
   },
 
   // Modal Styles

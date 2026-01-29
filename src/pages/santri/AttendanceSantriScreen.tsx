@@ -12,6 +12,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -39,6 +41,7 @@ const statusColors: any = {
 export default function SantriAbsensiScreen() {
   const [absensiHariIni, setAbsensiHariIni] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [statusAbsen, setStatusAbsen] = useState<StatusAbsensi | null>(null);
   const [showIzinModal, setShowIzinModal] = useState(false);
   const [alasanIzin, setAlasanIzin] = useState('');
@@ -59,6 +62,7 @@ export default function SantriAbsensiScreen() {
       Alert.alert('Error', 'Gagal mengambil data absensi');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -73,10 +77,13 @@ export default function SantriAbsensiScreen() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    fetchAbsensiHariIni();
-    fetchIzinPending();
+  const loadData = useCallback(async () => {
+    await Promise.all([fetchAbsensiHariIni(), fetchIzinPending()]);
   }, [fetchAbsensiHariIni, fetchIzinPending]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   useEffect(() => {
     socket.connect();
@@ -109,6 +116,11 @@ export default function SantriAbsensiScreen() {
     };
   }, []);
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
   // ==================== SUBMIT ABSEN ====================
   const submitAbsen = async (status: StatusAbsensi) => {
     setLoading(true);
@@ -123,8 +135,7 @@ export default function SantriAbsensiScreen() {
       Alert.alert('Berhasil', 'Absen berhasil');
 
       // Refresh data
-      await fetchAbsensiHariIni();
-      await fetchIzinPending();
+      await loadData();
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.message || 'Gagal absen');
     } finally {
@@ -157,8 +168,7 @@ export default function SantriAbsensiScreen() {
       setAlasanIzin('');
 
       // Refresh izin pending & absensi
-      await fetchIzinPending();
-      await fetchAbsensiHariIni();
+      await loadData();
     } catch (err: any) {
       Alert.alert('Gagal', err.response?.data?.message || 'Terjadi kesalahan server');
     } finally {
@@ -176,83 +186,17 @@ export default function SantriAbsensiScreen() {
     total === 0 ? 0 : Math.round((v / total) * 100);
 
   // ==================== RENDER ====================
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 80 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      <Loading visible={loading} />
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Absensi Hari Ini</Text>
+      <Text style={styles.headerSubtitle}>
+        Lakukan absensi sesuai status Anda
+      </Text>
+    </View>
+  );
 
-      {/* ==================== HEADER ==================== */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Absensi Hari Ini</Text>
-        <Text style={styles.headerSubtitle}>
-          Lakukan absensi sesuai status Anda
-        </Text>
-      </View>
-
-      {/* ==================== MODAL IZIN ==================== */}
-      <Modal
-        visible={showIzinModal}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajukan Izin</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => {
-                  setShowIzinModal(false);
-                  setAlasanIzin('');
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalCloseButtonText}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalLabel}>Alasan Izin</Text>
-            <TextInput
-              value={alasanIzin}
-              onChangeText={setAlasanIzin}
-              placeholder="Contoh: Keperluan keluarga"
-              placeholderTextColor="#9ca3af"
-              multiline
-              style={styles.textArea}
-            />
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  setShowIzinModal(false);
-                  setAlasanIzin('');
-                }}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalCancelButtonText}>Batal</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalSubmitButton}
-                onPress={submitIzin}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalSubmitButtonText}>AJUKAN IZIN</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
+  const renderContent = () => (
+    <>
       {/* ==================== BUTTON ABSEN CARD ==================== */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Status Absensi</Text>
@@ -335,7 +279,7 @@ export default function SantriAbsensiScreen() {
       </View>
 
       {/* ==================== STATISTIK CARD ==================== */}
-      <View style={styles.listCard}>
+      <View style={[styles.listCard, styles.statistikCard]}>
         <Text style={styles.listTitle}>Statistik Absensi</Text>
         
         {total === 0 ? (
@@ -446,18 +390,114 @@ export default function SantriAbsensiScreen() {
           />
         )}
       </View>
-    </ScrollView>
+
+      {/* SPACER UNTUK NAVIGATOR */}
+      <View style={styles.spacer} />
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+      <Loading visible={loading} />
+
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {renderHeader()}
+        {renderContent()}
+      </ScrollView>
+
+      {/* ==================== MODAL IZIN ==================== */}
+      <Modal
+        visible={showIzinModal}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Ajukan Izin</Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => {
+                  setShowIzinModal(false);
+                  setAlasanIzin('');
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCloseButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalLabel}>Alasan Izin</Text>
+            <TextInput
+              value={alasanIzin}
+              onChangeText={setAlasanIzin}
+              placeholder="Contoh: Keperluan keluarga"
+              placeholderTextColor="#9ca3af"
+              multiline
+              style={styles.textArea}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setShowIzinModal(false);
+                  setAlasanIzin('');
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalCancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalSubmitButton}
+                onPress={submitIzin}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.modalSubmitButtonText}>AJUKAN IZIN</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 // ==================== STYLES ====================
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#f1f5f9",
   },
 
-  // HEADER
+  scrollContent: {
+    paddingBottom: 100, // Spacer untuk navigator
+  },
+
+  // HEADER - SEKARANG DI DALAM SCROLLVIEW
   header: {
     backgroundColor: "#1e3a8a",
     paddingTop: Platform.OS === "android" ? 48 : 64,
@@ -465,6 +505,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    marginBottom: 20,
   },
 
   headerTitle: {
@@ -479,17 +520,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // CARD
+  // CARD - Untuk Status Absensi
   card: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginTop: -28,
+    marginTop: 0,
+    marginBottom: 24, // Tambah margin bawah agar berjarak dengan statistik
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   cardTitle: {
@@ -497,6 +541,33 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#111827",
     marginBottom: 16,
+  },
+
+  // LIST CARD - Untuk Statistik dan Riwayat
+  listCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+
+  // Statistik Card khusus dengan margin atas
+  statistikCard: {
+    marginTop: 0, // Jaga jarak dari card status absensi
+  },
+
+  listTitle: { // ← TAMBAHKAN INI
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 12,
+    color: "#111827",
   },
 
   // BUTTON GROUP
@@ -549,25 +620,6 @@ const styles = StyleSheet.create({
 
   btnTextDisabled: {
     opacity: 0.5,
-  },
-
-  // LIST CARD
-  listCard: {
-    backgroundColor: "#fff",
-    margin: 16,
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-
-  listTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 12,
-    color: "#111827",
   },
 
   // STATISTICS
@@ -698,6 +750,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 0,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
 
   modalHeader: {
@@ -799,5 +853,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+
+  // SPACER UNTUK NAVIGATOR
+  spacer: {
+    height: 100,
   },
 });

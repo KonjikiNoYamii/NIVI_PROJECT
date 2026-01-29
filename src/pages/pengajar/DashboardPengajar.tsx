@@ -92,185 +92,195 @@ const DashboardPengajar = () => {
   const absensiStats = getAbsensiStats();
 
   return (
-    <ScrollView 
-      style={styles.container} 
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl 
-          refreshing={refreshing} 
-          onRefresh={onRefresh}
-          colors={['#2563eb']}
-          tintColor="#2563eb"
-        />
-      }
-    >
+    <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Dashboard Pengajar</Text>
-        <Text style={styles.headerSubtitle}>
-          Ringkasan aktivitas terbaru
-        </Text>
-      </View>
-
-      {/* STATS CARDS */}
-      <View style={styles.statsContainer}>
-        {/* Row 1 */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#dbeafe' }]}>
-              <Icon name="users" type="font-awesome" size={20} color="#1e40af" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.totalSantri}</Text>
-              <Text style={styles.statLabel}>Total Santri</Text>
-            </View>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#dcfce7' }]}>
-              <Icon name="chalkboard-teacher" type="font-awesome-5" size={20} color="#166534" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.totalKelas}</Text>
-              <Text style={styles.statLabel}>Total Kelas</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Row 2 */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#f0f9ff' }]}>
-              <Icon name="tasks" type="font-awesome" size={18} color="#0369a1" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.tugasAktif}</Text>
-              <Text style={styles.statLabel}>Tugas Aktif</Text>
-            </View>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: '#fef3c7' }]}>
-              <Icon name="inbox" type="font-awesome" size={18} color="#92400e" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{data.submissionMasuk}</Text>
-              <Text style={styles.statLabel}>Pengumpulan</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* ABSENSI SECTION */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Absensi Hari Ini</Text>
-        
-        <View style={styles.absensiHeader}>
-          <Text style={styles.absensiTotalLabel}>Total Santri:</Text>
-          <Text style={styles.absensiTotal}>{absensiStats.total}</Text>
-        </View>
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${Math.min(absensiStats.presentPercentage, 100)}%` }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            <Text style={styles.progressPercent}>{absensiStats.presentPercentage.toFixed(1)}%</Text> Kehadiran
+      
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={['#2563eb']}
+            tintColor="#2563eb"
+          />
+        }
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* HEADER YANG IKUT SCROLL */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Dashboard Pengajar</Text>
+          <Text style={styles.headerSubtitle}>
+            Ringkasan aktivitas terbaru
           </Text>
         </View>
 
-        <View style={styles.absensiGrid}>
-          <View style={styles.absensiItem}>
-            <View style={[styles.absensiBadge, styles.hadirBadge]}>
-              <Icon name="check-circle" type="font-awesome" size={14} color="#fff" />
+        {/* STATS CARDS - LANGSUNG DI BAWAH HEADER */}
+        <View style={styles.statsContainer}>
+          {/* Row 1 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#dbeafe' }]}>
+                <Icon name="users" type="font-awesome" size={20} color="#1e40af" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.totalSantri}</Text>
+                <Text style={styles.statLabel}>Total Santri</Text>
+              </View>
             </View>
-            <Text style={styles.absensiCount}>{data.absensi.hadir}</Text>
-            <Text style={styles.absensiLabel}>Hadir</Text>
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#dcfce7' }]}>
+                <Icon name="graduation-cap" type="font-awesome" size={20} color="#166534" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.totalKelas}</Text>
+                <Text style={styles.statLabel}>Total Kelas</Text>
+              </View>
+            </View>
           </View>
-          
-          <View style={styles.absensiItem}>
-            <View style={[styles.absensiBadge, styles.izinBadge]}>
-              <Icon name="clock-o" type="font-awesome" size={14} color="#fff" />
+
+          {/* Row 2 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#f0f9ff' }]}>
+                <Icon name="tasks" type="font-awesome" size={18} color="#0369a1" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.tugasAktif}</Text>
+                <Text style={styles.statLabel}>Tugas Aktif</Text>
+              </View>
             </View>
-            <Text style={styles.absensiCount}>{data.absensi.izin}</Text>
-            <Text style={styles.absensiLabel}>Izin</Text>
-          </View>
-          
-          <View style={styles.absensiItem}>
-            <View style={[styles.absensiBadge, styles.sakitBadge]}>
-              <Icon name="heartbeat" type="font-awesome" size={12} color="#fff" />
+
+            <View style={styles.statCard}>
+              <View style={[styles.statIconContainer, { backgroundColor: '#fef3c7' }]}>
+                <Icon name="inbox" type="font-awesome" size={18} color="#92400e" />
+              </View>
+              <View style={styles.statContent}>
+                <Text style={styles.statValue}>{data.submissionMasuk}</Text>
+                <Text style={styles.statLabel}>Pengumpulan</Text>
+              </View>
             </View>
-            <Text style={styles.absensiCount}>{data.absensi.sakit}</Text>
-            <Text style={styles.absensiLabel}>Sakit</Text>
-          </View>
-          
-          <View style={styles.absensiItem}>
-            <View style={[styles.absensiBadge, styles.alphaBadge]}>
-              <Icon name="times-circle" type="font-awesome" size={12} color="#fff" />
-            </View>
-            <Text style={styles.absensiCount}>{data.absensi.alpha}</Text>
-            <Text style={styles.absensiLabel}>Alpha</Text>
           </View>
         </View>
-      </View>
 
-      {/* IZIN PENDING SECTION */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Perlu Tindakan</Text>
-        
-        <TouchableOpacity style={styles.actionCard}>
-          <View style={[styles.actionIconContainer, { backgroundColor: '#fef3c7' }]}>
-            <Icon name="clock" type="font-awesome" size={20} color="#92400e" />
+        {/* ABSENSI SECTION */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Absensi Hari Ini</Text>
+          
+          <View style={styles.absensiHeader}>
+            <Text style={styles.absensiTotalLabel}>Total Santri:</Text>
+            <Text style={styles.absensiTotal}>{absensiStats.total}</Text>
           </View>
-          <View style={styles.actionContent}>
-            <Text style={styles.actionTitle}>Izin Menunggu Konfirmasi</Text>
-            <Text style={styles.actionSubtitle}>Tinjau permintaan izin dari santri</Text>
-          </View>
-          <View style={styles.actionBadge}>
-            <Text style={styles.actionBadgeText}>{data.izinPending}</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
 
-      {/* SUMMARY SECTION */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Ringkasan</Text>
-        
-        <View style={styles.summaryContent}>
-          <Text style={styles.summaryText}>
-            {data.tugasAktif > 0 
-              ? `Ada ${data.tugasAktif} tugas aktif dengan ${data.submissionMasuk} pengumpulan yang masuk.`
-              : 'Tidak ada tugas aktif saat ini.'}
-          </Text>
-          <Text style={styles.summaryText}>
-            {data.izinPending > 0
-              ? `${data.izinPending} permintaan izin perlu dikonfirmasi.`
-              : 'Tidak ada izin yang menunggu.'}
-          </Text>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { width: `${Math.min(absensiStats.presentPercentage, 100)}%` }
+                ]} 
+              />
+            </View>
+            <Text style={styles.progressText}>
+              <Text style={styles.progressPercent}>{absensiStats.presentPercentage.toFixed(1)}%</Text> Kehadiran
+            </Text>
+          </View>
+
+          <View style={styles.absensiGrid}>
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.hadirBadge]}>
+                <Icon name="check-circle" type="font-awesome" size={14} color="#fff" />
+              </View>
+              <Text style={styles.absensiCount}>{data.absensi.hadir}</Text>
+              <Text style={styles.absensiLabel}>Hadir</Text>
+            </View>
+            
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.izinBadge]}>
+                <Icon name="clock-o" type="font-awesome" size={14} color="#fff" />
+              </View>
+              <Text style={styles.absensiCount}>{data.absensi.izin}</Text>
+              <Text style={styles.absensiLabel}>Izin</Text>
+            </View>
+            
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.sakitBadge]}>
+                <Icon name="heartbeat" type="font-awesome" size={12} color="#fff" />
+              </View>
+              <Text style={styles.absensiCount}>{data.absensi.sakit}</Text>
+              <Text style={styles.absensiLabel}>Sakit</Text>
+            </View>
+            
+            <View style={styles.absensiItem}>
+              <View style={[styles.absensiBadge, styles.alphaBadge]}>
+                <Icon name="times-circle" type="font-awesome" size={12} color="#fff" />
+              </View>
+              <Text style={styles.absensiCount}>{data.absensi.alpha}</Text>
+              <Text style={styles.absensiLabel}>Alpha</Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+
+        {/* IZIN PENDING SECTION */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Perlu Tindakan</Text>
+          
+          <TouchableOpacity style={styles.actionCard}>
+            <View style={[styles.actionIconContainer, { backgroundColor: '#fef3c7' }]}>
+              <Icon name="clock" type="font-awesome" size={20} color="#92400e" />
+            </View>
+            <View style={styles.actionContent}>
+              <Text style={styles.actionTitle}>Izin Menunggu Konfirmasi</Text>
+              <Text style={styles.actionSubtitle}>Tinjau permintaan izin dari santri</Text>
+            </View>
+            <View style={styles.actionBadge}>
+              <Text style={styles.actionBadgeText}>{data.izinPending}</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* SUMMARY SECTION */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Ringkasan</Text>
+          
+          <View style={styles.summaryContent}>
+            <Text style={styles.summaryText}>
+              {data.tugasAktif > 0 
+                ? `Ada ${data.tugasAktif} tugas aktif dengan ${data.submissionMasuk} pengumpulan yang masuk.`
+                : 'Tidak ada tugas aktif saat ini.'}
+            </Text>
+            <Text style={styles.summaryText}>
+              {data.izinPending > 0
+                ? `${data.izinPending} permintaan izin perlu dikonfirmasi.`
+                : 'Tidak ada izin yang menunggu.'}
+            </Text>
+          </View>
+        </View>
+
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 /* ================== STYLE ================== */
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#f1f5f9",
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#f1f5f9",
   },
 
-  safe: {
-    flex: 1,
-    backgroundColor: "#f1f5f9",
+  scrollContent: {
+    paddingBottom: 100, // DITAMBAHKAN: Padding bottom untuk navigator
   },
 
   header: {
@@ -296,7 +306,7 @@ const styles = StyleSheet.create({
 
   statsContainer: {
     paddingHorizontal: 16,
-    marginTop: -28,
+    marginTop: 15,
     marginBottom: 16,
   },
 
@@ -315,6 +325,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   statIconContainer: {
@@ -353,6 +365,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   sectionTitle: {
@@ -507,13 +521,15 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 16, // DIKURANGI: dari 24 menjadi 16
     padding: 20,
     borderRadius: 18,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
 
   summaryTitle: {
@@ -558,6 +574,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "800",
     letterSpacing: 0.5,
+  },
+
+  // DITAMBAHKAN: Spacer untuk navigator
+  spacer: {
+    height: 100,
   },
 });
 
