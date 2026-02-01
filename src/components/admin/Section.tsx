@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Icon } from "react-native-elements";
 import { NIVI } from "../../theme/niviTheme";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 interface Props {
   title: string;
@@ -13,7 +13,7 @@ const SectionCard: React.FC<Props> = ({ title, children, icon = "info-circle" })
   return (
     <View style={styles.section}>
       <View style={styles.header}>
-        <Icon name={icon} type="font-awesome" size={16} color={NIVI.primary} />
+        <Ionicons name={icon} size={16} color={NIVI.primary} />
         <Text style={styles.title}>{title}</Text>
       </View>
       {children}

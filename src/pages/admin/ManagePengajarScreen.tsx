@@ -20,6 +20,7 @@ import { API, SOCKET_URL } from '../../services/api';
 import { Icon } from 'react-native-elements';
 import io from 'socket.io-client';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import { Image } from 'react-native';
 
 /* =======================
    INTERFACE
@@ -32,8 +33,10 @@ interface Kelas {
 interface Pengajar {
   id: number;
   email: string;
-  profiles?: {
-    name?: string;
+  name: string;
+  profile?: {
+    namaLengkap?: string;
+    fotoUrl?: string;
   } | null;
 }
 
@@ -71,7 +74,17 @@ const ManagePengajarScreen = () => {
         axios.get(`${API}/users/pengajar`),
       ]);
       setKelasList(kelasRes.data.data ?? kelasRes.data ?? []);
-      setAllPengajar(pengajarRes.data.data ?? pengajarRes.data ?? []);
+
+      // Format data pengajar agar konsisten
+      const pengajarData = pengajarRes.data.data ?? pengajarRes.data ?? [];
+      const formattedPengajar = pengajarData.map((p: any) => ({
+        id: p.id,
+        email: p.email,
+        name: p.profile?.namaLengkap || p.name || p.email.split('@')[0],
+        profile: p.profile,
+      }));
+
+      setAllPengajar(formattedPengajar);
     } catch (err) {
       console.log(err);
       Alert.alert('Error', 'Gagal mengambil data awal');
@@ -104,12 +117,23 @@ const ManagePengajarScreen = () => {
           },
         );
         const raw = res.data?.data ?? res.data;
+        console.log(res.data.data);
+
         const list = Array.isArray(raw)
           ? raw
           : Array.isArray(raw?.pengajar)
           ? raw.pengajar
           : [];
-        setPengajarKelas(list);
+
+        // Format data pengajar agar konsisten
+        const formattedPengajar = list.map((p: any) => ({
+          id: p.id,
+          email: p.email,
+          name: p.profile?.namaLengkap || p.name || p.email.split('@')[0],
+          profile: p.profile,
+        }));
+
+        setPengajarKelas(formattedPengajar);
       } catch (err) {
         console.log(err);
         Alert.alert('Error', 'Gagal mengambil pengajar kelas');
@@ -141,7 +165,14 @@ const ManagePengajarScreen = () => {
       'kelas-pengajar-updated',
       (updatedKelas: { id: number; pengajar: Pengajar[] }) => {
         if (selectedKelasId === updatedKelas.id) {
-          setPengajarKelas(updatedKelas.pengajar ?? []);
+          const formattedPengajar =
+            updatedKelas.pengajar?.map(p => ({
+              id: p.id,
+              email: p.email,
+              name: p.profile?.namaLengkap || p.name || p.email.split('@')[0],
+              profile: p.profile,
+            })) ?? [];
+          setPengajarKelas(formattedPengajar);
         }
       },
     );
@@ -176,7 +207,15 @@ const ManagePengajarScreen = () => {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const newPengajar = res.data.data ?? res.data;
-      setAllPengajar(prev => [...prev, newPengajar]);
+      setAllPengajar(prev => [
+        ...prev,
+        {
+          id: newPengajar.id,
+          email: newPengajar.email,
+          name: newPengajar.profiles?.name || newPengajar.name || name,
+          profile: newPengajar.profiles,
+        },
+      ]);
       setName('');
       setEmail('');
       Alert.alert('Berhasil', 'Pengajar berhasil dibuat');
@@ -258,6 +297,20 @@ const ManagePengajarScreen = () => {
       ],
     );
   };
+
+  // Fungsi untuk mendapatkan inisial dari nama
+  const getInitials = (name: string) => {
+    if (!name) return '?';
+    const names = name.split(' ');
+    if (names.length === 1) return names[0].charAt(0).toUpperCase();
+    return (
+      names[0].charAt(0) + names[names.length - 1].charAt(0)
+    ).toUpperCase();
+  };
+
+  const avatarColors = ['#2563eb', '#059669', '#7c3aed', '#f59e0b', '#dc2626'];
+
+  const getRandomColor = (id: number) => avatarColors[id % avatarColors.length];
 
   if (fetchingInit && !refreshing) {
     return (
@@ -470,17 +523,44 @@ const ManagePengajarScreen = () => {
               <View style={styles.pengajarList}>
                 {pengajarKelas.map(p => (
                   <View key={p.id} style={styles.pengajarItem}>
-                    <View style={styles.pengajarAvatar}>
-                      <Text style={styles.pengajarAvatarText}>
-                        {(p.profiles?.name ?? p.email).charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
+                    {/* Avatar */}
+                    {p.profile?.fotoUrl ? (
+                      <Image
+                        source={{ uri: `${API}${p.profile.fotoUrl}` }}
+                        style={styles.avatarImage}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.avatarFallback,
+                          { backgroundColor: `${getRandomColor(p.id)}15` },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.avatarText,
+                            { color: getRandomColor(p.id) },
+                          ]}
+                        >
+                          {/* Pakai nama lengkap jika ada, fallback ke name */}
+                          {(p.profile?.namaLengkap || p.name)
+                            .charAt(0)
+                            .toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Info Pengajar */}
                     <View style={styles.pengajarInfo}>
-                      <Text style={styles.pengajarNama}>
-                        {p.profiles?.name ?? p.email}
+                      <Text style={styles.pengajarNama} numberOfLines={1}>
+                        {p.profile?.namaLengkap || p.name}
                       </Text>
-                      <Text style={styles.pengajarEmail}>{p.email}</Text>
+                      <Text style={styles.pengajarEmail} numberOfLines={1}>
+                        {p.email}
+                      </Text>
                     </View>
+
+                    {/* Tombol Hapus */}
                     <TouchableOpacity
                       style={styles.removeButton}
                       onPress={() => handleRemovePengajar(p.id)}
@@ -544,16 +624,20 @@ const ManagePengajarScreen = () => {
                     <View style={styles.availablePengajarContent}>
                       <View style={styles.availablePengajarAvatar}>
                         <Text style={styles.availablePengajarAvatarText}>
-                          {(p.profiles?.name ?? p.email)
-                            .charAt(0)
-                            .toUpperCase()}
+                          {getInitials(p.name)}
                         </Text>
                       </View>
                       <View style={styles.availablePengajarInfo}>
-                        <Text style={styles.availablePengajarNama}>
-                          {p.profiles?.name ?? p.email}
+                        <Text
+                          style={styles.availablePengajarNama}
+                          numberOfLines={1}
+                        >
+                          {p.name}
                         </Text>
-                        <Text style={styles.availablePengajarEmail}>
+                        <Text
+                          style={styles.availablePengajarEmail}
+                          numberOfLines={1}
+                        >
                           {p.email}
                         </Text>
                       </View>
@@ -638,7 +722,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom:5, // Spacer untuk navigator
+    paddingBottom: 100, // Spacer untuk navigator
   },
 
   center: {
@@ -920,37 +1004,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: '#f8fafc',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
 
   pengajarAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#dbeafe',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2563eb',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
 
   pengajarAvatarText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#1d4ed8',
+    color: '#fff',
   },
 
   pengajarInfo: {
     flex: 1,
+    marginRight: 12,
   },
 
   pengajarNama: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1e293b',
-    marginBottom: 2,
+    marginBottom: 4,
   },
 
   pengajarEmail: {
@@ -964,7 +1049,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fef2f2',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#fecaca',
@@ -990,7 +1075,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: '#f8fafc',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
@@ -1000,22 +1085,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    marginRight: 12,
   },
 
   availablePengajarAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#f0f9ff',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f59e0b',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
 
   availablePengajarAvatarText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#0369a1',
+    color: '#fff',
   },
 
   availablePengajarInfo: {
@@ -1023,10 +1109,10 @@ const styles = StyleSheet.create({
   },
 
   availablePengajarNama: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: '#1e293b',
-    marginBottom: 2,
+    marginBottom: 4,
   },
 
   availablePengajarEmail: {
@@ -1040,7 +1126,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#eff6ff',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#dbeafe',
@@ -1074,6 +1160,27 @@ const styles = StyleSheet.create({
   /* SPACER UNTUK NAVIGATOR */
   spacer: {
     height: 100,
+  },
+
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 14,
+  },
+
+  avatarFallback: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '800',
   },
 });
 

@@ -10,6 +10,7 @@ import {
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API } from "../../services/api";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 interface Santri {
   id: number;
@@ -49,7 +50,7 @@ const ManageSantriScreen = () => {
   const fetchKelas = async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`${API}/kelas`, {
+      const res = await axios.get(`${API}/kelas/all/santri`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setKelasList(res.data.data ?? []);
@@ -104,12 +105,58 @@ const ManageSantriScreen = () => {
     }
   };
 
+  
+
+  const handleUpdate = async () => {
+  if (!editingSantri) return;
+
+  if (!name || !email || !kelasId) {
+    Alert.alert("Validasi", "Semua field wajib diisi");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const token = await getToken();
+
+    await axios.put(
+      `${API}/users/${editingSantri.id}`,
+      {
+        name,
+        email,
+        kelasId,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    Alert.alert("Berhasil", "Santri berhasil diperbarui");
+
+    setName("");
+    setEmail("");
+    setKelasId(null);
+    setEditingSantri(null);
+    fetchKelas();
+  } catch (err: any) {
+    console.log(err.response || err.message);
+    Alert.alert(
+      "Gagal",
+      err.response?.data?.message || "Gagal memperbarui santri"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
   // Edit santri
   const handleEdit = (santri: Santri) => {
-    setEditingSantri(santri);
-    setName(santri.name || "");
-    setEmail(santri.email);
-  };
+  setEditingSantri(santri);
+  setName(santri.name || "");
+  setEmail(santri.email);
+  setKelasId(selectedKelasId); // 🔥 WAJIB
+};
+
 
   // Nonaktifkan santri
   const handleDeactivate = async (id: number) => {
@@ -267,11 +314,10 @@ const ManageSantriScreen = () => {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.disabled]}
-          onPress={handleCreate}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
+  style={[styles.button, loading && styles.disabled]}
+  onPress={editingSantri ? handleUpdate : handleCreate}
+>
+
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -321,9 +367,7 @@ const ManageSantriScreen = () => {
                 styles.classIconContainer,
                 { backgroundColor: `#${((kelas.id * 30) % 255).toString(16).padStart(2, '0')}${((kelas.id * 60) % 255).toString(16).padStart(2, '0')}${((kelas.id * 90) % 255).toString(16).padStart(2, '0')}20` }
               ]}>
-                <Text style={styles.classIconText}>
-                  {kelas.namaKelas.charAt(0).toUpperCase()}
-                </Text>
+<Ionicons name="school-outline" size={20} />
               </View>
               <Text style={styles.className}>{kelas.namaKelas}</Text>
               <Text style={styles.classCount}>

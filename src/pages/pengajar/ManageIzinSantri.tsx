@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,16 +11,16 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
-} from "react-native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API } from "../../services/api";
-import { useFocusEffect } from "@react-navigation/native";
-import { Icon } from "react-native-elements";
+} from 'react-native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API } from '../../services/api';
+import { useFocusEffect } from '@react-navigation/native';
+import { Icon } from 'react-native-elements';
 
 /* ================== TYPE ================== */
 
-type StatusIzin = "menunggu" | "disetujui" | "ditolak";
+type StatusIzin = 'menunggu' | 'disetujui' | 'ditolak';
 
 interface IzinData {
   id: number;
@@ -38,22 +38,22 @@ interface IzinData {
 /* ================== CONSTANT ================== */
 
 const STATUS_COLOR: Record<StatusIzin, string> = {
-  menunggu: "#F59E0B",
-  disetujui: "#10B981",
-  ditolak: "#EF4444",
+  menunggu: '#F59E0B',
+  disetujui: '#10B981',
+  ditolak: '#EF4444',
 };
 
 const STATUS_LABEL: Record<StatusIzin, string> = {
-  menunggu: "MENUNGGU",
-  disetujui: "DISETUJUI",
-  ditolak: "DITOLAK",
+  menunggu: 'MENUNGGU',
+  disetujui: 'DISETUJUI',
+  ditolak: 'DITOLAK',
 };
 
 /* ================== HELPER ================== */
 
 const getToken = async (): Promise<string> => {
-  const token = await AsyncStorage.getItem("token");
-  if (!token) throw new Error("Token tidak ditemukan");
+  const token = await AsyncStorage.getItem('token');
+  if (!token) throw new Error('Token tidak ditemukan');
   return token;
 };
 
@@ -64,16 +64,17 @@ export default function PengajarIzinScreen() {
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [initLoading, setInitLoading] = useState(true);
+  const [mode, setMode] = useState<'aktif' | 'arsip'>('aktif');
 
   /* ================== LOAD AUTH ================== */
 
   useEffect(() => {
     const loadAuth = async () => {
       try {
-        const storedRole = await AsyncStorage.getItem("role");
+        const storedRole = await AsyncStorage.getItem('role');
         setRole(storedRole);
       } catch {
-        Alert.alert("Error", "Gagal mengambil data autentikasi");
+        Alert.alert('Error', 'Gagal mengambil data autentikasi');
       } finally {
         setInitLoading(false);
       }
@@ -83,66 +84,117 @@ export default function PengajarIzinScreen() {
   }, []);
 
   /* ================== FETCH IZIN ================== */
-
-  const fetchIzin = useCallback(async () => {
-    if (!role || role !== "pengajar") return;
+  const fetchIzinAktif = useCallback(async () => {
+    if (!role || role !== 'pengajar') return;
 
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await axios.get(`${API}/izin`, {
+      const res = await axios.get(`${API}/izin/all/pengajar`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIzinList(res.data.data || []);
     } catch {
-      Alert.alert("Error", "Gagal mengambil data izin");
+      Alert.alert('Error', 'Gagal mengambil izin aktif');
     } finally {
       setLoading(false);
     }
   }, [role]);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchIzin();
-    }, [fetchIzin])
-  );
+  const fetchIzinArsip = useCallback(async () => {
+    if (!role || role !== 'pengajar') return;
+
+    setLoading(true);
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${API}/izin/arsip`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setIzinList(res.data.data || []);
+    } catch {
+      Alert.alert('Error', 'Gagal mengambil izin arsip');
+    } finally {
+      setLoading(false);
+    }
+  }, [role]);
 
   /* ================== UPDATE STATUS ================== */
 
-  const updateStatus = async (id: number, status: StatusIzin) => {
-    const actionText = status === "disetujui" ? "MENYETUJUI" : "MENOLAK";
+const updateStatus = async (id: number, status: StatusIzin) => {
+  const actionText = status === 'disetujui' ? 'MENYETUJUI' : 'MENOLAK';
 
-    Alert.alert(
-      "Konfirmasi",
-      `Yakin ingin ${actionText} izin ini?`,
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Ya",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const token = await getToken();
-              await axios.put(
-                `${API}/izin/${id}`,
-                { status },
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              fetchIzin();
-              Alert.alert(
-                "Berhasil", 
-                `Izin berhasil di${status === "disetujui" ? "setujui" : "tolak"}`
-              );
-            } catch {
-              Alert.alert("Error", "Gagal update status izin");
-            } finally {
-              setLoading(false);
-            }
-          },
+  Alert.alert('Konfirmasi', `Yakin ingin ${actionText} izin ini?`, [
+    { text: 'Batal', style: 'cancel' },
+    {
+      text: 'Ya',
+      onPress: async () => {
+        setLoading(true);
+        try {
+          const token = await getToken();
+
+          const res = await axios.put(
+            `${API}/izin/${id}`,
+            { status },
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+
+          const realStatus: StatusIzin = res.data.data.status;
+
+          fetchIzinAktif();
+
+          Alert.alert(
+            'Info',
+            realStatus === 'disetujui'
+              ? 'Izin disetujui'
+              : 'Izin ditolak otomatis karena kuota absensi penuh'
+          );
+        } catch {
+          Alert.alert('Error', 'Gagal update status izin');
+        } finally {
+          setLoading(false);
+        }
+      },
+    },
+  ]);
+};
+
+
+  const archiveIzin = async (id: number) => {
+    Alert.alert('Konfirmasi', 'Izin ini akan diarsipkan. Lanjutkan?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Ya',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            const token = await getToken();
+            await axios.delete(`${API}/izin/${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            fetchIzinAktif(); // refresh list
+            Alert.alert('Berhasil', 'Izin berhasil diarsipkan');
+          } catch {
+            Alert.alert('Error', 'Gagal mengarsipkan izin');
+          } finally {
+            setLoading(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (mode === 'aktif') {
+        fetchIzinAktif();
+      }
+
+      if (mode === 'arsip') {
+        fetchIzinArsip();
+      }
+    }, [mode, fetchIzinAktif, fetchIzinArsip]),
+  );
 
   /* ================== RENDER ITEM ================== */
 
@@ -151,12 +203,12 @@ export default function PengajarIzinScreen() {
       {/* HEADER */}
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.user?.name || "Santri"}</Text>
+          <Text style={styles.userName}>{item.user?.name || 'Santri'}</Text>
           <Text style={styles.classText}>
-            Kelas: {item.kelas?.namaKelas || "-"}
+            Kelas: {item.kelas?.namaKelas || '-'}
           </Text>
         </View>
-        
+
         <View
           style={[
             styles.statusBadge,
@@ -170,13 +222,14 @@ export default function PengajarIzinScreen() {
       {/* CONTENT */}
       <View style={styles.cardContent}>
         <Text style={styles.dateText}>
-          Tanggal: {new Date(item.tanggal).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric"
+          Tanggal:{' '}
+          {new Date(item.tanggal).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
           })}
         </Text>
-        
+
         <View style={styles.reasonContainer}>
           <Text style={styles.reasonLabel}>Alasan:</Text>
           <Text style={styles.reasonText}>{item.alasan}</Text>
@@ -184,11 +237,11 @@ export default function PengajarIzinScreen() {
       </View>
 
       {/* ACTIONS */}
-      {item.status === "menunggu" && (
+      {item.status === 'menunggu' && mode === 'aktif' && (
         <View style={styles.actionContainer}>
           <TouchableOpacity
             style={[styles.actionButton, styles.approveButton]}
-            onPress={() => updateStatus(item.id, "disetujui")}
+            onPress={() => updateStatus(item.id, 'disetujui')}
             activeOpacity={0.85}
           >
             <Icon name="check" type="font-awesome" color="#fff" size={14} />
@@ -197,11 +250,24 @@ export default function PengajarIzinScreen() {
 
           <TouchableOpacity
             style={[styles.actionButton, styles.rejectButton]}
-            onPress={() => updateStatus(item.id, "ditolak")}
+            onPress={() => updateStatus(item.id, 'ditolak')}
             activeOpacity={0.85}
           >
             <Icon name="times" type="font-awesome" color="#fff" size={14} />
             <Text style={styles.actionButtonText}>Tolak</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {/* ACTION ARSIP */}
+      {item.status !== 'menunggu' && mode === 'aktif' && (
+        <View style={styles.archiveContainer}>
+          <TouchableOpacity
+            style={styles.archiveButton}
+            onPress={() => archiveIzin(item.id)}
+            activeOpacity={0.85}
+          >
+            <Icon name="archive" type="font-awesome" size={14} color="#fff" />
+            <Text style={styles.archiveText}>Arsipkan</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -220,7 +286,7 @@ export default function PengajarIzinScreen() {
     );
   }
 
-  if (role !== "pengajar") {
+  if (role !== 'pengajar') {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
@@ -239,7 +305,7 @@ export default function PengajarIzinScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -250,6 +316,21 @@ export default function PengajarIzinScreen() {
           <Text style={styles.headerSubtitle}>
             Kelola pengajuan izin santri dengan mudah
           </Text>
+        </View>
+        <View style={{ flexDirection: 'row', marginTop: 16 }}>
+          <TouchableOpacity
+            style={[styles.tabBtn, mode === 'aktif' && styles.tabActive]}
+            onPress={() => setMode('aktif')}
+          >
+            <Text style={styles.tabText}>Aktif</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabBtn, mode === 'arsip' && styles.tabActive]}
+            onPress={() => setMode('arsip')}
+          >
+            <Text style={styles.tabText}>Arsip</Text>
+          </TouchableOpacity>
         </View>
 
         {/* CONTENT */}
@@ -262,7 +343,7 @@ export default function PengajarIzinScreen() {
           ) : (
             <FlatList
               data={izinList}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={item => item.id.toString()}
               renderItem={renderItem}
               scrollEnabled={false}
               ListHeaderComponent={
@@ -294,12 +375,12 @@ export default function PengajarIzinScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollContent: {
@@ -307,8 +388,8 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -316,14 +397,14 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
@@ -334,41 +415,41 @@ const styles = StyleSheet.create({
 
   totalText: {
     fontSize: 14,
-    color: "#6b7280",
-    fontWeight: "600",
+    color: '#6b7280',
+    fontWeight: '600',
     marginBottom: 16,
   },
 
   loadingContainer: {
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     minHeight: 200,
     marginTop: 20,
   },
 
   loadingText: {
     marginTop: 12,
-    color: "#6b7280",
+    color: '#6b7280',
     fontSize: 14,
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 18,
     padding: 20,
     marginBottom: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
 
@@ -379,14 +460,14 @@ const styles = StyleSheet.create({
 
   userName: {
     fontSize: 16,
-    fontWeight: "800",
-    color: "#111827",
+    fontWeight: '800',
+    color: '#111827',
     marginBottom: 4,
   },
 
   classText: {
     fontSize: 13,
-    color: "#6b7280",
+    color: '#6b7280',
   },
 
   statusBadge: {
@@ -394,67 +475,67 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     minWidth: 100,
-    alignItems: "center",
+    alignItems: 'center',
   },
 
   statusText: {
     fontSize: 11,
-    fontWeight: "800",
-    color: "#fff",
+    fontWeight: '800',
+    color: '#fff',
     letterSpacing: 0.5,
   },
 
   cardContent: {
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: '#e5e7eb',
     paddingTop: 16,
   },
 
   dateText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 12,
   },
 
   reasonContainer: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   reasonLabel: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#4b5563",
+    fontWeight: '700',
+    color: '#4b5563',
     marginBottom: 4,
   },
 
   reasonText: {
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
     lineHeight: 20,
   },
 
   actionContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     marginTop: 20,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: '#e5e7eb',
   },
 
   actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginLeft: 12,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -462,23 +543,23 @@ const styles = StyleSheet.create({
   },
 
   approveButton: {
-    backgroundColor: "#10B981",
+    backgroundColor: '#10B981',
   },
 
   rejectButton: {
-    backgroundColor: "#EF4444",
+    backgroundColor: '#EF4444',
   },
 
   actionButtonText: {
-    color: "#fff",
-    fontWeight: "700",
+    color: '#fff',
+    fontWeight: '700',
     marginLeft: 8,
     fontSize: 13,
     letterSpacing: 0.3,
   },
 
   emptyContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingTop: 60,
     paddingHorizontal: 20,
     marginTop: 20,
@@ -486,40 +567,79 @@ const styles = StyleSheet.create({
 
   emptyText: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#6b7280",
+    fontWeight: '700',
+    color: '#6b7280',
     marginBottom: 8,
   },
 
   emptySubtext: {
     fontSize: 13,
-    color: "#9ca3af",
-    textAlign: "center",
+    color: '#9ca3af',
+    textAlign: 'center',
   },
 
   center: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
     padding: 20,
   },
 
   errorText: {
     fontSize: 18,
-    fontWeight: "800",
-    color: "#EF4444",
+    fontWeight: '800',
+    color: '#EF4444',
     marginBottom: 8,
   },
 
   errorSubtext: {
     fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
+    color: '#6b7280',
+    textAlign: 'center',
   },
 
   // DITAMBAHKAN: Spacer untuk navigator
   spacer: {
     height: 100,
+  },
+
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#e5e7eb',
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+
+  tabActive: {
+    backgroundColor: '#2563eb',
+  },
+
+  tabText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+
+  archiveContainer: {
+    marginTop: 16,
+    alignItems: 'flex-end',
+  },
+
+  archiveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#64748b',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+  },
+
+  archiveText: {
+    color: '#fff',
+    fontWeight: '700',
+    marginLeft: 8,
+    fontSize: 13,
   },
 });

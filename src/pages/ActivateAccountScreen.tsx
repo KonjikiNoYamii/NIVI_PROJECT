@@ -29,6 +29,19 @@ const ActivateAccountScreen = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const handleSendOtp = async () => {
+    try {
+      setSendingOtp(true);
+      await axios.post(`${API}/auth/request-activation-otp`, { email });
+      Alert.alert('Berhasil', 'Kode OTP telah dikirim ke email Anda');
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.message || 'Gagal mengirim OTP');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
 
   const handleActivate = async () => {
     if (!otp.trim() || !password.trim()) {
@@ -39,10 +52,17 @@ const ActivateAccountScreen = () => {
     try {
       setLoading(true);
       // aktivasi tanpa Authorization
-      await axios.post(`${API}/auth/activate-with-otp`, { email, otp, password });
+      await axios.post(`${API}/auth/activate-with-otp`, {
+        email,
+        otp,
+        password,
+      });
 
       // setelah sukses, langsung login otomatis
-      const { data } = await axios.post(`${API}/auth/login`, { email, password });
+      const { data } = await axios.post(`${API}/auth/login`, {
+        email,
+        password,
+      });
       const { token, user } = data.data;
 
       await AsyncStorage.multiSet([
@@ -84,10 +104,15 @@ const ActivateAccountScreen = () => {
                 style={styles.logo}
               />
               <View style={styles.logoBadge}>
-                <Icon name="key" type="font-awesome" size={20} color="#2563eb" />
+                <Icon
+                  name="key"
+                  type="font-awesome"
+                  size={20}
+                  color="#2563eb"
+                />
               </View>
             </View>
-            
+
             <Text style={styles.welcomeText}>Aktivasi Akun</Text>
             <Text style={styles.subtitle}>
               Masukkan OTP yang dikirim ke email Anda dan buat password pertama
@@ -96,10 +121,15 @@ const ActivateAccountScreen = () => {
 
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>Aktivasi Akun</Text>
-            
+
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Icon name="key" type="font-awesome" size={14} color="#6b7280" />
+                <Icon
+                  name="key"
+                  type="font-awesome"
+                  size={14}
+                  color="#6b7280"
+                />
                 <Text style={styles.label}>OTP</Text>
               </View>
               <View style={styles.inputContainer}>
@@ -115,11 +145,31 @@ const ActivateAccountScreen = () => {
                   editable={!loading}
                 />
               </View>
+
+              {/* Tombol Kirim Ulang OTP */}
+              <TouchableOpacity
+                style={[
+                  styles.sendOtpButton,
+                  sendingOtp && styles.sendOtpButtonDisabled,
+                ]}
+                onPress={handleSendOtp}
+                disabled={sendingOtp || loading}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.sendOtpButtonText}>
+                  {sendingOtp ? 'Mengirim...' : 'Kirim Ulang OTP'}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Icon name="lock" type="font-awesome" size={14} color="#6b7280" />
+                <Icon
+                  name="lock"
+                  type="font-awesome"
+                  size={14}
+                  color="#6b7280"
+                />
                 <Text style={styles.label}>Password Baru</Text>
               </View>
               <View style={styles.inputContainer}>
@@ -157,7 +207,13 @@ const ActivateAccountScreen = () => {
               activeOpacity={0.85}
             >
               <Text style={styles.activateButtonText}>AKTIVASI AKUN</Text>
-              <Icon name="check-circle" type="font-awesome" size={18} color="#fff" style={styles.buttonIcon} />
+              <Icon
+                name="check-circle"
+                type="font-awesome"
+                size={18}
+                color="#fff"
+                style={styles.buttonIcon}
+              />
             </TouchableOpacity>
 
             <View style={styles.divider}>
@@ -172,10 +228,13 @@ const ActivateAccountScreen = () => {
               disabled={loading}
               activeOpacity={0.85}
             >
-              <Icon name="arrow-left" type="font-awesome" size={16} color="#6b7280" />
-              <Text style={styles.backButtonText}>
-                Kembali ke Login
-              </Text>
+              <Icon
+                name="arrow-left"
+                type="font-awesome"
+                size={16}
+                color="#6b7280"
+              />
+              <Text style={styles.backButtonText}>Kembali ke Login</Text>
             </TouchableOpacity>
           </View>
 
@@ -193,22 +252,22 @@ const ActivateAccountScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  safe: { 
-    flex: 1, 
-    backgroundColor: '#f1f5f9' 
+  safe: {
+    flex: 1,
+    backgroundColor: '#f1f5f9',
   },
-  container: { 
-    flex: 1 
+  container: {
+    flex: 1,
   },
-  scrollContainer: { 
-    flexGrow: 1, 
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
   },
-  
+
   // Header
-  header: { 
-    alignItems: 'center', 
+  header: {
+    alignItems: 'center',
     marginBottom: 32,
     marginTop: 20,
   },
@@ -216,9 +275,9 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 20,
   },
-  logo: { 
-    width: 120, 
-    height: 120, 
+  logo: {
+    width: 120,
+    height: 120,
     borderRadius: 60,
     borderWidth: 4,
     borderColor: '#fff',
@@ -254,14 +313,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-  subtitle: { 
-    fontSize: 15, 
-    color: '#64748b', 
+  subtitle: {
+    fontSize: 15,
+    color: '#64748b',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
   },
-  
+
   // Form Card
   formCard: {
     backgroundColor: '#fff',
@@ -283,10 +342,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
-  
+
   // Input Groups
-  inputGroup: { 
-    marginBottom: 20 
+  inputGroup: {
+    marginBottom: 20,
   },
   labelRow: {
     flexDirection: 'row',
@@ -308,17 +367,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     paddingHorizontal: 16,
   },
-  input: { 
-    flex: 1, 
-    paddingVertical: 16, 
-    fontSize: 16, 
+  input: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
     color: '#111827',
     paddingRight: 10,
   },
-  passwordToggle: { 
-    padding: 8 
+  passwordToggle: {
+    padding: 8,
   },
-  
+
   // Activate Button
   activateButton: {
     backgroundColor: '#2563eb',
@@ -334,19 +393,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  activateButtonDisabled: { 
-    backgroundColor: '#93c5fd' 
+  activateButtonDisabled: {
+    backgroundColor: '#93c5fd',
   },
-  activateButtonText: { 
-    color: '#fff', 
-    fontSize: 16, 
+  activateButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   buttonIcon: {
     marginLeft: 10,
   },
-  
+
   // Divider
   divider: {
     flexDirection: 'row',
@@ -364,7 +423,7 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontWeight: '600',
   },
-  
+
   // Back Button
   backButton: {
     flexDirection: 'row',
@@ -376,13 +435,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#e5e7eb',
   },
-  backButtonText: { 
-    fontSize: 15, 
-    color: '#6b7280', 
+  backButtonText: {
+    fontSize: 15,
+    color: '#6b7280',
     fontWeight: '600',
     marginLeft: 10,
   },
-  
+
   // Footer
   footer: {
     alignItems: 'center',
@@ -392,6 +451,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9ca3af',
     fontWeight: '500',
+  },
+  sendOtpButton: {
+    marginTop: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendOtpButtonDisabled: {
+    backgroundColor: '#93c5fd',
+  },
+  sendOtpButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
 

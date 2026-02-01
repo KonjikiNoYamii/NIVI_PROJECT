@@ -17,10 +17,9 @@ import { Icon } from "react-native-elements";
 
 import { API } from "../../services/api";
 import { NIVI } from "../../theme/niviTheme";
-import StatCard from "../../components/admin/Card";
 import AttendanceStats from "../../components/admin/AttedanceChart";
-import SectionCard from "../../components/admin/Section";
 import ActivityList from "../../components/admin/ActivityList";
+import Ionicons from "@react-native-vector-icons/ionicons";
 
 export default function DashboardAdmin() {
   const [data, setData] = useState<any>(null);
@@ -99,10 +98,9 @@ export default function DashboardAdmin() {
             </Text>
           </View>
           <View style={styles.headerIcon}>
-            <Icon
-              name="user"
-              type="font-awesome"
-              size={20}
+            <Ionicons
+              name="shield-checkmark"
+              size={26}
               color="#fff"
             />
           </View>

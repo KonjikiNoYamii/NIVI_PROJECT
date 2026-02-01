@@ -8,8 +8,8 @@ import AbsensiSantriPengajarScreen from '../pages/pengajar/AttendanceSantriViewS
 import PengajarIzinScreen from '../pages/pengajar/ManageIzinSantri';
 import PengumpulanTugasScreen from '../pages/pengajar/PengumpulanTugasSantri';
 import NilaiTugasScreen from '../pages/pengajar/NilaiTugasScreen';
-import { RekapBulananScreen } from '../pages/RekapBulananScreen';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { RekapBulananScreen } from '../pages/pengajar/RekapBulananScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -54,7 +54,7 @@ export default function PengajarBottomNavigator() {
         name="DashboardPengajar"
         component={DashboardPengajar}
         options={{
-          tabBarLabel: 'Dashboard',
+          tabBarLabel: 'Beranda',
           tabBarIcon: ({ focused, color, size }) => (
             <View
               style={[

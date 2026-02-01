@@ -9,14 +9,17 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  SafeAreaView,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API } from '../services/api';
+import { API } from '../../services/api';
 
 type Kelas = {
   id: number;
-  name: string;
+  namaKelas: string;
 };
 
 type AbsensiDetail = {
@@ -89,22 +92,17 @@ export const RekapBulananScreen = () => {
   const fetchKelas = async () => {
     try {
       setLoading(true);
-      const token = await getToken();
       const res = await axios.get<{ success: boolean; data: Kelas[] }>(
         `${API}/kelas`,
-        { headers: { Authorization: `Bearer ${token}` } },
       );
+
       if (res.data.success) {
         setKelasList(res.data.data);
-        // Set kelas pertama sebagai default
-        if (res.data.data.length > 0) {
-          setSelectedKelas(res.data.data[0]);
-        }
       } else {
         setKelasList([]);
       }
-    } catch (err) {
-      console.error('Error fetch kelas:', err);
+    } catch (e) {
+      console.error(e);
       setKelasList([]);
     } finally {
       setLoading(false);
@@ -139,6 +137,12 @@ export const RekapBulananScreen = () => {
   useEffect(() => {
     fetchKelas();
   }, []);
+
+  useEffect(() => {
+    if (kelasList.length > 0 && !selectedKelas) {
+      setSelectedKelas(kelasList[0]);
+    }
+  }, [kelasList]);
 
   // Ambil rekap ketika kelas, bulan, atau tahun berubah
   useEffect(() => {
@@ -196,10 +200,13 @@ export const RekapBulananScreen = () => {
   // Render progress bar untuk AI confidence
   const renderConfidenceBar = (confidence: number) => {
     const width = Math.min(confidence * 100, 100);
-    let color = '#EF4444';
+    let color = '#10B981'; // default hijau (untuk rendah)
 
-    if (confidence >= 0.8) color = '#10B981';
-    else if (confidence >= 0.6) color = '#F59E0B';
+    if (confidence >= 0.8) {
+      color = '#EF4444'; // merah untuk tinggi
+    } else if (confidence >= 0.6) {
+      color = '#F59E0B'; // kuning untuk sedang
+    }
 
     return (
       <View style={styles.confidenceContainer}>
@@ -323,31 +330,36 @@ export const RekapBulananScreen = () => {
     if (kelasList.length <= 1) return null;
 
     return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.kelasSelector}
-      >
-        {kelasList.map(kelas => (
-          <TouchableOpacity
-            key={kelas.id}
-            style={[
-              styles.kelasButton,
-              selectedKelas?.id === kelas.id && styles.kelasButtonActive,
-            ]}
-            onPress={() => setSelectedKelas(kelas)}
-          >
-            <Text
+      <View style={styles.kelasSelector}>
+        <Text style={styles.sectionLabel}>Pilih Kelas</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.kelasScrollContent}
+        >
+          {kelasList.map(kelas => (
+            <TouchableOpacity
+              key={kelas.id}
               style={[
-                styles.kelasButtonText,
-                selectedKelas?.id === kelas.id && styles.kelasButtonTextActive,
+                styles.kelasItem,
+                selectedKelas?.id === kelas.id && styles.kelasItemActive,
               ]}
+              onPress={() => setSelectedKelas(kelas)}
+              activeOpacity={0.7}
             >
-              {kelas.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={[
+                  styles.kelasItemText,
+                  selectedKelas?.id === kelas.id && styles.kelasItemTextActive,
+                ]}
+                numberOfLines={1}
+              >
+                {kelas.namaKelas}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
     );
   };
 
@@ -363,6 +375,7 @@ export const RekapBulananScreen = () => {
 
     return (
       <View style={styles.dateSelector}>
+        <Text style={styles.sectionLabel}>Pilih Periode</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -475,31 +488,31 @@ export const RekapBulananScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Rekap Absensi Bulanan</Text>
-        <Text style={styles.headerSubtitle}>
-          {bulanNama[bulan - 1]} {tahun}
-        </Text>
-      </View>
+    <SafeAreaView style={styles.safeContainer}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
+      
+      <View style={styles.container}>
 
-      {renderKelasSelector()}
-      {renderMonthYearSelector()}
 
-      {loadingRekap ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#5D5FEF" />
-          <Text style={styles.loadingText}>Memuat rekap absensi...</Text>
-        </View>
-      ) : !rekapData || !rekapData.rekap ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>
-            Tidak ada data absensi untuk periode ini
-          </Text>
-        </View>
-      ) : (
-        <>
+        {/* Container untuk filter yang lebih kompak */}
+        <View style={styles.filterContainer}>
+          {renderKelasSelector()}
+          {renderMonthYearSelector()}
           {renderSearchBar()}
+        </View>
+
+        {loadingRekap ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#5D5FEF" />
+            <Text style={styles.loadingText}>Memuat rekap absensi...</Text>
+          </View>
+        ) : !rekapData || !rekapData.rekap ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.errorText}>
+              Tidak ada data absensi untuk periode ini
+            </Text>
+          </View>
+        ) : (
           <FlatList
             data={filteredSantri}
             keyExtractor={([santriName]) => santriName}
@@ -587,18 +600,29 @@ export const RekapBulananScreen = () => {
               </View>
             }
           />
-        </>
-      )}
+        )}
 
-      {renderSantriModal()}
-    </View>
+        {renderSantriModal()}
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeContainer: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  // Container untuk filter yang kompak
+  filterContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 4,
   },
   centerContainer: {
     flex: 1,
@@ -606,92 +630,102 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  // Header yang lebih kompak
   header: {
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === 'ios' ? 6 : 10,
+    paddingBottom: 8,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1E293B',
     textAlign: 'center',
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 2,
   },
+  // Kelas selector yang lebih kompak
   kelasSelector: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  kelasButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    marginBottom: 6,
+  },
+  kelasScrollContent: {
+    paddingRight: 16,
+  },
+  kelasItem: {
+    minWidth: 70,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 6,
+    borderRadius: 16,
     backgroundColor: '#F1F5F9',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  kelasButtonActive: {
+  kelasItemActive: {
     backgroundColor: '#5D5FEF',
     borderColor: '#5D5FEF',
   },
-  kelasButtonText: {
-    fontSize: 14,
-    color: '#64748B',
+  kelasItemText: {
+    fontSize: 12,
     fontWeight: '500',
+    color: '#64748B',
+    textAlign: 'center',
   },
-  kelasButtonTextActive: {
+  kelasItemTextActive: {
     color: '#FFFFFF',
   },
+  // Date selector yang lebih kompak
   dateSelector: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    paddingTop: 0,
+    paddingBottom: 8,
   },
   monthSelector: {
-    marginBottom: 8,
+    marginBottom: 6,
   },
   yearSelector: {
-    marginBottom: 4,
+    marginBottom: 0,
   },
   dateButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    borderRadius: 10,
     backgroundColor: '#F1F5F9',
   },
   dateButtonActive: {
     backgroundColor: '#5D5FEF',
   },
   dateButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '500',
   },
   dateButtonTextActive: {
     color: '#FFFFFF',
   },
+  // Search bar yang lebih kompak
   searchContainer: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   searchInputContainer: {
     position: 'relative',
@@ -700,10 +734,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 16,
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    fontSize: 16,
+    fontSize: 14,
     color: '#1E293B',
     paddingRight: 40,
   },
@@ -725,23 +759,25 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   searchInfo: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
-    marginTop: 6,
+    marginTop: 4,
     textAlign: 'center',
   },
+  // List content dengan padding yang lebih sedikit
   listContent: {
-    padding: 16,
+    padding: 12,
+    paddingBottom: 100,
   },
   santriCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
     shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
     elevation: 2,
     borderWidth: 1,
     borderColor: '#F1F5F9',
@@ -750,30 +786,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   santriName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1E293B',
     flex: 1,
   },
   detailButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
     backgroundColor: '#EEF2FF',
   },
   detailButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#5D5FEF',
     fontWeight: '500',
   },
   summaryContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
@@ -781,12 +817,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryNumber: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   summaryLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#64748B',
   },
   hadir: {

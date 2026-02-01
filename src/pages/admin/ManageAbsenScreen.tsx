@@ -256,30 +256,53 @@ function AdminJadwalScreen() {
     }
   };
 
-  const submitEdit = async () => {
-    if (!editingJadwal) return;
+const submitEdit = async () => {
+  if (!editingJadwal) return;
+
+  try {
     setLoading(true);
-    try {
-      const token = await getToken();
-      const payload: any = {
-        jamMulai: editJamMulai,
-        jamSelesai: editJamSelesai,
-      };
-      if (editingJadwal.absensi && editingJadwal.absensi.length === 0 && editTanggal) {
-        payload.tanggal = editTanggal.toISOString().split('T')[0];
-      }
-      await axios.put(`${API}/jadwal/${editingJadwal.id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      socket.emit('jadwal-changed', { kelasId: selectedKelas });
-      setEditVisible(false);
-      fetchJadwal(selectedKelas!);
-    } catch {
-      Alert.alert('Error', 'Gagal update jadwal');
-    } finally {
-      setLoading(false);
+    const token = await getToken();
+
+    const payload: any = {
+      jamMulai: editJamMulai,
+      jamSelesai: editJamSelesai,
+    };
+
+    if (editTanggal) {
+      payload.tanggal = editTanggal
+        .toISOString()
+        .split("T")[0];
     }
-  };
+
+    await axios.put(
+      `${API}/jadwal/${editingJadwal.id}`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    socket.emit("jadwal-changed", {
+      kelasId: selectedKelas,
+    });
+
+    setEditVisible(false);
+    fetchJadwal(selectedKelas!);
+  } catch (err: any) {
+  const message =
+    err?.response?.data?.message ||
+    "Terjadi kesalahan";
+
+  Alert.alert("Gagal", message);
+}
+finally {
+    setLoading(false);
+  }
+};
+
+
 
   /* ================= SOCKET LISTENER ================= */
   useEffect(() => {

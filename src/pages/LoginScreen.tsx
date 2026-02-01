@@ -116,9 +116,6 @@ const LoginScreen = () => {
                 source={require('../assets/logo.png')}
                 style={styles.logo}
               />
-              <View style={styles.logoBadge}>
-                <Icon name="graduation-cap" type="font-awesome" size={20} color="#2563eb" />
-              </View>
             </View>
             
             <Text style={styles.welcomeText}>Selamat Datang!</Text>
@@ -226,7 +223,7 @@ const LoginScreen = () => {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              © 2026 Sistem Absensi Pesantren
+              © NIVI PROJECT
             </Text>
           </View>
         </ScrollView>

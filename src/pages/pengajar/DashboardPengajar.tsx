@@ -215,11 +215,6 @@ const DashboardPengajar = () => {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Absensi Hari Ini</Text>
 
-          <View style={styles.absensiHeader}>
-            <Text style={styles.absensiTotalLabel}>Total Santri:</Text>
-            <Text style={styles.absensiTotal}>{absensiStats.total}</Text>
-          </View>
-
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
               <View
@@ -363,7 +358,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: 100, // DITAMBAHKAN: Padding bottom untuk navigator
+    paddingBottom: 20, // DITAMBAHKAN: Padding bottom untuk navigator
   },
 
   header: {

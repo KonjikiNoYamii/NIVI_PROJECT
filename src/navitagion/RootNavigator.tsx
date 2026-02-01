@@ -12,6 +12,7 @@ import ActivateAccountScreen from "../pages/ActivateAccountScreen";
 import ForgotPasswordScreen from "../pages/ForgotPassword";
 import ResetPasswordScreen from "../pages/ResetPassword";
 import NilaiTugasScreen from "../pages/pengajar/NilaiTugasScreen";
+import TugasArsipScreen from "../pages/santri/TugasArsipScreen";
 
 const Stack = createStackNavigator();
 
@@ -28,6 +29,7 @@ export default function RootNavigator() {
         <Stack.Screen name="PengajarApp" component={PengajarDrawer} />
         <Stack.Screen name="AdminApp" component={AdminDrawer} />
         <Stack.Screen name="Nilai" component={NilaiTugasScreen}/>
+        <Stack.Screen name="ArsipTugas" component={TugasArsipScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

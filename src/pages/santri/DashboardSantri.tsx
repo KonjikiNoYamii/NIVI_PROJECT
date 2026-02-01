@@ -1,5 +1,5 @@
 // DashboardSantri.tsx
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,15 +11,14 @@ import {
   StatusBar,
   Platform,
   RefreshControl,
-} from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
-import { absensiService, Absensi } from "../../services/absensi";
-import { absensiSettingService } from "../../services/absensiSetting";
-import HeaderDashboard from "../../components/santri/HeaderDashboard";
-import AbsensiCard from "../../components/santri/AbsensiCard";
-import HistoryCard from "../../components/santri/HistoryCard";
-import InfoCard from "../../components/santri/InfoCard";
-import { useAiBubble } from "../../context/aiBubbleContext";
+} from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { absensiService, Absensi } from '../../services/absensi';
+import { absensiSettingService } from '../../services/absensiSetting';
+import AbsensiCard from '../../components/santri/AbsensiCard';
+import HistoryCard from '../../components/santri/HistoryCard';
+import InfoCard from '../../components/santri/InfoCard';
+import { useAiBubble } from '../../context/aiBubbleContext';
 
 const DashboardSantri = () => {
   const [loading, setLoading] = useState(true);
@@ -27,8 +26,7 @@ const DashboardSantri = () => {
   const [submitting, setSubmitting] = useState(false);
   const [absensi, setAbsensi] = useState<Absensi[]>([]);
   const [MAX_ABSEN, setMaxAbsen] = useState<number>(0);
-const { bubble, clearBubble } = useAiBubble();
-
+  const { bubble, clearBubble } = useAiBubble();
 
   // Load maxAbsen dari backend
   const loadMaxAbsen = async () => {
@@ -37,7 +35,7 @@ const { bubble, clearBubble } = useAiBubble();
       const max = await absensiSettingService.getMaxAbsen();
       if (max !== null) setMaxAbsen(max);
     } catch {
-      Alert.alert("Error", "Gagal mengambil setting absensi");
+      Alert.alert('Error', 'Gagal mengambil setting absensi');
     }
   };
 
@@ -46,7 +44,7 @@ const { bubble, clearBubble } = useAiBubble();
       const data = await absensiService.getToday();
       setAbsensi(data);
     } catch {
-      Alert.alert("Error", "Gagal mengambil data absensi");
+      Alert.alert('Error', 'Gagal mengambil data absensi');
     }
   };
 
@@ -63,7 +61,7 @@ const { bubble, clearBubble } = useAiBubble();
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [])
+    }, []),
   );
 
   const onRefresh = () => {
@@ -74,11 +72,14 @@ const { bubble, clearBubble } = useAiBubble();
   const handleAbsen = async () => {
     try {
       setSubmitting(true);
-      await absensiService.absen("hadir");
+      await absensiService.absen('hadir');
       await loadAbsensi();
-      Alert.alert("Berhasil", "Absensi berhasil dikirim");
+      Alert.alert('Berhasil', 'Absensi berhasil dikirim');
     } catch (e: any) {
-      Alert.alert("Gagal", e.response?.data?.message || "Terjadi kesalahan server");
+      Alert.alert(
+        'Gagal',
+        e.response?.data?.message || 'Terjadi kesalahan server',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -86,10 +87,10 @@ const { bubble, clearBubble } = useAiBubble();
 
   const getTimeStatus = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Pagi";
-    if (hour < 15) return "Siang";
-    if (hour < 18) return "Sore";
-    return "Malam";
+    if (hour < 12) return 'Pagi';
+    if (hour < 15) return 'Siang';
+    if (hour < 18) return 'Sore';
+    return 'Malam';
   };
 
   if (loading) {
@@ -105,13 +106,13 @@ const { bubble, clearBubble } = useAiBubble();
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#2563eb']}
             tintColor="#2563eb"
@@ -162,12 +163,12 @@ const { bubble, clearBubble } = useAiBubble();
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
-  
+
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollContent: {
@@ -176,15 +177,15 @@ const styles = StyleSheet.create({
 
   center: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
   },
 
   /* HEADER BLOK BIRU */
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -192,14 +193,14 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
@@ -209,29 +210,29 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   listCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   // DITAMBAHKAN: Spacer untuk navigator

@@ -22,7 +22,6 @@ import { socket } from '../../services/socket';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from '@react-native-vector-icons/ionicons';
 
-
 interface Santri {
   id: number;
   name: string;
@@ -52,18 +51,19 @@ const KelasScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [editModal, setEditModal] = useState(false);
   const [selectedAbsensi, setSelectedAbsensi] = useState<Absensi | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<'hadir' | 'izin' | 'sakit' | 'alpha'>('hadir');
+  const [selectedStatus, setSelectedStatus] = useState<
+    'hadir' | 'izin' | 'sakit' | 'alpha'
+  >('hadir');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
 
   const sortedAbsensi = useMemo(() => {
-  if (!Array.isArray(selectedKelas?.absensi)) return []; // <- pastikan benar-benar array
-  return [...selectedKelas.absensi].sort((a, b) => {
-    const timeA = new Date(a.tanggal).getTime();
-    const timeB = new Date(b.tanggal).getTime();
-    return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
-  });
-}, [selectedKelas?.absensi, sortOrder]);
-
+    if (!Array.isArray(selectedKelas?.absensi)) return []; // <- pastikan benar-benar array
+    return [...selectedKelas.absensi].sort((a, b) => {
+      const timeA = new Date(a.tanggal).getTime();
+      const timeB = new Date(b.tanggal).getTime();
+      return sortOrder === 'latest' ? timeB - timeA : timeA - timeB;
+    });
+  }, [selectedKelas?.absensi, sortOrder]);
 
   useEffect(() => {
     fetchKelas();
@@ -83,7 +83,7 @@ const KelasScreen: React.FC = () => {
       const token = await AsyncStorage.getItem('token');
 
       const res = await axios.get<{ success: boolean; data: Kelas[] }>(
-        `${API}/kelas`,
+        `${API}/kelas/all/pengajar`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -172,32 +172,25 @@ const KelasScreen: React.FC = () => {
       onPress={() => setSelectedKelas(item)}
       activeOpacity={0.85}
     >
-      <View style={[styles.kelasIconContainer, { backgroundColor: `${getRandomColor(item.id)}15` }]}>
-        <FontAwesome6
-          name="users"
-          size={22}
-          color={getRandomColor(item.id)}
-        />
+      <View
+        style={[
+          styles.kelasIconContainer,
+          { backgroundColor: `${getRandomColor(item.id)}15` },
+        ]}
+      >
+        <FontAwesome6 name="users" size={22} color={getRandomColor(item.id)} />
       </View>
       <View style={styles.kelasContent}>
         <Text style={styles.kelasTitle}>{item.namaKelas}</Text>
         <View style={styles.kelasInfo}>
           <View style={styles.kelasInfoItem}>
-            <Ionicons
-              name="people-outline"
-              size={12}
-              color="#6b7280"
-            />
+            <Ionicons name="people-outline" size={12} color="#6b7280" />
             <Text style={styles.kelasInfoText}>
               {item.santri.length} Santri
             </Text>
           </View>
           <View style={styles.kelasInfoItem}>
-            <FontAwesome6
-              name="calendar-check"
-              size={12}
-              color="#6b7280"
-            />
+            <FontAwesome6 name="calendar-check" size={12} color="#6b7280" />
             <Text style={styles.kelasInfoText}>
               {item.absensi.length} Absensi
             </Text>
@@ -226,8 +219,18 @@ const KelasScreen: React.FC = () => {
                 style={styles.avatarImage}
               />
             ) : (
-              <View style={[styles.avatarFallback, { backgroundColor: `${getRandomColor(item.id)}15` }]}>
-                <Text style={[styles.avatarText, { color: getRandomColor(item.id) }]}>
+              <View
+                style={[
+                  styles.avatarFallback,
+                  { backgroundColor: `${getRandomColor(item.id)}15` },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.avatarText,
+                    { color: getRandomColor(item.id) },
+                  ]}
+                >
                   {item.name.charAt(0).toUpperCase()}
                 </Text>
               </View>
@@ -250,7 +253,12 @@ const KelasScreen: React.FC = () => {
                 <View style={styles.absensiRecord}>
                   <View style={styles.absensiRecordLeft}>
                     <View
-                      style={[styles.statusBadge, { backgroundColor: `${getStatusColor(absen.status)}15` }]}
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: `${getStatusColor(absen.status)}15`,
+                        },
+                      ]}
                     >
                       <FontAwesome6
                         name={getStatusIcon(absen.status)}
@@ -258,7 +266,10 @@ const KelasScreen: React.FC = () => {
                         color={getStatusColor(absen.status)}
                       />
                       <Text
-                        style={[styles.statusText, { color: getStatusColor(absen.status) }]}
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(absen.status) },
+                        ]}
                       >
                         {getStatusText(absen.status)}
                       </Text>
@@ -293,11 +304,7 @@ const KelasScreen: React.FC = () => {
             />
           ) : (
             <View style={styles.noAbsensiContainer}>
-              <FontAwesome6
-                name="clipboard"
-                size={16}
-                color="#000000"
-              />
+              <FontAwesome6 name="clipboard" size={16} color="#000000" />
               <Text style={styles.noAbsensiText}>
                 Belum ada catatan absensi
               </Text>
@@ -364,22 +371,13 @@ const KelasScreen: React.FC = () => {
               onPress={onRefresh}
               activeOpacity={0.85}
             >
-              <Icon
-                name="refresh"
-                type="font-awesome"
-                size={16}
-                color="#fff"
-              />
+              <Icon name="refresh" type="font-awesome" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
 
           {kelasList.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <FontAwesome6
-                name="school"
-                size={56}
-                color="#e5e7eb"
-              />
+              <FontAwesome6 name="school" size={56} color="#e5e7eb" />
               <Text style={styles.emptyText}>Tidak ada kelas</Text>
               <Text style={styles.emptySubtitle}>
                 Belum ada data kelas yang tersedia
@@ -408,8 +406,8 @@ const KelasScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      <ScrollView 
-        style={styles.container} 
+      <ScrollView
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -445,33 +443,20 @@ const KelasScreen: React.FC = () => {
               onPress={onRefresh}
               activeOpacity={0.85}
             >
-              <Icon
-                name="refresh"
-                type="font-awesome"
-                size={16}
-                color="#fff"
-              />
+              <Icon name="refresh" type="font-awesome" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
 
           <Text style={styles.absensiTitle}>{selectedKelas.namaKelas}</Text>
           <View style={styles.absensiSubtitleContainer}>
             <View style={styles.subtitleItem}>
-              <Ionicons
-                name="person-outline"
-                size={13}
-                color="#c7d2fe"
-              />
+              <Ionicons name="person-outline" size={13} color="#c7d2fe" />
               <Text style={styles.absensiSubtitle}>
                 {selectedKelas.santri.length} Santri
               </Text>
             </View>
             <View style={styles.subtitleItem}>
-              <FontAwesome6
-                name="calendar"
-                size={13}
-                color="#c7d2fe"
-              />
+              <FontAwesome6 name="calendar" size={13} color="#c7d2fe" />
               <Text style={styles.absensiSubtitle}>
                 {totalAbsensiToday} Absensi Hari Ini
               </Text>
@@ -491,7 +476,12 @@ const KelasScreen: React.FC = () => {
               { key: 'alpha', label: 'Alpha', color: '#dc2626' },
             ].map(({ key, label, color }) => (
               <View key={key} style={styles.summaryItem}>
-                <View style={[styles.summaryBadge, { backgroundColor: `${color}15` }]}>
+                <View
+                  style={[
+                    styles.summaryBadge,
+                    { backgroundColor: `${color}15` },
+                  ]}
+                >
                   <Text style={[styles.summaryNumber, { color }]}>
                     {absensiSummary[key as keyof typeof absensiSummary]}
                   </Text>
@@ -502,7 +492,9 @@ const KelasScreen: React.FC = () => {
           </View>
 
           <TouchableOpacity
-            onPress={() => setSortOrder(sortOrder === 'latest' ? 'oldest' : 'latest')}
+            onPress={() =>
+              setSortOrder(sortOrder === 'latest' ? 'oldest' : 'latest')
+            }
             style={styles.sortButton}
             activeOpacity={0.85}
           >
@@ -603,10 +595,15 @@ const KelasScreen: React.FC = () => {
                     color={selectedStatus === s ? getStatusColor(s) : '#6b7280'}
                     style={styles.statusOptionIcon}
                   />
-                  <Text style={[
-                    styles.statusOptionText,
-                    selectedStatus === s && { color: getStatusColor(s), fontWeight: '700' }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.statusOptionText,
+                      selectedStatus === s && {
+                        color: getStatusColor(s),
+                        fontWeight: '700',
+                      },
+                    ]}
+                  >
                     {s.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -666,11 +663,11 @@ const KelasScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9"
+    backgroundColor: '#f1f5f9',
   },
   scrollContent: {
     paddingBottom: 100,
@@ -691,8 +688,8 @@ const styles = StyleSheet.create({
 
   // HEADER - SAMA DENGAN DASHBOARD PENGASAR
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64, // SAMA DENGAN DASHBOARD
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64, // SAMA DENGAN DASHBOARD
     paddingBottom: 32, // SAMA DENGAN DASHBOARD
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -706,30 +703,30 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
   refreshButton: {
     position: 'absolute',
-    top: Platform.OS === "android" ? 58 : 74,
+    top: Platform.OS === 'android' ? 58 : 74,
     right: 20,
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   backButton: {
-    marginTop: Platform.OS === "android" ? 8 : 12,
+    marginTop: Platform.OS === 'android' ? 8 : 12,
   },
   backButtonContent: {
     flexDirection: 'row',
@@ -741,7 +738,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontWeight: '600',
   },
-  
+
   // Header untuk detail kelas
   absensiTitle: {
     fontSize: 26,
@@ -777,14 +774,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
   kelasIconContainer: {
     width: 56,
@@ -827,8 +824,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   emptyText: {
-    textAlign: "center",
-    color: "#6b7280",
+    textAlign: 'center',
+    color: '#6b7280',
     fontSize: 13,
     marginTop: 12,
   },
@@ -843,22 +840,22 @@ const styles = StyleSheet.create({
 
   // Card (Summary) - DITEMPAKKAN DI BAWAH HEADER
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 16,
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 16,
   },
   summaryGrid: {
@@ -907,28 +904,28 @@ const styles = StyleSheet.create({
 
   // Santri List Card
   listCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
   },
   listTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     marginBottom: 12,
-    color: "#111827",
+    color: '#111827',
   },
   listSubtitle: {
     fontSize: 13,
-    color: "#6b7280",
+    color: '#6b7280',
     marginBottom: 16,
-    fontWeight: "500",
+    fontWeight: '500',
   },
 
   // Absensi List
@@ -941,7 +938,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
   absensiHeader: {
     flexDirection: 'row',

@@ -23,37 +23,33 @@ export const AiBubbleProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const socketRef = useRef<Socket | null>(null);
   const [bubble, setBubble] = useState<AiBubble | null>(null);
 
-  useEffect(() => {
-  (async () => {
-    const userId = await AsyncStorage.getItem("userId");
+useEffect(() => {
+  let mounted = true;
 
-    if (!userId) return;
+  const initSocket = async () => {
+    const userId = await AsyncStorage.getItem("userId");
+    if (!userId || !mounted) return;
 
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      auth: { userId }, // ⬅️ JOIN ROOM SEBELUM CONNECT
+      auth: { userId: String(userId) }, // PASTIKAN STRING
     });
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("🟢 Socket connected as user-" + userId);
-    });
-
-    socket.on("ai-bubble", (data: AiBubble) => {
-      console.log("🤖 AI Bubble received:", data);
+    socket.on("ai-bubble", data => {
       setBubble(data);
     });
+  };
 
-    socket.on("disconnect", () => {
-      console.log("🔴 Socket disconnected");
-    });
-  })();
+  initSocket();
 
   return () => {
+    mounted = false;
     socketRef.current?.disconnect();
   };
 }, []);
+
 
 
   const clearBubble = () => setBubble(null);

@@ -80,8 +80,8 @@ const TaskPengajar: React.FC = () => {
       if (!token) return;
 
       const res = await axios.get<ApiResponse<Kelas[]>>(
-        `${API}/kelas`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${API}/kelas/all/pengajar`,
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (res.data.success) {
@@ -101,7 +101,7 @@ const TaskPengajar: React.FC = () => {
 
       const res = await axios.get<ApiResponse<MataPelajaran[]>>(
         `${API}/mapel`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       if (res.data.success) {
@@ -122,10 +122,7 @@ const TaskPengajar: React.FC = () => {
   /* =======================
      HANDLER
   ======================= */
-  const handleInputChange = (
-    field: keyof CreateTaskRequest,
-    value: any
-  ) => {
+  const handleInputChange = (field: keyof CreateTaskRequest, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -185,9 +182,7 @@ const TaskPengajar: React.FC = () => {
     }
   };
 
-  const selectedMapel = mapelList.find(
-    m => m.id === formData.mapelId
-  );
+  const selectedMapel = mapelList.find(m => m.id === formData.mapelId);
 
   /* =======================
      RENDER
@@ -195,9 +190,9 @@ const TaskPengajar: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      
-      <ScrollView 
-        style={styles.container} 
+
+      <ScrollView
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -229,22 +224,24 @@ const TaskPengajar: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.selectInput,
-                !formData.mapelId && styles.selectInputEmpty
+                !formData.mapelId && styles.selectInputEmpty,
               ]}
               onPress={() => setShowMapelModal(true)}
               activeOpacity={0.85}
             >
-              <Text style={[
-                styles.selectText,
-                !formData.mapelId && styles.placeholderText
-              ]}>
+              <Text
+                style={[
+                  styles.selectText,
+                  !formData.mapelId && styles.placeholderText,
+                ]}
+              >
                 {selectedMapel?.nama || 'Pilih mata pelajaran'}
               </Text>
-              <Icon 
-                name="chevron-down" 
-                type="font-awesome" 
-                size={16} 
-                color="#6b7280" 
+              <Icon
+                name="chevron-down"
+                type="font-awesome"
+                size={16}
+                color="#6b7280"
               />
             </TouchableOpacity>
           </View>
@@ -275,11 +272,11 @@ const TaskPengajar: React.FC = () => {
               onPress={() => setShowDateModal(true)}
               activeOpacity={0.85}
             >
-              <Icon 
-                name="calendar" 
-                type="font-awesome" 
-                size={16} 
-                color="#2563eb" 
+              <Icon
+                name="calendar"
+                type="font-awesome"
+                size={16}
+                color="#2563eb"
                 style={styles.dateIcon}
               />
               <Text style={styles.dateText}>
@@ -287,14 +284,14 @@ const TaskPengajar: React.FC = () => {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
-                  day: 'numeric'
+                  day: 'numeric',
                 })}
               </Text>
-              <Icon 
-                name="chevron-right" 
-                type="font-awesome" 
-                size={16} 
-                color="#9ca3af" 
+              <Icon
+                name="chevron-right"
+                type="font-awesome"
+                size={16}
+                color="#9ca3af"
               />
             </TouchableOpacity>
           </View>
@@ -318,10 +315,12 @@ const TaskPengajar: React.FC = () => {
                     onPress={() => handleInputChange('kelasId', k.id)}
                     activeOpacity={0.85}
                   >
-                    <Text style={[
-                      styles.kelasText,
-                      formData.kelasId === k.id && styles.kelasTextSelected
-                    ]}>
+                    <Text
+                      style={[
+                        styles.kelasText,
+                        formData.kelasId === k.id && styles.kelasTextSelected,
+                      ]}
+                    >
                       {k.namaKelas}
                     </Text>
                   </TouchableOpacity>
@@ -332,10 +331,7 @@ const TaskPengajar: React.FC = () => {
 
           {/* SUBMIT BUTTON */}
           <TouchableOpacity
-            style={[
-              styles.button,
-              submitting && styles.disabled
-            ]}
+            style={[styles.button, submitting && styles.disabled]}
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
@@ -353,9 +349,9 @@ const TaskPengajar: React.FC = () => {
       </ScrollView>
 
       {/* MAPEL MODAL */}
-      <Modal 
-        visible={showMapelModal} 
-        transparent 
+      <Modal
+        visible={showMapelModal}
+        transparent
         animationType="slide"
         statusBarTranslucent
       >
@@ -363,14 +359,19 @@ const TaskPengajar: React.FC = () => {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Pilih Mata Pelajaran</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowMapelModal(false)}
                 style={styles.modalCloseButton}
               >
-                <Icon name="times" type="font-awesome" size={20} color="#6b7280" />
+                <Icon
+                  name="times"
+                  type="font-awesome"
+                  size={20}
+                  color="#6b7280"
+                />
               </TouchableOpacity>
             </View>
-            <ScrollView 
+            <ScrollView
               style={styles.modalScroll}
               showsVerticalScrollIndicator={false}
             >
@@ -379,7 +380,7 @@ const TaskPengajar: React.FC = () => {
                   key={m.id}
                   style={[
                     styles.subjectItem,
-                    formData.mapelId === m.id && styles.subjectItemSelected
+                    formData.mapelId === m.id && styles.subjectItemSelected,
                   ]}
                   onPress={() => {
                     handleInputChange('mapelId', m.id);
@@ -388,33 +389,41 @@ const TaskPengajar: React.FC = () => {
                   activeOpacity={0.85}
                 >
                   <View style={styles.subjectInfo}>
-                    <View style={[
-                      styles.subjectIcon,
-                      { backgroundColor: formData.mapelId === m.id ? '#2563eb' : '#f3f4f6' }
-                    ]}>
-                      <Icon 
-                        name="book" 
-                        type="font-awesome" 
-                        size={16} 
-                        color={formData.mapelId === m.id ? '#fff' : '#6b7280'} 
+                    <View
+                      style={[
+                        styles.subjectIcon,
+                        {
+                          backgroundColor:
+                            formData.mapelId === m.id ? '#2563eb' : '#f3f4f6',
+                        },
+                      ]}
+                    >
+                      <Icon
+                        name="book"
+                        type="font-awesome"
+                        size={16}
+                        color={formData.mapelId === m.id ? '#fff' : '#6b7280'}
                       />
                     </View>
                     <View>
-                      <Text style={[
-                        styles.subjectName,
-                        formData.mapelId === m.id && styles.subjectNameSelected
-                      ]}>
+                      <Text
+                        style={[
+                          styles.subjectName,
+                          formData.mapelId === m.id &&
+                            styles.subjectNameSelected,
+                        ]}
+                      >
                         {m.nama}
                       </Text>
                       <Text style={styles.subjectCode}>{m.kode}</Text>
                     </View>
                   </View>
                   {formData.mapelId === m.id && (
-                    <Icon 
-                      name="check" 
-                      type="font-awesome" 
-                      size={16} 
-                      color="#2563eb" 
+                    <Icon
+                      name="check"
+                      type="font-awesome"
+                      size={16}
+                      color="#2563eb"
                     />
                   )}
                 </TouchableOpacity>
@@ -436,11 +445,16 @@ const TaskPengajar: React.FC = () => {
             <View style={styles.dateModalContent}>
               <View style={styles.dateModalHeader}>
                 <Text style={styles.dateModalTitle}>Pilih Deadline</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setShowDateModal(false)}
                   style={styles.dateModalClose}
                 >
-                  <Icon name="times" type="font-awesome" size={20} color="#6b7280" />
+                  <Icon
+                    name="times"
+                    type="font-awesome"
+                    size={20}
+                    color="#6b7280"
+                  />
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -473,12 +487,12 @@ const TaskPengajar: React.FC = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollContent: {
@@ -486,8 +500,8 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -495,29 +509,29 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 16,
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   inputGroup: {
@@ -526,73 +540,73 @@ const styles = StyleSheet.create({
 
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 8,
   },
 
   input: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
   },
 
   selectInput: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   selectInputEmpty: {
-    borderColor: "#d1d5db",
+    borderColor: '#d1d5db',
   },
 
   selectText: {
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
     flex: 1,
   },
 
   placeholderText: {
-    color: "#9ca3af",
+    color: '#9ca3af',
   },
 
   textArea: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
     minHeight: 100,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
   },
 
   charCount: {
     fontSize: 12,
-    color: "#6b7280",
-    textAlign: "right",
+    color: '#6b7280',
+    textAlign: 'right',
     marginTop: 4,
   },
 
   dateInput: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   dateIcon: {
@@ -601,56 +615,56 @@ const styles = StyleSheet.create({
 
   dateText: {
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
     flex: 1,
   },
 
   loadingContainer: {
     padding: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
 
   kelasGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginHorizontal: -6,
   },
 
   kelasCard: {
-    width: "47%",
-    marginHorizontal: "1.5%",
+    width: '47%',
+    marginHorizontal: '1.5%',
     marginBottom: 12,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    alignItems: "center",
-    justifyContent: "center",
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   kelasCardSelected: {
-    backgroundColor: "#dbeafe",
-    borderColor: "#2563eb",
+    backgroundColor: '#dbeafe',
+    borderColor: '#2563eb',
   },
 
   kelasText: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-    textAlign: "center",
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
   },
 
   kelasTextSelected: {
-    color: "#1e40af",
-    fontWeight: "700",
+    color: '#1e40af',
+    fontWeight: '700',
   },
 
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: '#2563eb',
     paddingVertical: 14,
     borderRadius: 14,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 8,
     marginBottom: 10, // Ditambahkan margin bottom
   },
@@ -660,8 +674,8 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
-    fontWeight: "800",
+    color: '#fff',
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
 
@@ -671,40 +685,40 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
 
   modalContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "80%",
+    maxHeight: '80%',
   },
 
   modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: '#e5e7eb',
   },
 
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: '700',
+    color: '#111827',
   },
 
   modalCloseButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f3f4f6",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
   },
 
   modalScroll: {
@@ -712,22 +726,22 @@ const styles = StyleSheet.create({
   },
 
   subjectItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 16,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: '#f3f4f6',
   },
 
   subjectItemSelected: {
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: '#e5e7eb',
   },
 
   subjectInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
 
@@ -735,66 +749,66 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 12,
   },
 
   subjectName: {
     fontSize: 15,
-    color: "#374151",
-    fontWeight: "600",
+    color: '#374151',
+    fontWeight: '600',
     marginBottom: 2,
   },
 
   subjectNameSelected: {
-    color: "#1e40af",
+    color: '#1e40af',
   },
 
   subjectCode: {
     fontSize: 12,
-    color: "#6b7280",
-    fontWeight: "500",
+    color: '#6b7280',
+    fontWeight: '500',
   },
 
   dateModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
 
   dateModalContent: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 20,
     width: Platform.OS === 'ios' ? 340 : 320,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
 
   dateModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: '#e5e7eb',
   },
 
   dateModalTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#111827",
+    fontWeight: '700',
+    color: '#111827',
   },
 
   dateModalClose: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f3f4f6",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
   },
 
   datePicker: {
@@ -803,14 +817,14 @@ const styles = StyleSheet.create({
 
   dateConfirmButton: {
     padding: 16,
-    backgroundColor: "#2563eb",
-    alignItems: "center",
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
   },
 
   dateConfirmText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
 });

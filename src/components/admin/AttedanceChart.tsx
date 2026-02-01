@@ -1,9 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { Icon } from "react-native-elements";
-import { NIVI } from "../../theme/niviTheme";
-import SectionCard from "./Section";
-import FontAwesome5 from "@react-native-vector-icons/fontawesome5-pro";
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { NIVI } from '../../theme/niviTheme';
+import SectionCard from './Section';
 
 const AttendanceStats = ({ data }: any) => {
   const total =
@@ -13,19 +12,20 @@ const AttendanceStats = ({ data }: any) => {
     (data?.alpha || 0);
 
   const stats = [
-    { label: "Hadir", value: data?.hadir || 0, color: NIVI.success },
-    { label: "Izin", value: data?.izin || 0, color: NIVI.warning },
-    { label: "Sakit", value: data?.sakit || 0, color: NIVI.secondary },
-    { label: "Alpha", value: data?.alpha || 0, color: NIVI.danger },
+    { label: 'Hadir', value: data?.hadir || 0, color: NIVI.success },
+    { label: 'Izin', value: data?.izin || 0, color: NIVI.warning },
+    { label: 'Sakit', value: data?.sakit || 0, color: NIVI.secondary },
+    { label: 'Alpha', value: data?.alpha || 0, color: NIVI.danger },
   ];
 
-  const percent = (v: number) => (total === 0 ? 0 : Math.round((v / total) * 100));
+  const percent = (v: number) =>
+    total === 0 ? 0 : Math.round((v / total) * 100);
 
   return (
-    <SectionCard title="Statistik Absensi Hari Ini" icon="chart-bar">
+    <SectionCard title="Statistik Absensi Hari Ini" icon="bar-chart">
       {total === 0 ? (
         <View style={styles.empty}>
-          <FontAwesome5 name="calendar-week"size={40} color={NIVI.textMuted} iconStyle="solid"/>
+          <Ionicons name="calendar-outline" size={40} color={NIVI.textMuted} />
           <Text style={styles.emptyText}>Belum ada data absensi</Text>
         </View>
       ) : (
@@ -36,7 +36,15 @@ const AttendanceStats = ({ data }: any) => {
               <Text style={styles.label}>{s.label}</Text>
 
               <View style={styles.bar}>
-                <View style={[styles.fill, { width: `${percent(s.value)}%`, backgroundColor: s.color }]} />
+                <View
+                  style={[
+                    styles.fill,
+                    {
+                      width: `${percent(s.value)}%`,
+                      backgroundColor: s.color,
+                    },
+                  ]}
+                />
               </View>
 
               <Text style={styles.percent}>{percent(s.value)}%</Text>
@@ -50,12 +58,12 @@ const AttendanceStats = ({ data }: any) => {
 
 const styles = StyleSheet.create({
   grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   card: {
-    width: "48%",
+    width: '48%',
     backgroundColor: NIVI.card,
     borderRadius: 12,
     padding: 16,
@@ -65,7 +73,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: '700',
   },
   label: {
     fontSize: 14,
@@ -74,22 +82,22 @@ const styles = StyleSheet.create({
   },
   bar: {
     height: 6,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: '#E2E8F0',
     borderRadius: 3,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   fill: {
-    height: "100%",
+    height: '100%',
     borderRadius: 3,
   },
   percent: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: '600',
     marginTop: 6,
     color: NIVI.textMuted,
   },
   empty: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 32,
   },
   emptyText: {

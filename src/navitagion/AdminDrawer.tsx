@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { 
-  createDrawerNavigator, 
-  DrawerContentScrollView, 
-  DrawerItemList 
-} from "@react-navigation/drawer";
-import ProfileScreen from "../pages/ProfileScreen";
-import AdminBottomNavigator from "./AdminNavigator";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert 
-} from "react-native";
+import React, { useState, useEffect } from 'react';
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+  DrawerItemList,
+} from '@react-navigation/drawer';
+import ProfileScreen from '../pages/ProfileScreen';
+import AdminBottomNavigator from './AdminNavigator';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Icon } from 'react-native-elements';
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import UserListScreen from '../pages/admin/ViewAllUser';
+import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
+import KelasList from '../pages/admin/KelasList';
 
 const Drawer = createDrawerNavigator();
 
@@ -41,25 +39,33 @@ function CustomDrawerContent(props: any) {
 
   const handleLogout = async () => {
     Alert.alert(
-      "Konfirmasi Keluar",
-      "Apakah Anda yakin ingin keluar dari akun?",
+      'Konfirmasi Keluar',
+      'Apakah Anda yakin ingin keluar dari akun?',
       [
-        { text: "Batal", style: "cancel" },
+        { text: 'Batal', style: 'cancel' },
         {
-          text: "Keluar",
-          style: "destructive",
-          onPress: async () => {
-            await AsyncStorage.removeItem('token');
-            await AsyncStorage.removeItem('profile');
-            navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
-          }
-        }
-      ]
+          text: 'Keluar',
+          style: 'destructive',
+         onPress: async () => {
+          await AsyncStorage.multiRemove([
+            'token',
+            'user',
+            'profile',
+            'kelasId',
+            'kelasIds',
+            'userName',
+            'userEmail',
+          ]);
+
+          navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
+        },
+        },
+      ],
     );
   };
 
   return (
-    <DrawerContentScrollView 
+    <DrawerContentScrollView
       {...props}
       contentContainerStyle={styles.drawerContainer}
     >
@@ -86,7 +92,12 @@ function CustomDrawerContent(props: any) {
           activeOpacity={0.8}
         >
           <View style={styles.logoutIconContainer}>
-            <Icon name="outdent" type="font-awesome" size={16} color="#e74c3c" />
+            <Icon
+              name="outdent"
+              type="font-awesome"
+              size={16}
+              color="#e74c3c"
+            />
           </View>
           <Text style={styles.logoutText}>Keluar</Text>
         </TouchableOpacity>
@@ -136,43 +147,87 @@ export default function AdminDrawer() {
           paddingVertical: 6,
         },
       })}
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      drawerContent={props => <CustomDrawerContent {...props} />}
     >
-      <Drawer.Screen 
-        name="Dashboard" 
+      <Drawer.Screen
+        name="Dashboard"
         component={AdminBottomNavigator}
         options={{
-          title: 'Dashboard',
+          title: 'Beranda',
           drawerIcon: ({ focused }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <Icon
                 name="dashboard"
                 type="font-awesome"
                 size={18}
-                color={focused ? "#3498db" : "#64748b"}
+                color={focused ? '#3498db' : '#64748b'}
               />
             </View>
           ),
         }}
       />
-      <Drawer.Screen 
-        name="Profile" 
+      <Drawer.Screen
+        name="Profile"
         component={ProfileScreen}
         options={{
           title: 'Profil Saya',
           drawerIcon: ({ focused }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <Icon
                 name="user"
                 type="font-awesome"
                 size={18}
-                color={focused ? "#3498db" : "#64748b"}
+                color={focused ? '#3498db' : '#64748b'}
+              />
+            </View>
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="UserManagement"
+        component={UserListScreen}
+        options={{
+          title: 'Manage Users',
+          drawerIcon: ({ focused }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <FontAwesome6 name="users-gear" size={18} color="#fff" />
+            </View>
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="ClassManagement"
+        component={KelasList}
+        options={{
+          title: 'Manage Kelas',
+          drawerIcon: ({ focused }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <Ionicons
+                name={focused ? 'school' : 'school-outline'}
+                size={focused ? 20 : 18}
+                color={focused ? '#3498db' : '#000000'}
               />
             </View>
           ),

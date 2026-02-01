@@ -142,7 +142,7 @@ export default function PengajarDrawer() {
         name="Dashboard" 
         component={PengajarBottomNavigator}
         options={{
-          title: 'Dashboard',
+          title: 'Beranda',
           drawerIcon: ({ focused }) => (
             <View style={[
               styles.iconContainer,

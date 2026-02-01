@@ -9,8 +9,7 @@ import ManagePengajarScreen from '../pages/admin/ManagePengajarScreen';
 import ManageKelasScreen from '../pages/admin/ManageKelasScreen';
 import CreateMataPelajaranScreen from '../pages/admin/MataPelajaranPage';
 import AdminJadwalScreen from '../pages/admin/ManageAbsenScreen';
-import { RekapBulananScreen } from '../pages/RekapBulananScreen';
-
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 const Tab = createBottomTabNavigator();
 
@@ -20,7 +19,6 @@ export default function AdminBottomNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#3498db',
-        tabBarInactiveTintColor: '#95a5a6',
         tabBarStyle: {
           backgroundColor: 'rgba(255, 255, 255, 0.98)',
           borderTopWidth: 0,
@@ -51,17 +49,18 @@ export default function AdminBottomNavigator() {
         },
       }}
     >
-
       <Tab.Screen
         name="AdminDashboard"
         component={DashboardAdmin}
         options={{
-          tabBarLabel: 'Dashboard',
+          tabBarLabel: 'Beranda',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name={focused ? 'chart-simple' : 'chart-simple'}
                 size={focused ? 22 : 20}
@@ -77,15 +76,16 @@ export default function AdminBottomNavigator() {
         options={{
           tabBarLabel: 'Santri',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
-              <FontAwesome6
-                name="user"
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <Ionicons
+                name="person"
                 size={focused ? 20 : 18}
                 color={focused ? '#3498db' : '#000000'}
-                solid={focused}
               />
             </View>
           ),
@@ -97,10 +97,12 @@ export default function AdminBottomNavigator() {
         options={{
           tabBarLabel: 'Pengajar',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="chalkboard-user"
                 size={focused ? 20 : 18}
@@ -117,10 +119,12 @@ export default function AdminBottomNavigator() {
         options={{
           tabBarLabel: 'Kelas',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="door-open"
                 size={focused ? 20 : 18}
@@ -137,10 +141,12 @@ export default function AdminBottomNavigator() {
         options={{
           tabBarLabel: 'Mapel',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="book-open"
                 size={focused ? 20 : 18}
@@ -157,10 +163,12 @@ export default function AdminBottomNavigator() {
         options={{
           tabBarLabel: 'Absensi',
           tabBarIcon: ({ focused, color, size }) => (
-            <View style={[
-              styles.iconContainer,
-              focused && styles.iconContainerActive
-            ]}>
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
               <FontAwesome6
                 name="calendar-check"
                 size={focused ? 20 : 18}

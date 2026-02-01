@@ -19,11 +19,11 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Loading from '../../components/loading';
 import { API } from '../../services/api';
-import { NIVI } from '../../theme/niviTheme';
 import { Icon } from 'react-native-elements';
 import { TextInput } from 'react-native-gesture-handler';
 import { socket } from '../../services/socket';
 import { useAiBubble } from '../../context/aiBubbleContext';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 const getToken = async () => {
   const token = await AsyncStorage.getItem('token');
@@ -166,7 +166,10 @@ export default function SantriAbsensiScreen() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      Alert.alert('Berhasil', 'Izin berhasil diajukan dan menunggu persetujuan');
+      Alert.alert(
+        'Berhasil',
+        'Izin berhasil diajukan dan menunggu persetujuan',
+      );
 
       setShowIzinModal(false);
       setAlasanIzin('');
@@ -174,7 +177,10 @@ export default function SantriAbsensiScreen() {
       // Refresh izin pending & absensi
       await loadData();
     } catch (err: any) {
-      Alert.alert('Gagal', err.response?.data?.message || 'Terjadi kesalahan server');
+      Alert.alert(
+        'Gagal',
+        err.response?.data?.message || 'Terjadi kesalahan server',
+      );
     } finally {
       setLoading(false);
     }
@@ -204,7 +210,7 @@ export default function SantriAbsensiScreen() {
       {/* ==================== BUTTON ABSEN CARD ==================== */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Status Absensi</Text>
-        
+
         <View style={styles.buttonGroup}>
           {statusOptions.map(s => {
             const bgColor = statusColors[s];
@@ -220,7 +226,10 @@ export default function SantriAbsensiScreen() {
                     if (!izinPending) {
                       setShowIzinModal(true);
                     } else {
-                      Alert.alert('Peringatan', 'Masih ada izin menunggu, tunggu persetujuan');
+                      Alert.alert(
+                        'Peringatan',
+                        'Masih ada izin menunggu, tunggu persetujuan',
+                      );
                     }
                   } else {
                     submitAbsen(s);
@@ -244,36 +253,41 @@ export default function SantriAbsensiScreen() {
                   },
                 ]}
               >
-                <View style={[
-                  styles.btnIconContainer,
-                  isActive && styles.btnIconContainerActive,
-                  isDisabled && styles.btnIconContainerDisabled,
-                ]}>
-                  <Icon
+                <View
+                  style={[
+                    styles.btnIconContainer,
+                    isActive && styles.btnIconContainerActive,
+                    isDisabled && styles.btnIconContainerDisabled,
+                  ]}
+                >
+                  <Ionicons
                     name={
                       s === 'hadir'
-                        ? 'check-circle'
+                        ? 'checkmark-circle'
                         : s === 'izin'
-                        ? 'clock'
-                        : 'heartbeat'
+                        ? 'time'
+                        : 'medkit'
                     }
-                    type="font-awesome"
                     color={
-                      isActive
-                        ? '#FFFFFF'
-                        : isDisabled
-                        ? '#d1d5db'
-                        : bgColor
+                      isActive ? '#FFFFFF' : isDisabled ? '#d1d5db' : bgColor
                     }
                     size={24}
                   />
                 </View>
-                <Text style={[
-                  styles.btnText,
-                  isActive && styles.btnTextActive,
-                  isDisabled && styles.btnTextDisabled,
-                  { color: isActive ? '#FFFFFF' : isDisabled ? '#9ca3af' : bgColor }
-                ]}>
+                <Text
+                  style={[
+                    styles.btnText,
+                    isActive && styles.btnTextActive,
+                    isDisabled && styles.btnTextDisabled,
+                    {
+                      color: isActive
+                        ? '#FFFFFF'
+                        : isDisabled
+                        ? '#9ca3af'
+                        : bgColor,
+                    },
+                  ]}
+                >
                   {s.toUpperCase()}
                 </Text>
               </TouchableOpacity>
@@ -285,7 +299,7 @@ export default function SantriAbsensiScreen() {
       {/* ==================== STATISTIK CARD ==================== */}
       <View style={[styles.listCard, styles.statistikCard]}>
         <Text style={styles.listTitle}>Statistik Absensi</Text>
-        
+
         {total === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
@@ -293,23 +307,21 @@ export default function SantriAbsensiScreen() {
         ) : (
           <View style={styles.statsGrid}>
             {statusOptions.map(key => (
-              <View 
-                key={key} 
-                style={styles.statCard}
-              >
-                <View style={[
-                  styles.statIconContainer,
-                  { backgroundColor: `${statusColors[key]}15` }
-                ]}>
-                  <Icon
+              <View key={key} style={styles.statCard}>
+                <View
+                  style={[
+                    styles.statIconContainer,
+                    { backgroundColor: `${statusColors[key]}15` },
+                  ]}
+                >
+                  <Ionicons
                     name={
                       key === 'hadir'
-                        ? 'check-circle'
+                        ? 'checkmark-circle'
                         : key === 'izin'
-                        ? 'clock'
-                        : 'heartbeat'
+                        ? 'time'
+                        : 'medkit'
                     }
-                    type="font-awesome"
                     color={statusColors[key]}
                     size={20}
                   />
@@ -341,7 +353,7 @@ export default function SantriAbsensiScreen() {
       {/* ==================== RIWAYAT ABSENSI CARD ==================== */}
       <View style={styles.listCard}>
         <Text style={styles.listTitle}>Riwayat Absensi</Text>
-        
+
         {absensiHariIni.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Belum ada absensi hari ini</Text>
@@ -353,10 +365,12 @@ export default function SantriAbsensiScreen() {
             scrollEnabled={false}
             renderItem={({ item }) => (
               <View style={styles.listItem}>
-                <View style={[
-                  styles.statusIndicator,
-                  { backgroundColor: `${statusColors[item.status]}15` }
-                ]}>
+                <View
+                  style={[
+                    styles.statusIndicator,
+                    { backgroundColor: `${statusColors[item.status]}15` },
+                  ]}
+                >
                   <Icon
                     name={
                       item.status === 'hadir'
@@ -380,11 +394,18 @@ export default function SantriAbsensiScreen() {
                     ]}
                   >
                     {item.status === 'izin' || item.status === 'disetujui'
-                      ? `Izin | ${new Date(item.tanggal).toLocaleDateString('id-ID')}`
-                      : `${item.jadwal?.hari || 'Tidak ada jadwal'} | ${item.jadwal?.jamMulai || ''}-${item.jadwal?.jamSelesai || ''}`}
+                      ? `Izin | ${new Date(item.tanggal).toLocaleDateString(
+                          'id-ID',
+                        )}`
+                      : `${item.jadwal?.hari || 'Tidak ada jadwal'} | ${
+                          item.jadwal?.jamMulai || ''
+                        }-${item.jadwal?.jamSelesai || ''}`}
                   </Text>
                   <Text
-                    style={[styles.status, { color: statusColors[item.status] }]}
+                    style={[
+                      styles.status,
+                      { color: statusColors[item.status] },
+                    ]}
                   >
                     {item.status.toUpperCase()}
                   </Text>
@@ -409,8 +430,8 @@ export default function SantriAbsensiScreen() {
         style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#2563eb']}
             tintColor="#2563eb"
@@ -489,12 +510,12 @@ export default function SantriAbsensiScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollContent: {
@@ -503,8 +524,8 @@ const styles = StyleSheet.create({
 
   // HEADER - SEKARANG DI DALAM SCROLLVIEW
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -513,53 +534,53 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
   // CARD - Untuk Status Absensi
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginTop: 0,
     marginBottom: 24, // Tambah margin bawah agar berjarak dengan statistik
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   cardTitle: {
     fontSize: 16,
-    fontWeight: "800",
-    color: "#111827",
+    fontWeight: '800',
+    color: '#111827',
     marginBottom: 16,
   },
 
   // LIST CARD - Untuk Statistik dan Riwayat
   listCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   // Statistik Card khusus dengan margin atas
@@ -567,11 +588,12 @@ const styles = StyleSheet.create({
     marginTop: 0, // Jaga jarak dari card status absensi
   },
 
-  listTitle: { // ← TAMBAHKAN INI
+  listTitle: {
+    // ← TAMBAHKAN INI
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     marginBottom: 12,
-    color: "#111827",
+    color: '#111827',
   },
 
   // BUTTON GROUP
@@ -611,7 +633,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
 
-  btnText: { 
+  btnText: {
     fontWeight: '700',
     fontSize: 13,
     letterSpacing: 0.5,
@@ -627,13 +649,13 @@ const styles = StyleSheet.create({
   },
 
   // STATISTICS
-  statsGrid: { 
-    flexDirection: 'row', 
+  statsGrid: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
   },
 
-  statCard: { 
+  statCard: {
     flex: 1,
     backgroundColor: '#f9fafb',
     borderRadius: 14,
@@ -652,15 +674,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  statValue: { 
-    fontSize: 24, 
-    fontWeight: '800', 
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
     marginBottom: 4,
   },
 
-  statLabel: { 
-    fontSize: 12, 
-    color: '#6b7280', 
+  statLabel: {
+    fontSize: 12,
+    color: '#6b7280',
     marginBottom: 10,
     fontWeight: '600',
   },
@@ -674,8 +696,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  fill: { 
-    height: '100%', 
+  fill: {
+    height: '100%',
     borderRadius: 2,
   },
 
@@ -690,7 +712,7 @@ const styles = StyleSheet.create({
   listItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -708,16 +730,16 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
 
-  jadwal: { 
-    fontSize: 14, 
-    color: '#4b5563', 
+  jadwal: {
+    fontSize: 14,
+    color: '#4b5563',
     marginBottom: 4,
     lineHeight: 20,
     fontWeight: '500',
   },
 
-  status: { 
-    fontSize: 13, 
+  status: {
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -725,12 +747,12 @@ const styles = StyleSheet.create({
   // EMPTY STATE
   emptyContainer: {
     paddingVertical: 20,
-    alignItems: "center",
+    alignItems: 'center',
   },
 
   emptyText: {
-    textAlign: "center",
-    color: "#6b7280",
+    textAlign: 'center',
+    color: '#6b7280',
     fontSize: 13,
   },
 

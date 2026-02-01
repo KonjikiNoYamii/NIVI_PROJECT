@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Icon } from "react-native-elements";
+import Ionicons from "@react-native-vector-icons/ionicons";
 import { NIVI } from "../../theme/niviTheme";
 
 const ActivityList = ({ data }: any) => {
@@ -8,19 +8,19 @@ const ActivityList = ({ data }: any) => {
     {
       title: "Tugas Aktif",
       value: data?.tugasAktif || 0,
-      icon: "tasks",
+      icon: "list-outline",
       color: NIVI.primary,
     },
     {
       title: "Submission Masuk",
       value: data?.submissionMasuk || 0,
-      icon: "inbox",
+      icon: "mail-unread-outline",
       color: NIVI.success,
     },
     {
       title: "Izin Pending",
       value: data?.izinPending || 0,
-      icon: "clipboard-list",
+      icon: "time-outline",
       color: NIVI.warning,
     },
   ];
@@ -28,17 +28,26 @@ const ActivityList = ({ data }: any) => {
   return (
     <View>
       {items.map((item, i) => (
-        <TouchableOpacity key={i} style={styles.row}>
+        <TouchableOpacity key={i} style={styles.row} activeOpacity={0.7}>
           <View style={styles.left}>
-            <View style={[styles.iconBox, { backgroundColor: `${item.color}1A` }]}>
-              <Icon name={item.icon} type="font-awesome" size={16} color={item.color} />
+            <View
+              style={[
+                styles.iconBox,
+                { backgroundColor: `${item.color}1A` },
+              ]}
+            >
+              <Ionicons
+                name={item.icon}
+                size={18}
+                color={item.color}
+              />
             </View>
+
             <View>
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.value}>{item.value} item</Text>
             </View>
           </View>
-          <Icon name="chevron-right" type="font-awesome" size={12} color={NIVI.textMuted} />
         </TouchableOpacity>
       ))}
     </View>

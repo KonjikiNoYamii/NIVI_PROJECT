@@ -17,8 +17,9 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
 import { API } from '../../services/api';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 interface Task {
   id: number;
@@ -38,6 +39,10 @@ const TaskScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [submissionLink, setSubmissionLink] = useState('');
+  const navigation = useNavigation<any>();
+  const isFocused = useIsFocused();
+
+
 
   const fetchTasks = useCallback(async (showLoading = true) => {
     try {
@@ -157,6 +162,40 @@ const TaskScreen: React.FC = () => {
       }
     };
 
+    const archiveTask = async (taskId: number) => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+
+    await axios.patch(
+      `${API}/tugas/santri/${taskId}/archive`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    Alert.alert("Sukses", "Tugas berhasil diarsipkan");
+    fetchTasks(false);
+  } catch (e: any) {
+    Alert.alert(
+      "Gagal",
+      e?.response?.data?.message ?? "Tidak dapat mengarsipkan tugas"
+    );
+  }
+};
+const canArchive = (task: Task) => {
+  if (!isLate(task.deadline)) return false;
+
+  return (
+    task.status === "belum_submit" ||
+    task.status === "reviewed" ||
+    task.status === "rejected"
+  );
+};
+
+
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
@@ -221,6 +260,29 @@ const TaskScreen: React.FC = () => {
             <Text style={styles.linkText}>Lihat Pengumpulan</Text>
           </TouchableOpacity>
         )}
+
+        {canArchive(item) && (
+  <TouchableOpacity
+    style={styles.archiveBtn}
+    onPress={() =>
+      Alert.alert(
+        "Arsipkan Tugas",
+        "Tugas yang diarsipkan akan dipindahkan ke arsip. Lanjutkan?",
+        [
+          { text: "Batal", style: "cancel" },
+          {
+            text: "Arsipkan",
+            style: "destructive",
+            onPress: () => archiveTask(item.id),
+          },
+        ]
+      )
+    }
+  >
+    <Text style={styles.archiveText}>Arsipkan</Text>
+  </TouchableOpacity>
+)}
+
       </View>
     );
   };
@@ -300,6 +362,24 @@ const TaskScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         style={styles.list}
       />
+
+      {/* Floating Button ke Arsip */}
+<TouchableOpacity
+  style={[
+    styles.fab,
+    isFocused && styles.fabFocused,
+  ]}
+  activeOpacity={0.85}
+  onPress={() => navigation.navigate('ArsipTugas')}
+>
+  <Ionicons
+    name={isFocused ? 'archive' : 'archive-outline'}
+    size={22}
+    color="#fff"
+  />
+</TouchableOpacity>
+
+
 
       <Modal visible={!!selectedTask} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
@@ -723,4 +803,44 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.7,
   },
+
+  archiveBtn: {
+  marginTop: 10,
+  padding: 10,
+  borderRadius: 8,
+  backgroundColor: "#fef2f2",
+  borderWidth: 1,
+  borderColor: "#e74c3c",
+  alignItems: "center",
+},
+archiveText: {
+  color: "#e74c3c",
+  fontWeight: "600",
+},
+
+fab: {
+  position: "absolute",
+  right: 20,
+  bottom: 110,
+  width: 58,
+  height: 58,
+  borderRadius: 29,
+  backgroundColor: "#1e3a8a",
+  justifyContent: "center",
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 8,
+},
+fabIcon: {
+  fontSize: 24,
+  color: "#fff",
+},
+fabFocused: {
+  backgroundColor: '#4f46e5', // lebih gelap saat aktif
+},
+
+
 });

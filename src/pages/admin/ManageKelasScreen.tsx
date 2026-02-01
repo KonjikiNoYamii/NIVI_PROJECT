@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,13 +13,13 @@ import {
   Platform,
   SafeAreaView,
   RefreshControl,
-} from "react-native";
-import axios from "axios";
-import { API } from "../../services/api";
+} from 'react-native';
+import axios from 'axios';
+import { API } from '../../services/api';
 
 const ManageKelasScreen = () => {
-  const [namaKelas, setNamaKelas] = useState("");
-  const [deskripsi, setDeskripsi] = useState("");
+  const [namaKelas, setNamaKelas] = useState('');
+  const [deskripsi, setDeskripsi] = useState('');
   const [loading, setLoading] = useState(false);
   const [kelasList, setKelasList] = useState<any[]>([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -32,7 +32,7 @@ const ManageKelasScreen = () => {
       const res = await axios.get(`${API}/kelas`);
       setKelasList(res.data.data || []);
     } catch (err) {
-      Alert.alert("Error", "Gagal mengambil data kelas");
+      Alert.alert('Error', 'Gagal mengambil data kelas');
     } finally {
       setLoadingList(false);
       setRefreshing(false);
@@ -53,26 +53,26 @@ const ManageKelasScreen = () => {
     Keyboard.dismiss();
 
     if (!namaKelas.trim()) {
-      Alert.alert("Error", "Nama kelas wajib diisi");
+      Alert.alert('Error', 'Nama kelas wajib diisi');
       return;
     }
 
     if (namaKelas.trim().length < 3) {
-      Alert.alert("Error", "Nama kelas minimal 3 karakter");
+      Alert.alert('Error', 'Nama kelas minimal 3 karakter');
       return;
     }
 
     setLoading(true);
     try {
       await axios.post(`${API}/kelas`, { namaKelas, deskripsi });
-      Alert.alert("Berhasil", "Kelas berhasil dibuat");
-      setNamaKelas("");
-      setDeskripsi("");
+      Alert.alert('Berhasil', 'Kelas berhasil dibuat');
+      setNamaKelas('');
+      setDeskripsi('');
       fetchKelas();
     } catch (error: any) {
       Alert.alert(
-        "Gagal",
-        error.response?.data?.message || "Terjadi kesalahan server"
+        'Gagal',
+        error.response?.data?.message || 'Terjadi kesalahan server',
       );
     } finally {
       setLoading(false);
@@ -81,34 +81,28 @@ const ManageKelasScreen = () => {
 
   /* ================= DELETE KELAS ================= */
   const handleDelete = (id: number) => {
-    Alert.alert(
-      "Hapus Kelas",
-      "Apakah yakin ingin menghapus kelas ini?",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Hapus",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await axios.delete(`${API}/kelas/${id}`);
-              Alert.alert("Berhasil", "Kelas berhasil dihapus");
-              fetchKelas();
-            } catch (err) {
-              Alert.alert("Gagal", "Tidak bisa menghapus kelas");
-            }
-          },
+    Alert.alert('Hapus Kelas', 'Apakah yakin ingin menghapus kelas ini?', [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Hapus',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await axios.delete(`${API}/kelas/${id}`);
+            Alert.alert('Berhasil', 'Kelas berhasil dihapus');
+            fetchKelas();
+          } catch (err) {
+            Alert.alert('Gagal', 'Tidak bisa menghapus kelas');
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const renderHeader = () => (
     <View style={styles.header}>
       <Text style={styles.headerTitle}>Manajemen Kelas</Text>
-      <Text style={styles.headerSubtitle}>
-        Kelola data kelas desa belajar
-      </Text>
+      <Text style={styles.headerSubtitle}>Kelola data kelas desa belajar</Text>
     </View>
   );
 
@@ -159,7 +153,7 @@ const ManageKelasScreen = () => {
         ) : kelasList.length === 0 ? (
           <Text style={styles.emptyText}>Belum ada kelas</Text>
         ) : (
-          kelasList.map((kelas) => (
+          kelasList.map(kelas => (
             <View key={kelas.id} style={styles.listItem}>
               <View style={styles.listItemContent}>
                 <Text style={styles.kelasNama}>{kelas.namaKelas}</Text>
@@ -168,7 +162,7 @@ const ManageKelasScreen = () => {
                 ) : null}
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => handleDelete(kelas.id)}
                 activeOpacity={0.85}
               >
@@ -187,13 +181,13 @@ const ManageKelasScreen = () => {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             colors={['#2563eb']}
             tintColor="#2563eb"
@@ -213,12 +207,12 @@ const ManageKelasScreen = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollView: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   scrollContent: {
@@ -226,8 +220,8 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -236,60 +230,60 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
   // Card untuk form
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 20,
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 6,
   },
 
   input: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
   },
 
   textArea: {
     minHeight: 80,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
   },
 
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: '#2563eb',
     paddingVertical: 14,
     borderRadius: 14,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 8,
   },
 
@@ -298,40 +292,40 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
-    fontWeight: "800",
+    color: '#fff',
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
 
   // Card untuk daftar kelas
   listCard: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 20,
     padding: 16,
     borderRadius: 16,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 4,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
 
   listTitle: {
     fontSize: 16,
-    fontWeight: "800",
+    fontWeight: '800',
     marginBottom: 12,
-    color: "#111827",
+    color: '#111827',
   },
 
   listItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: "#e5e7eb",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    borderColor: '#e5e7eb',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   listItemContent: {
@@ -340,25 +334,25 @@ const styles = StyleSheet.create({
 
   kelasNama: {
     fontSize: 14,
-    fontWeight: "700",
-    color: "#1f2933",
+    fontWeight: '700',
+    color: '#1f2933',
   },
 
   kelasDeskripsi: {
     fontSize: 12,
-    color: "#6b7280",
+    color: '#6b7280',
     marginTop: 2,
   },
 
   deleteText: {
     fontSize: 13,
-    fontWeight: "700",
-    color: "#ef4444",
+    fontWeight: '700',
+    color: '#ef4444',
   },
 
   emptyText: {
-    textAlign: "center",
-    color: "#6b7280",
+    textAlign: 'center',
+    color: '#6b7280',
     fontSize: 13,
     paddingVertical: 12,
   },
