@@ -106,20 +106,24 @@ function AdminJadwalScreen() {
     }
   }, []);
 
-  const fetchJadwal = useCallback(async (kelasId: number) => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const res = await axios.get(`${API}/jadwal/kelas/${kelasId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setJadwal(res.data.data || []);
-    } catch {
-      Alert.alert('Error', 'Gagal mengambil jadwal');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const fetchJadwal = useCallback(async (kelasId: number) => {
+  setLoading(true);
+  try {
+    const token = await getToken(); // ambil token dari AsyncStorage
+    const res = await axios.get(`${API}/jadwal?kelasId=${kelasId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // wajib sesuai middleware authenticate
+      },
+    });
+    setJadwal(res.data.data || []);
+  } catch (err) {
+    console.log(err);
+    Alert.alert("Error", "Gagal mengambil jadwal");
+  } finally {
+    setLoading(false);
+  }
+}, []);
+
 
   const fetchAbsensiSetting = useCallback(async (kelasId: number) => {
     try {
@@ -207,38 +211,40 @@ function AdminJadwalScreen() {
     }
   };
 
-  const createBulk = async () => {
-    if (!tanggalMulai || !tanggalSelesai) return;
-    if (
-      jadwal.some(
-        j => new Date(j.tanggal).toDateString() === tanggalMulai.toDateString(),
-      )
-    ) {
-      Alert.alert('Error', 'Tanggal sudah memiliki jadwal');
-      return;
-    }
-    setLoading(true);
-    try {
-      const token = await getToken();
-      await axios.post(
-        `${API}/jadwal/bulk`,
-        {
-          kelasId: selectedKelas,
-          jamMulai,
-          jamSelesai,
-          tanggalMulai: tanggalMulai.toISOString().split('T')[0],
-          tanggalSelesai: tanggalSelesai.toISOString().split('T')[0],
+ const createBulk = async () => {
+  if (!selectedKelas || !tanggalMulai || !tanggalSelesai) return;
+
+  setLoading(true);
+  try {
+    const token = await getToken();
+
+    await axios.post(
+      `${API}/jadwal`,
+      {
+        kelasId: selectedKelas,
+        jamMulai,
+        jamSelesai,
+        tanggal: tanggalMulai.toISOString(), // gunakan satu tanggal per sesi
+        hari: tanggalMulai.getDay(), // kalau pakai enum Hari
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      socket.emit('jadwal-changed', { kelasId: selectedKelas });
-      fetchJadwal(selectedKelas!);
-    } catch {
-      Alert.alert('Error', 'Gagal membuat jadwal');
-    } finally {
-      setLoading(false);
-    }
-  };
+      }
+    );
+
+    socket.emit("jadwal-changed", { kelasId: selectedKelas });
+    fetchJadwal(selectedKelas);
+  } catch (err: any) {
+    const message =
+      err?.response?.data?.message || "Gagal membuat jadwal";
+    Alert.alert("Error", message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const deleteJadwal = async (id: number) => {
     setLoading(true);
@@ -259,48 +265,33 @@ function AdminJadwalScreen() {
 const submitEdit = async () => {
   if (!editingJadwal) return;
 
+  setLoading(true);
   try {
-    setLoading(true);
     const token = await getToken();
 
     const payload: any = {
       jamMulai: editJamMulai,
       jamSelesai: editJamSelesai,
+      tanggal: editTanggal.toISOString(),
+      hari: editTanggal.getDay(), // enum Hari sesuai backend
     };
 
-    if (editTanggal) {
-      payload.tanggal = editTanggal
-        .toISOString()
-        .split("T")[0];
-    }
-
-    await axios.put(
-      `${API}/jadwal/${editingJadwal.id}`,
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
-    socket.emit("jadwal-changed", {
-      kelasId: selectedKelas,
+    await axios.put(`${API}/jadwal/${editingJadwal.id}`, payload, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
+    socket.emit("jadwal-changed", { kelasId: selectedKelas });
     setEditVisible(false);
-    fetchJadwal(selectedKelas!);
+    fetchJadwal(selectedKelas);
   } catch (err: any) {
-  const message =
-    err?.response?.data?.message ||
-    "Terjadi kesalahan";
-
-  Alert.alert("Gagal", message);
-}
-finally {
+    const message =
+      err?.response?.data?.message || "Gagal menyimpan jadwal";
+    Alert.alert("Error", message);
+  } finally {
     setLoading(false);
   }
 };
+
 
 
 

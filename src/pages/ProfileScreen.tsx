@@ -144,16 +144,23 @@ const ProfileScreen: React.FC = () => {
 
   // Open edit modal
   const openEditModal = () => {
+    const fotoUri = profileData.profile.fotoUrl
+      ? profileData.profile.fotoUrl.startsWith('http')
+        ? profileData.profile.fotoUrl
+        : `${API}${profileData.profile.fotoUrl}`
+      : DEFAULT_AVATAR_URL;
+
     setEditForm({
       namaLengkap: profileData.profile.namaLengkap ?? '',
       noHp: profileData.profile.noHp ?? '',
       alamat: profileData.profile.alamat ?? '',
       tanggalLahir: profileData.profile.tanggalLahir ?? null,
       jenisKelamin: profileData.profile.jenisKelamin ?? null,
-      fotoUrl: profileData.profile.fotoUrl || null,
+      fotoUrl: fotoUri,
     });
     setShowEditModal(true);
   };
+
   console.log('FOTO URL =>', profileData.profile.fotoUrl);
 
   // Save profile ke server
@@ -303,9 +310,15 @@ const ProfileScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.editPhotoButton}
               onPress={() => {
+                const fotoUri = profileData.profile.fotoUrl
+                  ? profileData.profile.fotoUrl.startsWith('http')
+                    ? profileData.profile.fotoUrl
+                    : `${API}${profileData.profile.fotoUrl}` // Tambahkan base URL
+                  : DEFAULT_AVATAR_URL;
+
                 setEditForm({
                   ...profileData.profile,
-                  fotoUrl: profileData.profile.fotoUrl || null,
+                  fotoUrl: fotoUri,
                 });
 
                 setShowEditModal(true);

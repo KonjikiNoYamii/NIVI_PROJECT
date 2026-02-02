@@ -36,13 +36,25 @@ interface Absensi {
   tanggal: string;
   status: 'hadir' | 'izin' | 'sakit' | 'alpha';
 }
+interface Izin {
+  id: number;
+  userId: number;
+  tanggal: string;
+  alasan?: string;
+  status: 'menunggu' | 'disetujui' | 'ditolak';
+}
 
 interface Kelas {
   id: number;
   namaKelas: string;
   santri: Santri[];
   absensi: Absensi[];
+  izin: Izin[];
 }
+
+type AbsensiOrIzin =
+  | (Absensi & { type: 'absensi' })
+  | (Izin & { type: 'izin' });
 
 const KelasScreen: React.FC = () => {
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
@@ -50,7 +62,9 @@ const KelasScreen: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [editModal, setEditModal] = useState(false);
-  const [selectedAbsensi, setSelectedAbsensi] = useState<Absensi | null>(null);
+  const [selectedAbsensi, setSelectedAbsensi] = useState<AbsensiOrIzin | null>(
+    null,
+  );
   const [selectedStatus, setSelectedStatus] = useState<
     'hadir' | 'izin' | 'sakit' | 'alpha'
   >('hadir');
@@ -207,7 +221,28 @@ const KelasScreen: React.FC = () => {
   );
 
   const renderAbsensiItem = ({ item }: { item: Santri }) => {
+    // Filter absensi untuk santri ini
     const absensiUser = sortedAbsensi.filter(a => a.userId === item.id);
+
+    // Ambil izin yang disetujui
+    const izinUser =
+      selectedKelas?.izin?.filter(
+        i => i.userId === item.id && i.status === 'disetujui',
+      ) ?? [];
+
+    // Gabungkan absensi + izin disetujui, beri type supaya mudah dibedakan
+    const combinedRecords = [
+      ...absensiUser.map(a => ({ ...a, type: 'absensi' as const })),
+      ...izinUser.map(i => ({
+        id: i.id,
+        tanggal: i.tanggal,
+        type: 'izin' as const,
+        status: 'izin', // supaya konsisten dengan getStatusIcon/getStatusColor
+      })),
+    ].sort(
+      (a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime(),
+    );
+    console.log('Combined Records:', combinedRecords);
 
     return (
       <View style={styles.absensiCard}>
@@ -244,38 +279,38 @@ const KelasScreen: React.FC = () => {
         </View>
 
         <View style={styles.absensiContent}>
-          {absensiUser && absensiUser.length > 0 ? (
+          {combinedRecords.length > 0 ? (
             <FlatList
-              data={absensiUser}
+              data={combinedRecords}
               scrollEnabled={false}
-              keyExtractor={a => a.id.toString()}
-              renderItem={({ item: absen }) => (
+              keyExtractor={r => `${r.type}-${r.id}`}
+              renderItem={({ item: record }) => (
                 <View style={styles.absensiRecord}>
                   <View style={styles.absensiRecordLeft}>
                     <View
                       style={[
                         styles.statusBadge,
                         {
-                          backgroundColor: `${getStatusColor(absen.status)}15`,
+                          backgroundColor: `${getStatusColor(record.status)}15`,
                         },
                       ]}
                     >
                       <FontAwesome6
-                        name={getStatusIcon(absen.status)}
+                        name={getStatusIcon(record.status)}
                         size={14}
-                        color={getStatusColor(absen.status)}
+                        color={getStatusColor(record.status)}
                       />
                       <Text
                         style={[
                           styles.statusText,
-                          { color: getStatusColor(absen.status) },
+                          { color: getStatusColor(record.status) },
                         ]}
                       >
-                        {getStatusText(absen.status)}
+                        {getStatusText(record.status)}
                       </Text>
                     </View>
                     <Text style={styles.absensiDate}>
-                      {new Date(absen.tanggal).toLocaleDateString('id-ID', {
+                      {new Date(record.tanggal).toLocaleDateString('id-ID', {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
@@ -283,22 +318,24 @@ const KelasScreen: React.FC = () => {
                     </Text>
                   </View>
 
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => {
-                      setSelectedAbsensi(absen);
-                      setSelectedStatus(absen.status);
-                      setEditModal(true);
-                    }}
-                    activeOpacity={0.85}
-                  >
-                    <Icon
-                      name="edit"
-                      type="font-awesome"
-                      size={14}
-                      color="#6b7280"
-                    />
-                  </TouchableOpacity>
+                  {record.type === 'absensi' && (
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => {
+                        setSelectedAbsensi(record);
+                        setSelectedStatus(record.status);
+                        setEditModal(true);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Icon
+                        name="edit"
+                        type="font-awesome"
+                        size={14}
+                        color="#6b7280"
+                      />
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             />
@@ -306,7 +343,7 @@ const KelasScreen: React.FC = () => {
             <View style={styles.noAbsensiContainer}>
               <FontAwesome6 name="clipboard" size={16} color="#000000" />
               <Text style={styles.noAbsensiText}>
-                Belum ada catatan absensi
+                Belum ada catatan absensi atau izin disetujui
               </Text>
             </View>
           )}
@@ -621,16 +658,32 @@ const KelasScreen: React.FC = () => {
               <TouchableOpacity
                 style={[styles.saveButton, loading && styles.disabled]}
                 onPress={async () => {
-                  const token = await AsyncStorage.getItem('token');
+                  if (!selectedAbsensi) return;
 
-                  await axios.put(
-                    `${API}/absensi/${selectedAbsensi?.id}`,
-                    { status: selectedStatus },
-                    { headers: { Authorization: `Bearer ${token}` } },
-                  );
+                  try {
+                    const token = await AsyncStorage.getItem('token');
 
-                  setEditModal(false);
-                  fetchKelas();
+                    if (selectedAbsensi.type === 'izin') {
+                      // Endpoint izin dan otomatis disetujui
+                      await axios.put(
+                        `${API}/izin/${selectedAbsensi.id}`,
+                        { status: 'disetujui' },
+                        { headers: { Authorization: `Bearer ${token}` } },
+                      );
+                    } else {
+                      // Endpoint absensi
+                      await axios.put(
+                        `${API}/absensi/${selectedAbsensi.id}`,
+                        { status: selectedStatus },
+                        { headers: { Authorization: `Bearer ${token}` } },
+                      );
+                    }
+
+                    setEditModal(false);
+                    fetchKelas(); // refresh data
+                  } catch (err) {
+                    console.error(err);
+                  }
                 }}
                 disabled={loading}
                 activeOpacity={0.85}

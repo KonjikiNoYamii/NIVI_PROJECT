@@ -14,6 +14,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import UserListScreen from '../pages/admin/ViewAllUser';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import KelasList from '../pages/admin/KelasList';
+import { RekapBulananScreen } from '../pages/admin/RekapBulananScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -46,19 +47,22 @@ function CustomDrawerContent(props: any) {
         {
           text: 'Keluar',
           style: 'destructive',
-         onPress: async () => {
-          await AsyncStorage.multiRemove([
-            'token',
-            'user',
-            'profile',
-            'kelasId',
-            'kelasIds',
-            'userName',
-            'userEmail',
-          ]);
+          onPress: async () => {
+            await AsyncStorage.multiRemove([
+              'token',
+              'user',
+              'profile',
+              'kelasId',
+              'kelasIds',
+              'userName',
+              'userEmail',
+            ]);
 
-          navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
-        },
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' as never }],
+            });
+          },
         },
       ],
     );
@@ -172,29 +176,6 @@ export default function AdminDrawer() {
         }}
       />
       <Drawer.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          title: 'Profil Saya',
-          drawerIcon: ({ focused }) => (
-            <View
-              style={[
-                styles.iconContainer,
-                focused && styles.iconContainerActive,
-              ]}
-            >
-              <Icon
-                name="user"
-                type="font-awesome"
-                size={18}
-                color={focused ? '#3498db' : '#64748b'}
-              />
-            </View>
-          ),
-        }}
-      />
-
-      <Drawer.Screen
         name="UserManagement"
         component={UserListScreen}
         options={{
@@ -228,6 +209,49 @@ export default function AdminDrawer() {
                 name={focused ? 'school' : 'school-outline'}
                 size={focused ? 20 : 18}
                 color={focused ? '#3498db' : '#000000'}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Rekap"
+        component={RekapBulananScreen}
+        options={{
+          title: 'Rekap',
+          drawerIcon: ({ focused }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <FontAwesome6
+                name={focused ? 'file-lines' : 'file'}
+                size={focused ? 20 : 18}
+                color={focused ? '#3498db' : '#000000'}
+              />
+            </View>
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          title: 'Profil Saya',
+          drawerIcon: ({ focused }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <Icon
+                name="user"
+                type="font-awesome"
+                size={18}
+                color={focused ? '#3498db' : '#64748b'}
               />
             </View>
           ),

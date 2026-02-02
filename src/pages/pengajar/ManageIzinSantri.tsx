@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API } from '../../services/api';
 import { useFocusEffect } from '@react-navigation/native';
 import { Icon } from 'react-native-elements';
+import FloatingArchiveButton from '../../components/FloatingArchiveButton';
 
 /* ================== TYPE ================== */
 
@@ -302,71 +303,59 @@ const updateStatus = async (id: number, status: StatusIzin) => {
   /* ================== UI ================== */
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+   <SafeAreaView style={styles.safe}>
+  <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* HEADER YANG IKUT SCROLL */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
-          <Text style={styles.headerSubtitle}>
-            Kelola pengajuan izin santri dengan mudah
-          </Text>
+  <ScrollView
+    style={styles.container}
+    showsVerticalScrollIndicator={false}
+    contentContainerStyle={styles.scrollContent}
+  >
+    {/* HEADER */}
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
+      <Text style={styles.headerSubtitle}>
+        Kelola pengajuan izin santri dengan mudah
+      </Text>
+    </View>
+
+    {/* CONTENT */}
+    <View style={styles.contentContainer}>
+      {loading && izinList.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Memuat data izin...</Text>
         </View>
-        <View style={{ flexDirection: 'row', marginTop: 16 }}>
-          <TouchableOpacity
-            style={[styles.tabBtn, mode === 'aktif' && styles.tabActive]}
-            onPress={() => setMode('aktif')}
-          >
-            <Text style={styles.tabText}>Aktif</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, mode === 'arsip' && styles.tabActive]}
-            onPress={() => setMode('arsip')}
-          >
-            <Text style={styles.tabText}>Arsip</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* CONTENT */}
-        <View style={styles.contentContainer}>
-          {loading && izinList.length === 0 ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2563eb" />
-              <Text style={styles.loadingText}>Memuat data izin...</Text>
+      ) : (
+        <FlatList
+          data={izinList}
+          keyExtractor={item => item.id.toString()}
+          renderItem={renderItem}
+          scrollEnabled={false}
+          ListHeaderComponent={
+            <Text style={styles.totalText}>
+              Total: {izinList.length} pengajuan izin
+            </Text>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
+              <Text style={styles.emptySubtext}>
+                Semua izin santri telah diproses
+              </Text>
             </View>
-          ) : (
-            <FlatList
-              data={izinList}
-              keyExtractor={item => item.id.toString()}
-              renderItem={renderItem}
-              scrollEnabled={false}
-              ListHeaderComponent={
-                <Text style={styles.totalText}>
-                  Total: {izinList.length} pengajuan izin
-                </Text>
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
-                  <Text style={styles.emptySubtext}>
-                    Semua izin santri telah diproses
-                  </Text>
-                </View>
-              }
-            />
-          )}
-        </View>
+          }
+        />
+      )}
+    </View>
 
-        {/* SPACER UNTUK NAVIGATOR */}
-        <View style={styles.spacer} />
-      </ScrollView>
-    </SafeAreaView>
+    {/* SPACER UNTUK NAVIGATOR */}
+    <View style={styles.spacer} />
+  </ScrollView>
+
+  <FloatingArchiveButton />
+</SafeAreaView>
+
   );
 }
 
@@ -377,7 +366,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f1f5f9',
   },
-
   container: {
     flex: 1,
     backgroundColor: '#f1f5f9',

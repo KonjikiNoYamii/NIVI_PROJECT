@@ -9,7 +9,6 @@ import PengajarIzinScreen from '../pages/pengajar/ManageIzinSantri';
 import PengumpulanTugasScreen from '../pages/pengajar/PengumpulanTugasSantri';
 import NilaiTugasScreen from '../pages/pengajar/NilaiTugasScreen';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { RekapBulananScreen } from '../pages/pengajar/RekapBulananScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -154,29 +153,6 @@ export default function PengajarBottomNavigator() {
                 size={focused ? 20 : 18}
                 color={focused ? '#3498db' : '#000000'}
                 solid={focused}
-              />
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Rekap"
-        component={RekapBulananScreen}
-        options={{
-          tabBarLabel: 'Rekap',
-          tabBarIcon: ({ focused, color, size }) => (
-            <View
-              style={[
-                styles.iconContainer,
-                focused && styles.iconContainerActive,
-              ]}
-            >
-              <FontAwesome6
-                name={focused ? 'file-lines' : 'file'}
-                size={focused ? 18 : 18}
-                color={focused ? '#3498db' : '#000000'}
-                solid={focused}
-
               />
             </View>
           ),

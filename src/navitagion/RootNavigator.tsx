@@ -13,6 +13,7 @@ import ForgotPasswordScreen from "../pages/ForgotPassword";
 import ResetPasswordScreen from "../pages/ResetPassword";
 import NilaiTugasScreen from "../pages/pengajar/NilaiTugasScreen";
 import TugasArsipScreen from "../pages/santri/TugasArsipScreen";
+import ArsipSubmissionScreen from "../pages/pengajar/ArsipScreen";
 
 const Stack = createStackNavigator();
 
@@ -30,6 +31,7 @@ export default function RootNavigator() {
         <Stack.Screen name="AdminApp" component={AdminDrawer} />
         <Stack.Screen name="Nilai" component={NilaiTugasScreen}/>
         <Stack.Screen name="ArsipTugas" component={TugasArsipScreen}/>
+        <Stack.Screen name="ArsipSubmission" component={ArsipSubmissionScreen}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

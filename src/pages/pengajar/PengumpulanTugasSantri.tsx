@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { API } from '../../services/api';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import FloatingArchiveButton from '../../components/FloatingArchiveButton';
 
 interface Submission {
   id: number;
@@ -142,6 +143,23 @@ const PengajarSubmissionScreen = () => {
     setFilteredData(result);
   }, [data, selectedKelas, searchQuery]);
 
+
+  const softDeleteSubmission = async (id: number) => {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    await axios.put(
+      `${API}/submission/${id}/arsip`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    Alert.alert('Berhasil', 'Submission telah diarsipkan');
+    fetchSubmission(); // refresh data setelah soft delete
+  } catch (err) {
+    console.log('Soft delete error:', err);
+    Alert.alert('Error', 'Gagal mengarsipkan submission');
+  }
+};
+
   useEffect(() => {
     fetchKelas();
     fetchSubmission();
@@ -153,6 +171,8 @@ const PengajarSubmissionScreen = () => {
 
     return unsubscribe;
   }, []);
+
+
 
   const renderItem = ({ item }: { item: Submission }) => {
     let statusColor = '#f59e0b';
@@ -196,6 +216,8 @@ const PengajarSubmissionScreen = () => {
           </View>
 
           <View style={styles.actionRow}>
+            
+
             {item.status === 'pending' && (
               <>
                 <TouchableOpacity
@@ -233,10 +255,15 @@ const PengajarSubmissionScreen = () => {
             )}
 
             {item.isGraded && (
-              <View style={styles.gradedBadge}>
-                <Ionicons name="checkmark-circle" size={22} color="#16a34a" />
-              </View>
-            )}
+  <TouchableOpacity
+    style={[styles.btn, styles.archive]}
+    onPress={() => softDeleteSubmission(item.id)}
+    activeOpacity={0.85}
+  >
+    <Text style={styles.btnText}>Arsip</Text>
+  </TouchableOpacity>
+)}
+
           </View>
         </View>
       </View>
@@ -405,6 +432,7 @@ const PengajarSubmissionScreen = () => {
           <View style={styles.spacer} />
         </ScrollView>
       </View>
+      <FloatingArchiveButton />
     </SafeAreaView>
   );
 };
@@ -726,4 +754,9 @@ const styles = StyleSheet.create({
   spacer: {
     height: 100,
   },
+
+  archive: {
+  backgroundColor: '#6b7280', // abu-abu
+},
+
 });
