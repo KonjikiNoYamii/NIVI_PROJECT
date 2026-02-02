@@ -20,7 +20,7 @@ const ActivityList = ({ data }: any) => {
     {
       title: "Izin Pending",
       value: data?.izinPending || 0,
-      icon: "clipboard-list",
+      icon: "clipboard",
       color: NIVI.warning,
     },
   ];

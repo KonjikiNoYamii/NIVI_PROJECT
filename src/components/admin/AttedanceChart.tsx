@@ -22,7 +22,7 @@ const AttendanceStats = ({ data }: any) => {
   const percent = (v: number) => (total === 0 ? 0 : Math.round((v / total) * 100));
 
   return (
-    <SectionCard title="Statistik Absensi Hari Ini" icon="chart-bar">
+    <SectionCard title="Statistik Absensi Hari Ini" icon="clock-o">
       {total === 0 ? (
         <View style={styles.empty}>
           <FontAwesome5 name="calendar-week"size={40} color={NIVI.textMuted} iconStyle="solid"/>

@@ -9,11 +9,13 @@ import {
   RefreshControl,
   StatusBar,
   Platform,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useFocusEffect } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
+import LottieView from "lottie-react-native";
 
 import { API } from "../../services/api";
 import { NIVI } from "../../theme/niviTheme";
@@ -61,7 +63,12 @@ export default function DashboardAdmin() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <LottieView
+            source={require("../../assets/loading.json")}
+            autoPlay
+            loop
+            style={styles.lottieAnimation}
+          />
           <Text style={styles.loadingText}>Memuat Dashboard…</Text>
         </View>
       </SafeAreaView>
@@ -199,6 +206,8 @@ export default function DashboardAdmin() {
 
 /* ================== STYLE ================== */
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -219,6 +228,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f1f5f9",
+  },
+  
+  lottieAnimation: {
+    width: width * 0.6,
+    height: width * 0.6,
   },
   
   loadingText: {

@@ -11,12 +11,15 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
+  Modal,
+  Dimensions,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API } from "../../services/api";
 import { useFocusEffect } from "@react-navigation/native";
 import { Icon } from "react-native-elements";
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
 
 /* ================== TYPE ================== */
 
@@ -49,6 +52,427 @@ const STATUS_LABEL: Record<StatusIzin, string> = {
   ditolak: "DITOLAK",
 };
 
+// ================ CUSTOM ALERT MODAL ================
+interface CustomAlertProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
+}
+
+const CustomAlertModal: React.FC<CustomAlertProps> = ({
+  visible,
+  title,
+  message,
+  type,
+  confirmText = "OK",
+  cancelText = "Batal",
+  onConfirm,
+  onCancel,
+  onClose
+}) => {
+  const getIcon = () => {
+    switch(type) {
+      case 'success': 
+        return <FontAwesomeIcon name="check-circle" size={64} color="#10b981" />;
+      case 'error': 
+        return <FontAwesomeIcon name="exclamation-circle" size={64} color="#ef4444" />;
+      case 'warning': 
+        return <FontAwesomeIcon name="exclamation-triangle" size={64} color="#f59e0b" />;
+      case 'info': 
+        return <FontAwesomeIcon name="info-circle" size={64} color="#3b82f6" />;
+      default: 
+        return <FontAwesomeIcon name="info-circle" size={64} color="#3b82f6" />;
+    }
+  };
+
+  const getTitleColor = () => {
+    switch(type) {
+      case 'success': return '#10b981';
+      case 'error': return '#ef4444';
+      case 'warning': return '#f59e0b';
+      case 'info': return '#3b82f6';
+      default: return '#111827';
+    }
+  };
+
+  const getButtonColor = () => {
+    switch(type) {
+      case 'success': return '#10b981';
+      case 'error': return '#ef4444';
+      case 'warning': return '#f59e0b';
+      case 'info': return '#3b82f6';
+      default: return '#2563eb';
+    }
+  };
+
+  const getIconContainerStyle = () => {
+    switch(type) {
+      case 'success': return customAlertStyles.iconContainerSuccess;
+      case 'error': return customAlertStyles.iconContainerError;
+      case 'warning': return customAlertStyles.iconContainerWarning;
+      case 'info': return customAlertStyles.iconContainerInfo;
+      default: return customAlertStyles.iconContainerInfo;
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={customAlertStyles.overlay}>
+        <View style={customAlertStyles.container}>
+          <View style={customAlertStyles.content}>
+            <View style={[customAlertStyles.iconContainer, getIconContainerStyle()]}>
+              {getIcon()}
+            </View>
+            
+            <Text style={[customAlertStyles.title, { color: getTitleColor() }]}>
+              {title}
+            </Text>
+            
+            <Text style={customAlertStyles.message}>
+              {message}
+            </Text>
+            
+            <View style={customAlertStyles.buttonContainer}>
+              {onCancel && (
+                <TouchableOpacity 
+                  style={[customAlertStyles.button, customAlertStyles.cancelButton]}
+                  onPress={onCancel}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesomeIcon name="times" size={16} color="#6b7280" style={customAlertStyles.buttonIcon} />
+                  <Text 
+                    style={customAlertStyles.cancelButtonText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {cancelText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[customAlertStyles.button, { backgroundColor: getButtonColor() }]}
+                onPress={onConfirm || onClose}
+                activeOpacity={0.7}
+              >
+                {type === 'success' && <FontAwesomeIcon name="check" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                {type === 'error' && <FontAwesomeIcon name="exclamation-circle" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                {type === 'warning' && <FontAwesomeIcon name="exclamation-triangle" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                {type === 'info' && <FontAwesomeIcon name="info-circle" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                <Text 
+                  style={customAlertStyles.buttonText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {confirmText}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const customAlertStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  container: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 0,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 20,
+    overflow: 'hidden',
+  },
+  content: {
+    padding: 28,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 4,
+  },
+  iconContainerSuccess: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#a7f3d0',
+  },
+  iconContainerError: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
+  },
+  iconContainerWarning: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+  },
+  iconContainerInfo: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#bfdbfe',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 30,
+    letterSpacing: 0.3,
+  },
+  message: {
+    fontSize: 16,
+    color: '#4b5563',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 28,
+    letterSpacing: 0.2,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    flexDirection: 'row',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    paddingHorizontal: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  cancelButtonText: {
+    color: '#4b5563',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  buttonIcon: {
+    marginRight: 4,
+  },
+});
+
+// ================ CUSTOM ALERT HELPER ================
+const useCustomAlert = () => {
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info' | 'warning',
+    confirmText: 'OK',
+    cancelText: 'Batal',
+    onConfirm: undefined as (() => void) | undefined,
+    onCancel: undefined as (() => void) | undefined,
+    showCancel: false,
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'info',
+    options?: {
+      confirmText?: string;
+      cancelText?: string;
+      onConfirm?: () => void;
+      onCancel?: () => void;
+      showCancel?: boolean;
+    }
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      type,
+      confirmText: options?.confirmText || 'OK',
+      cancelText: options?.cancelText || 'Batal',
+      onConfirm: options?.onConfirm,
+      onCancel: options?.onCancel,
+      showCancel: options?.showCancel || false,
+    });
+    setAlertVisible(true);
+  };
+
+  const hideAlert = () => {
+    setAlertVisible(false);
+  };
+
+  const AlertComponent = () => (
+    <CustomAlertModal
+      visible={alertVisible}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      type={alertConfig.type}
+      confirmText={alertConfig.confirmText}
+      cancelText={alertConfig.cancelText}
+      onConfirm={() => {
+        alertConfig.onConfirm?.();
+        hideAlert();
+      }}
+      onCancel={() => {
+        alertConfig.onCancel?.();
+        hideAlert();
+      }}
+      onClose={hideAlert}
+    />
+  );
+
+  return {
+    showAlert,
+    hideAlert,
+    AlertComponent,
+  };
+};
+
+// ================ MODIFIED ALERT HELPER ================
+const createAlertHelper = () => {
+  let alertHook: ReturnType<typeof useCustomAlert> | null = null;
+  
+  const AlertProvider = () => {
+    alertHook = useCustomAlert();
+    return alertHook.AlertComponent();
+  };
+
+  const getAlertHook = () => {
+    if (!alertHook) {
+      throw new Error('AlertProvider must be rendered before using alert helpers');
+    }
+    return alertHook;
+  };
+
+  const showAlertHelper = {
+    success: (title: string, message: string, onPress?: () => void) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'success',
+        { onConfirm: onPress }
+      );
+    },
+
+    error: (title: string, message: string) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'error'
+      );
+    },
+
+    validation: (message: string) => {
+      getAlertHook().showAlert(
+        "Validasi",
+        message,
+        'info'
+      );
+    },
+
+    confirm: (
+      title: string,
+      message: string,
+      onConfirm: () => void,
+      options?: {
+        confirmText?: string;
+        cancelText?: string;
+        type?: 'success' | 'error' | 'info' | 'warning';
+      }
+    ) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        options?.type || 'info',
+        {
+          confirmText: options?.confirmText || 'Konfirmasi',
+          cancelText: options?.cancelText || 'Batal',
+          onConfirm,
+          onCancel: () => {},
+          showCancel: true,
+        }
+      );
+    },
+
+    info: (title: string, message: string, onPress?: () => void) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'info',
+        { onConfirm: onPress }
+      );
+    },
+
+    warning: (title: string, message: string, onPress?: () => void) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'warning',
+        { onConfirm: onPress }
+      );
+    }
+  };
+
+  return {
+    AlertProvider,
+    showAlert: showAlertHelper,
+  };
+};
+
+const { AlertProvider, showAlert } = createAlertHelper();
+
 /* ================== HELPER ================== */
 
 const getToken = async (): Promise<string> => {
@@ -72,8 +496,12 @@ export default function PengajarIzinScreen() {
       try {
         const storedRole = await AsyncStorage.getItem("role");
         setRole(storedRole);
-      } catch {
-        Alert.alert("Error", "Gagal mengambil data autentikasi");
+      } catch (err: any) {
+        console.log(err.message || err);
+        showAlert.error(
+          "⚠️ Gagal Memuat Data",
+          "Tidak dapat mengambil data autentikasi. Silakan login kembali."
+        );
       } finally {
         setInitLoading(false);
       }
@@ -94,8 +522,12 @@ export default function PengajarIzinScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIzinList(res.data.data || []);
-    } catch {
-      Alert.alert("Error", "Gagal mengambil data izin");
+    } catch (err: any) {
+      console.log(err.response || err.message);
+      showAlert.error(
+        "⚠️ Gagal Memuat Data",
+        "Tidak dapat mengambil data izin. Periksa koneksi internet Anda."
+      );
     } finally {
       setLoading(false);
     }
@@ -110,37 +542,62 @@ export default function PengajarIzinScreen() {
   /* ================== UPDATE STATUS ================== */
 
   const updateStatus = async (id: number, status: StatusIzin) => {
-    const actionText = status === "disetujui" ? "MENYETUJUI" : "MENOLAK";
+    const actionText = status === "disetujui" ? "menyetujui" : "menolak";
+    const actionTitle = status === "disetujui" ? "Setujui Izin" : "Tolak Izin";
+    const actionEmoji = status === "disetujui" ? "✅" : "❌";
 
-    Alert.alert(
-      "Konfirmasi",
-      `Yakin ingin ${actionText} izin ini?`,
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Ya",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              const token = await getToken();
-              await axios.put(
-                `${API}/izin/${id}`,
-                { status },
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              fetchIzin();
-              Alert.alert(
-                "Berhasil", 
-                `Izin berhasil di${status === "disetujui" ? "setujui" : "tolak"}`
-              );
-            } catch {
-              Alert.alert("Error", "Gagal update status izin");
-            } finally {
-              setLoading(false);
-            }
-          },
-        },
-      ]
+    showAlert.confirm(
+      `${actionEmoji} Konfirmasi Tindakan`,
+      `Apakah Anda yakin ingin ${actionText} izin ini?`,
+      async () => {
+        setLoading(true);
+        try {
+          const token = await getToken();
+          await axios.put(
+            `${API}/izin/${id}`,
+            { status },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          
+          showAlert.success(
+            "✅ Berhasil Diproses",
+            `Izin berhasil di${actionText}.`,
+            () => fetchIzin()
+          );
+        } catch (err: any) {
+          console.log(err.response || err.message);
+          const errorMessage = err.response?.data?.message ?? "Gagal memperbarui status izin. Silakan coba lagi.";
+          
+          if (err.response?.status === 400) {
+            showAlert.error(
+              "⚠️ Data Tidak Valid",
+              errorMessage
+            );
+          } else if (err.response?.status === 401) {
+            showAlert.error(
+              "⚠️ Autentikasi Gagal",
+              "Sesi Anda telah berakhir. Silakan login kembali."
+            );
+          } else if (err.response?.status === 404) {
+            showAlert.error(
+              "⚠️ Data Tidak Ditemukan",
+              "Izin tidak ditemukan atau sudah dihapus."
+            );
+          } else {
+            showAlert.error(
+              "⚠️ Gagal Memproses",
+              errorMessage
+            );
+          }
+        } finally {
+          setLoading(false);
+        }
+      },
+      {
+        confirmText: "Ya, Lanjutkan",
+        cancelText: "Batal",
+        type: "info"
+      }
     );
   };
 
@@ -151,10 +608,20 @@ export default function PengajarIzinScreen() {
       {/* HEADER */}
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.user?.name || "Santri"}</Text>
-          <Text style={styles.classText}>
-            Kelas: {item.kelas?.namaKelas || "-"}
-          </Text>
+          <View style={styles.userIcon}>
+            <Icon
+              name="user"
+              type="font-awesome"
+              size={14}
+              color="#fff"
+            />
+          </View>
+          <View>
+            <Text style={styles.userName}>{item.user?.name || "Santri"}</Text>
+            <Text style={styles.classText}>
+              Kelas: {item.kelas?.namaKelas || "-"}
+            </Text>
+          </View>
         </View>
         
         <View
@@ -163,22 +630,48 @@ export default function PengajarIzinScreen() {
             { backgroundColor: STATUS_COLOR[item.status] },
           ]}
         >
+          <Icon
+            name={item.status === "menunggu" ? "clock-o" : item.status === "disetujui" ? "check" : "times"}
+            type="font-awesome"
+            size={10}
+            color="#fff"
+            style={styles.statusIcon}
+          />
           <Text style={styles.statusText}>{STATUS_LABEL[item.status]}</Text>
         </View>
       </View>
 
       {/* CONTENT */}
       <View style={styles.cardContent}>
-        <Text style={styles.dateText}>
-          Tanggal: {new Date(item.tanggal).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-          })}
-        </Text>
+        <View style={styles.dateContainer}>
+          <Icon
+            name="calendar"
+            type="font-awesome"
+            size={12}
+            color="#6b7280"
+            style={styles.dateIcon}
+          />
+          <Text style={styles.dateText}>
+            {new Date(item.tanggal).toLocaleDateString("id-ID", {
+              weekday: 'long',
+              day: "numeric",
+              month: "long",
+              year: "numeric"
+            })}
+          </Text>
+        </View>
         
         <View style={styles.reasonContainer}>
-          <Text style={styles.reasonLabel}>Alasan:</Text>
+          <View style={styles.reasonHeader}>
+            <Icon
+              name="sticky-note"
+              type="font-awesome"
+              size={12}
+              color="#4b5563"
+              style={styles.reasonIcon}
+            />
+            <Text style={styles.reasonLabel}>Alasan Izin:</Text>
+          </View>
           <Text style={styles.reasonText}>{item.alasan}</Text>
         </View>
       </View>
@@ -215,6 +708,7 @@ export default function PengajarIzinScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.centerLoadingText}>Menyiapkan aplikasi...</Text>
         </View>
       </SafeAreaView>
     );
@@ -224,8 +718,15 @@ export default function PengajarIzinScreen() {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>Akses Ditolak</Text>
-          <Text style={styles.errorSubtext}>
+          <Icon
+            name="lock"
+            type="font-awesome"
+            size={32}
+            color="#ef4444"
+            style={styles.errorIcon}
+          />
+          <Text style={styles.errorTitle}>🔒 Akses Ditolak</Text>
+          <Text style={styles.errorText}>
             Hanya pengajar yang dapat mengakses halaman ini
           </Text>
         </View>
@@ -239,6 +740,9 @@ export default function PengajarIzinScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
+      {/* Render Alert Provider */}
+      <AlertProvider />
+      
       <ScrollView 
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -246,10 +750,74 @@ export default function PengajarIzinScreen() {
       >
         {/* HEADER YANG IKUT SCROLL */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
-          <Text style={styles.headerSubtitle}>
-            Kelola pengajuan izin santri dengan mudah
-          </Text>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
+            <Text style={styles.headerSubtitle}>
+              Kelola pengajuan izin santri dengan mudah
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Icon
+              name="clipboard"
+              type="font-awesome"
+              size={18}
+              color="#fff"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* STATS SUMMARY - DITAMBAH MARGIN TOP AGAR TURUN */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statsCard}>
+            <View style={[styles.statsIcon, { backgroundColor: '#F59E0B20' }]}>
+              <Icon
+                name="clock-o"
+                type="font-awesome"
+                size={16}
+                color="#F59E0B"
+              />
+            </View>
+            <View style={styles.statsInfo}>
+              <Text style={styles.statsCount}>
+                {izinList.filter(i => i.status === 'menunggu').length}
+              </Text>
+              <Text style={styles.statsLabel}>Menunggu</Text>
+            </View>
+          </View>
+          
+          <View style={styles.statsCard}>
+            <View style={[styles.statsIcon, { backgroundColor: '#10B98120' }]}>
+              <Icon
+                name="check"
+                type="font-awesome"
+                size={16}
+                color="#10B981"
+              />
+            </View>
+            <View style={styles.statsInfo}>
+              <Text style={styles.statsCount}>
+                {izinList.filter(i => i.status === 'disetujui').length}
+              </Text>
+              <Text style={styles.statsLabel}>Disetujui</Text>
+            </View>
+          </View>
+          
+          <View style={styles.statsCard}>
+            <View style={[styles.statsIcon, { backgroundColor: '#EF444420' }]}>
+              <Icon
+                name="times"
+                type="font-awesome"
+                size={16}
+                color="#EF4444"
+              />
+            </View>
+            <View style={styles.statsInfo}>
+              <Text style={styles.statsCount}>
+                {izinList.filter(i => i.status === 'ditolak').length}
+              </Text>
+              <Text style={styles.statsLabel}>Ditolak</Text>
+            </View>
+          </View>
         </View>
 
         {/* CONTENT */}
@@ -260,25 +828,49 @@ export default function PengajarIzinScreen() {
               <Text style={styles.loadingText}>Memuat data izin...</Text>
             </View>
           ) : (
-            <FlatList
-              data={izinList}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderItem}
-              scrollEnabled={false}
-              ListHeaderComponent={
+            <View style={styles.listContainer}>
+              <View style={styles.listHeader}>
                 <Text style={styles.totalText}>
-                  Total: {izinList.length} pengajuan izin
+                  Total Pengajuan: {izinList.length} izin
                 </Text>
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
-                  <Text style={styles.emptySubtext}>
-                    Semua izin santri telah diproses
-                  </Text>
-                </View>
-              }
-            />
+                {izinList.length > 0 && (
+                  <TouchableOpacity 
+                    style={styles.refreshButton}
+                    onPress={fetchIzin}
+                    activeOpacity={0.85}
+                  >
+                    <Icon
+                      name="refresh"
+                      type="font-awesome"
+                      size={12}
+                      color="#2563eb"
+                    />
+                    <Text style={styles.refreshText}>Refresh</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              <FlatList
+                data={izinList}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={renderItem}
+                scrollEnabled={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Icon
+                      name="clipboard"
+                      type="font-awesome"
+                      size={36}
+                      color="#d1d5db"
+                    />
+                    <Text style={styles.emptyTitle}>Tidak ada pengajuan izin</Text>
+                    <Text style={styles.emptySubtext}>
+                      Semua izin santri telah diproses atau belum ada pengajuan
+                    </Text>
+                  </View>
+                }
+              />
+            </View>
           )}
         </View>
 
@@ -294,18 +886,19 @@ export default function PengajarIzinScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f8fafc",
   },
 
   container: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f8fafc",
   },
 
   scrollContent: {
-    paddingBottom: 100, // DITAMBAHKAN: Padding untuk navigator
+    paddingBottom: 100,
   },
 
+  /* HEADER */
   header: {
     backgroundColor: "#1e3a8a",
     paddingTop: Platform.OS === "android" ? 48 : 64,
@@ -313,30 +906,147 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+
+  headerContent: {
+    flex: 1,
   },
 
   headerTitle: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "800",
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
 
   headerSubtitle: {
-    marginTop: 6,
     color: "#c7d2fe",
     fontSize: 14,
+    fontWeight: "500",
   },
 
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    marginLeft: 12,
+    marginTop: 4,
+  },
+
+  /* STATS CONTAINER - DITAMBAH MARGIN TOP AGAR TURUN */
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginTop: 15, // DITAMBAH: Margin top untuk menurunkan posisi
+    marginBottom: 20,
+  },
+
+  statsCard: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    alignItems: "center",
+  },
+
+  statsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  statsInfo: {
+    alignItems: "center",
+  },
+
+  statsCount: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1e293b",
+    marginBottom: 2,
+  },
+
+  statsLabel: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  /* CONTENT CONTAINER */
   contentContainer: {
-    paddingHorizontal: 16,
-    marginTop: 16, // DITAMBAHKAN: Margin agar tidak nabrak header
+    paddingHorizontal: 20,
+  },
+
+  listContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    marginBottom: 20,
+  },
+
+  listHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
   },
 
   totalText: {
-    fontSize: 14,
-    color: "#6b7280",
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#374151",
+    letterSpacing: 0.2,
+  },
+
+  refreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+  },
+
+  refreshText: {
+    fontSize: 12,
+    color: "#2563eb",
     fontWeight: "600",
-    marginBottom: 16,
+    marginLeft: 6,
   },
 
   loadingContainer: {
@@ -344,25 +1054,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     minHeight: 200,
     marginTop: 20,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
 
   loadingText: {
-    marginTop: 12,
-    color: "#6b7280",
+    marginTop: 16,
+    color: "#64748b",
     fontSize: 14,
+    fontWeight: "500",
   },
 
+  /* CARD STYLES */
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
+    backgroundColor: "#f8fafc",
+    borderRadius: 16,
     padding: 20,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderWidth: 1.5,
+    borderColor: "#e2e8f0",
   },
 
   cardHeader: {
@@ -375,26 +1093,46 @@ const styles = StyleSheet.create({
   userInfo: {
     flex: 1,
     marginRight: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  userIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#2563eb",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
 
   userName: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
 
   classText: {
     fontSize: 13,
-    color: "#6b7280",
+    color: "#64748b",
+    fontWeight: "500",
   },
 
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    minWidth: 100,
-    alignItems: "center",
+    minWidth: 110,
+    justifyContent: "center",
+  },
+
+  statusIcon: {
+    marginRight: 6,
   },
 
   statusText: {
@@ -410,26 +1148,44 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
 
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+
+  dateIcon: {
+    marginRight: 8,
+  },
+
   dateText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#374151",
-    marginBottom: 12,
   },
 
   reasonContainer: {
     backgroundColor: "#f9fafb",
-    padding: 12,
+    padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
+  },
+
+  reasonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  reasonIcon: {
+    marginRight: 8,
   },
 
   reasonLabel: {
     fontSize: 13,
     fontWeight: "700",
     color: "#4b5563",
-    marginBottom: 4,
   },
 
   reasonText: {
@@ -477,48 +1233,65 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  /* EMPTY STATES */
   emptyContainer: {
     alignItems: "center",
-    paddingTop: 60,
+    paddingVertical: 40,
     paddingHorizontal: 20,
-    marginTop: 20,
   },
 
-  emptyText: {
+  emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
     color: "#6b7280",
+    marginTop: 16,
     marginBottom: 8,
   },
 
   emptySubtext: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#9ca3af",
     textAlign: "center",
+    lineHeight: 20,
   },
 
+  /* CENTERED VIEWS */
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#f8fafc",
     padding: 20,
   },
 
-  errorText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#EF4444",
-    marginBottom: 8,
-  },
-
-  errorSubtext: {
+  centerLoadingText: {
+    marginTop: 16,
     fontSize: 14,
     color: "#6b7280",
-    textAlign: "center",
+    fontWeight: "500",
   },
 
-  // DITAMBAHKAN: Spacer untuk navigator
+  errorIcon: {
+    marginBottom: 16,
+  },
+
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#ef4444",
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+
+  errorText: {
+    fontSize: 14,
+    color: "#6b7280",
+    fontWeight: "500",
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+
+  /* SPACER */
   spacer: {
     height: 100,
   },

@@ -24,6 +24,430 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'react-native-image-picker';
 import { Icon } from 'react-native-elements';
 import { API } from '../services/api';
+import FontAwesomeIcon from 'react-native-vector-icons/FontAwesome';
+
+/* =======================
+   CUSTOM ALERT MODAL
+======================= */
+interface CustomAlertProps {
+  visible: boolean;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
+}
+
+const CustomAlertModal: React.FC<CustomAlertProps> = ({
+  visible,
+  title,
+  message,
+  type,
+  confirmText = "OK",
+  cancelText = "Batal",
+  onConfirm,
+  onCancel,
+  onClose
+}) => {
+  const getIcon = () => {
+    switch(type) {
+      case 'success': 
+        return <FontAwesomeIcon name="check-circle" size={64} color="#10b981" />;
+      case 'error': 
+        return <FontAwesomeIcon name="exclamation-circle" size={64} color="#ef4444" />;
+      case 'warning': 
+        return <FontAwesomeIcon name="exclamation-triangle" size={64} color="#f59e0b" />;
+      case 'info': 
+        return <FontAwesomeIcon name="info-circle" size={64} color="#3b82f6" />;
+      default: 
+        return <FontAwesomeIcon name="info-circle" size={64} color="#3b82f6" />;
+    }
+  };
+
+  const getTitleColor = () => {
+    switch(type) {
+      case 'success': return '#10b981';
+      case 'error': return '#ef4444';
+      case 'warning': return '#f59e0b';
+      case 'info': return '#3b82f6';
+      default: return '#111827';
+    }
+  };
+
+  const getButtonColor = () => {
+    switch(type) {
+      case 'success': return '#10b981';
+      case 'error': return '#ef4444';
+      case 'warning': return '#f59e0b';
+      case 'info': return '#3b82f6';
+      default: return '#2563eb';
+    }
+  };
+
+  const getIconContainerStyle = () => {
+    switch(type) {
+      case 'success': return customAlertStyles.iconContainerSuccess;
+      case 'error': return customAlertStyles.iconContainerError;
+      case 'warning': return customAlertStyles.iconContainerWarning;
+      case 'info': return customAlertStyles.iconContainerInfo;
+      default: return customAlertStyles.iconContainerInfo;
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View style={customAlertStyles.overlay}>
+        <View style={customAlertStyles.container}>
+          <View style={customAlertStyles.content}>
+            <View style={[customAlertStyles.iconContainer, getIconContainerStyle()]}>
+              {getIcon()}
+            </View>
+            
+            <Text style={[customAlertStyles.title, { color: getTitleColor() }]}>
+              {title}
+            </Text>
+            
+            <Text style={customAlertStyles.message}>
+              {message}
+            </Text>
+            
+            <View style={customAlertStyles.buttonContainer}>
+              {onCancel && (
+                <TouchableOpacity 
+                  style={[customAlertStyles.button, customAlertStyles.cancelButton]}
+                  onPress={onCancel}
+                  activeOpacity={0.7}
+                >
+                  <FontAwesomeIcon name="times" size={16} color="#6b7280" style={customAlertStyles.buttonIcon} />
+                  <Text 
+                    style={customAlertStyles.cancelButtonText}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {cancelText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                style={[customAlertStyles.button, { backgroundColor: getButtonColor() }]}
+                onPress={onConfirm || onClose}
+                activeOpacity={0.7}
+              >
+                {type === 'success' && <FontAwesomeIcon name="check" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                {type === 'error' && <FontAwesomeIcon name="exclamation-circle" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                {type === 'warning' && <FontAwesomeIcon name="exclamation-triangle" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                {type === 'info' && <FontAwesomeIcon name="info-circle" size={16} color="#ffffff" style={customAlertStyles.buttonIcon} />}
+                <Text 
+                  style={customAlertStyles.buttonText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {confirmText}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const customAlertStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  container: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    padding: 0,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 20,
+    overflow: 'hidden',
+  },
+  content: {
+    padding: 28,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 4,
+  },
+  iconContainerSuccess: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#a7f3d0',
+  },
+  iconContainerError: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#fecaca',
+  },
+  iconContainerWarning: {
+    backgroundColor: '#fef3c7',
+    borderColor: '#fde68a',
+  },
+  iconContainerInfo: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#bfdbfe',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 12,
+    textAlign: 'center',
+    lineHeight: 30,
+    letterSpacing: 0.3,
+  },
+  message: {
+    fontSize: 16,
+    color: '#4b5563',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 28,
+    letterSpacing: 0.2,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    flexDirection: 'row',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    paddingHorizontal: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  cancelButtonText: {
+    color: '#4b5563',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+    flexShrink: 1,
+  },
+  buttonIcon: {
+    marginRight: 4,
+  },
+});
+
+// ================ CUSTOM ALERT HOOK ================
+const useCustomAlert = () => {
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info' | 'warning',
+    confirmText: 'OK',
+    cancelText: 'Batal',
+    onConfirm: undefined as (() => void) | undefined,
+    onCancel: undefined as (() => void) | undefined,
+    showCancel: false,
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'info' | 'warning' = 'info',
+    options?: {
+      confirmText?: string;
+      cancelText?: string;
+      onConfirm?: () => void;
+      onCancel?: () => void;
+      showCancel?: boolean;
+    }
+  ) => {
+    setAlertConfig({
+      title,
+      message,
+      type,
+      confirmText: options?.confirmText || 'OK',
+      cancelText: options?.cancelText || 'Batal',
+      onConfirm: options?.onConfirm,
+      onCancel: options?.onCancel,
+      showCancel: options?.showCancel || false,
+    });
+    setAlertVisible(true);
+  };
+
+  const hideAlert = () => {
+    setAlertVisible(false);
+  };
+
+  const AlertComponent = () => (
+    <CustomAlertModal
+      visible={alertVisible}
+      title={alertConfig.title}
+      message={alertConfig.message}
+      type={alertConfig.type}
+      confirmText={alertConfig.confirmText}
+      cancelText={alertConfig.cancelText}
+      onConfirm={() => {
+        alertConfig.onConfirm?.();
+        hideAlert();
+      }}
+      onCancel={() => {
+        alertConfig.onCancel?.();
+        hideAlert();
+      }}
+      onClose={hideAlert}
+    />
+  );
+
+  return {
+    showAlert,
+    hideAlert,
+    AlertComponent,
+  };
+};
+
+// ================ ALERT HELPER FUNCTIONS ================
+const createAlertHelper = () => {
+  let alertHook: ReturnType<typeof useCustomAlert> | null = null;
+  
+  const AlertProvider = () => {
+    alertHook = useCustomAlert();
+    return alertHook.AlertComponent();
+  };
+
+  const getAlertHook = () => {
+    if (!alertHook) {
+      throw new Error('AlertProvider must be rendered before using alert helpers');
+    }
+    return alertHook;
+  };
+
+  const showAlertHelper = {
+    success: (title: string, message: string, onPress?: () => void) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'success',
+        { onConfirm: onPress }
+      );
+    },
+
+    error: (title: string, message: string) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'error'
+      );
+    },
+
+    validation: (message: string) => {
+      getAlertHook().showAlert(
+        "Validasi",
+        message,
+        'info'
+      );
+    },
+
+    confirm: (
+      title: string,
+      message: string,
+      onConfirm: () => void,
+      options?: {
+        confirmText?: string;
+        cancelText?: string;
+        type?: 'success' | 'error' | 'info' | 'warning';
+      }
+    ) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        options?.type || 'info',
+        {
+          confirmText: options?.confirmText || 'Konfirmasi',
+          cancelText: options?.cancelText || 'Batal',
+          onConfirm,
+          onCancel: () => {},
+          showCancel: true,
+        }
+      );
+    },
+
+    info: (title: string, message: string, onPress?: () => void) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'info',
+        { onConfirm: onPress }
+      );
+    },
+
+    warning: (title: string, message: string, onPress?: () => void) => {
+      getAlertHook().showAlert(
+        title,
+        message,
+        'warning',
+        { onConfirm: onPress }
+      );
+    }
+  };
+
+  return {
+    AlertProvider,
+    showAlert: showAlertHelper,
+  };
+};
+
+const { AlertProvider, showAlert } = createAlertHelper();
 
 // Types
 interface Profile {
@@ -157,9 +581,12 @@ const ProfileScreen: React.FC = () => {
           jenisKelamin: data.profile?.jenisKelamin,
         },
       });
-    } catch (err) {
-      console.log('fetchProfile error', err);
-      Alert.alert('Error', 'Gagal memuat data profil');
+    } catch (err: any) {
+      console.log('fetchProfile error', err.response || err.message);
+      showAlert.error(
+        "Gagal Memuat Data",
+        "Tidak dapat mengambil data profil. Periksa koneksi internet Anda."
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -243,42 +670,88 @@ const ProfileScreen: React.FC = () => {
   // Update profile
   const handleUpdateProfile = async () => {
     if (!editForm.namaLengkap?.trim()) {
-      Alert.alert('Peringatan', 'Nama lengkap wajib diisi');
+      showAlert.validation("Nama lengkap wajib diisi.");
       return;
     }
 
-    setUpdating(true);
+    showAlert.confirm(
+      "Konfirmasi Perubahan",
+      "Apakah Anda yakin ingin menyimpan perubahan pada profil?",
+      async () => {
+        setUpdating(true);
 
-    try {
-      await saveProfileToServer(editForm);
+        try {
+          await saveProfileToServer(editForm);
 
-      await fetchProfile();
+          await fetchProfile();
 
-      Alert.alert('Sukses', 'Profil berhasil diperbarui');
-      setShowEditModal(false);
-    } catch (err) {
-      console.log('update profile error', err);
-      Alert.alert('Error', 'Gagal menyimpan profil');
-    } finally {
-      setUpdating(false);
-    }
+          showAlert.success(
+            "Berhasil Diperbarui",
+            "Profil berhasil diperbarui.",
+            () => setShowEditModal(false)
+          );
+        } catch (err: any) {
+          console.log('update profile error', err.response || err.message);
+          const errorMessage = err.response?.data?.message ?? "Gagal menyimpan profil. Silakan coba lagi.";
+          
+          if (err.response?.status === 400) {
+            showAlert.error(
+              "Data Tidak Valid",
+              errorMessage
+            );
+          } else if (err.response?.status === 413) {
+            showAlert.error(
+              "Ukuran File Terlalu Besar",
+              "Ukuran foto profil terlalu besar. Silakan pilih foto yang lebih kecil."
+            );
+          } else if (err.response?.status === 415) {
+            showAlert.error(
+              "Format File Tidak Didukung",
+              "Format foto profil tidak didukung. Gunakan format JPG atau PNG."
+            );
+          } else {
+            showAlert.error(
+              "Gagal Menyimpan Profil",
+              errorMessage
+            );
+          }
+        } finally {
+          setUpdating(false);
+        }
+      },
+      {
+        confirmText: "Ya, Simpan Perubahan",
+        cancelText: "Batal",
+        type: "info"
+      }
+    );
   };
 
   // Logout
   const handleLogout = async () => {
-    Alert.alert('Konfirmasi Logout', 'Apakah Anda yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
+    showAlert.confirm(
+      "Konfirmasi Logout",
+      "Apakah Anda yakin ingin keluar dari aplikasi?",
+      async () => {
+        try {
           await AsyncStorage.removeItem('token');
           await AsyncStorage.removeItem('user');
           await AsyncStorage.removeItem('profile');
           navigation.reset({ index: 0, routes: [{ name: 'Login' as never }] });
-        },
+        } catch (err: any) {
+          console.log('logout error', err.message || err);
+          showAlert.error(
+            "Gagal Logout",
+            "Terjadi kesalahan saat logout. Silakan coba lagi."
+          );
+        }
       },
-    ]);
+      {
+        confirmText: "Ya, Keluar Sekarang",
+        cancelText: "Batal",
+        type: "warning"
+      }
+    );
   };
 
   const handlePickImage = async () => {
@@ -366,9 +839,10 @@ const ProfileScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.safe}>
         <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+        <AlertProvider />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Memuat profil...</Text>
+          <Text style={styles.centerLoadingText}>Memuat profil...</Text>
         </View>
       </SafeAreaView>
     );
@@ -380,6 +854,9 @@ const ProfileScreen: React.FC = () => {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
       
+      {/* Render Alert Provider */}
+      <AlertProvider />
+      
       <Animated.ScrollView 
         style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}
         showsVerticalScrollIndicator={false}
@@ -389,6 +866,8 @@ const ProfileScreen: React.FC = () => {
             onRefresh={onRefresh}
             colors={['#2563eb']}
             tintColor="#2563eb"
+            title="Menyegarkan data..."
+            titleColor="#2563eb"
           />
         }
         contentContainerStyle={styles.scrollContent}
@@ -547,7 +1026,7 @@ const ProfileScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Account Info Card - DIKEMBALIKAN TAPI TANPA BERGAUNGSINCE */}
+          {/* Account Info Card */}
           <View style={[styles.infoCard, { backgroundColor: '#ffffff' }]}>
             <View style={styles.cardHeader}>
               <Icon name="user" type="font-awesome" size={20} color="#7c3aed" />
@@ -563,8 +1042,6 @@ const ProfileScreen: React.FC = () => {
                 <Text style={styles.infoValue}>{profileData.user.email}</Text>
               </View>
             </View>
-            
-            {/* ITEM BERGAUNGSINCE DIHAPUS DARI SINI */}
             
             <View style={styles.infoItem}>
               <View style={[styles.infoIconContainer, { backgroundColor: '#d1fae5' }]}>
@@ -860,11 +1337,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
+    padding: 20,
   },
-  loadingText: {
+  centerLoadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#4b5563',
+    fontSize: 14,
+    color: '#6b7280',
     fontWeight: '500',
   },
   

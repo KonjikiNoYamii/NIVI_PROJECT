@@ -229,7 +229,7 @@ const DashboardPengajar = () => {
           
           <TouchableOpacity style={styles.actionCard}>
             <View style={[styles.actionIconContainer, { backgroundColor: '#fef3c7' }]}>
-              <Icon name="clock" type="font-awesome" size={20} color="#92400e" />
+              <Icon name="clock-o" type="font-awesome" size={20} color="#92400e" />
             </View>
             <View style={styles.actionContent}>
               <Text style={styles.actionTitle}>Izin Menunggu Konfirmasi</Text>
