@@ -1,1016 +1,1052 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
   Alert,
-  TextInput,
   ScrollView,
+  TextInput,
   Modal,
+  FlatList,
+  Dimensions,
   StatusBar,
   Platform,
-  ActivityIndicator,
-  SafeAreaView,
-  RefreshControl,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import io from 'socket.io-client';
-import { API, SOCKET_URL } from '../../services/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { API } from '../../services/api';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
-/* ================= UTIL ================= */
+const { width, height } = Dimensions.get('window');
 
-const getToken = async () => {
-  const token = await AsyncStorage.getItem('token');
-  if (!token) throw new Error('Token tidak ditemukan');
-  return token;
-};
+/* ================== ENUM ================== */
+type Hari =
+  | 'senin'
+  | 'selasa'
+  | 'rabu'
+  | 'kamis'
+  | 'jumat'
+  | 'sabtu'
+  | 'minggu';
 
-const bulanNama = [
-  'Januari',
-  'Februari',
-  'Maret',
-  'April',
-  'Mei',
-  'Juni',
-  'Juli',
-  'Agustus',
-  'September',
-  'Oktober',
-  'November',
-  'Desember',
+const HARI_MAP: Hari[] = [
+  'minggu',
+  'senin',
+  'selasa',
+  'rabu',
+  'kamis',
+  'jumat',
+  'sabtu',
 ];
 
-/* ================= SCREEN ================= */
+const getHariFromTanggal = (d: Date): Hari => HARI_MAP[d.getDay()];
 
-function AdminJadwalScreen() {
-  const [kelasList, setKelasList] = useState<any[]>([]);
-  const [selectedKelas, setSelectedKelas] = useState<number | null>(null);
-  const [jadwal, setJadwal] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+/* ================== CUSTOM DROPDOWN COMPONENT ================== */
+interface DropdownProps {
+  label: string;
+  value: any;
+  items: { label: string; value: any }[];
+  onSelect: (value: any) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}
 
-  const [maxAbsen, setMaxAbsen] = useState('');
-  const [settingId, setSettingId] = useState<number | null>(null);
-
-  const [jamMulai, setJamMulai] = useState('08:00');
-  const [jamSelesai, setJamSelesai] = useState('10:00');
-
-  const [tanggalMulai, setTanggalMulai] = useState<Date>(new Date());
-  const [tanggalSelesai, setTanggalSelesai] = useState<Date>(new Date());
-
-  const [showTM, setShowTM] = useState(false);
-  const [showTS, setShowTS] = useState(false);
-
-  const [editVisible, setEditVisible] = useState(false);
-  const [editingJadwal, setEditingJadwal] = useState<any | null>(null);
-
-  const [editJamMulai, setEditJamMulai] = useState('');
-  const [editJamSelesai, setEditJamSelesai] = useState('');
-  const [editTanggal, setEditTanggal] = useState<Date>(new Date());
-
-  /* ================= JAM OPTION ================= */
-
-  const jamOptions = useMemo(() => {
-    return Array.from({ length: 96 }, (_, i) => {
-      const h = String(Math.floor(i / 4)).padStart(2, '0');
-      const m = String((i % 4) * 15).padStart(2, '0');
-      return `${h}:${m}`;
-    });
-  }, []);
-
-  /* ================= SOCKET ================= */
-  const socket = useMemo(
-    () => io(SOCKET_URL, { transports: ['websocket'] }),
-    [],
-  );
-
-  /* ================= FETCH ================= */
-
-  const fetchKelas = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      const res = await axios.get(`${API}/kelas`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setKelasList(res.data.data || []);
-    } catch (e) {
-      Alert.alert('Error', 'Gagal mengambil data kelas');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-const fetchJadwal = useCallback(async (kelasId: number) => {
-  setLoading(true);
-  try {
-    const token = await getToken(); // ambil token dari AsyncStorage
-    const res = await axios.get(`${API}/jadwal?kelasId=${kelasId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`, // wajib sesuai middleware authenticate
-      },
-    });
-    setJadwal(res.data.data || []);
-  } catch (err) {
-    console.log(err);
-    Alert.alert("Error", "Gagal mengambil jadwal");
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
-
-  const fetchAbsensiSetting = useCallback(async (kelasId: number) => {
-    try {
-      const token = await getToken();
-      const res = await axios.get(`${API}/absensi-setting/kelas/${kelasId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.data.data) {
-        setMaxAbsen(String(res.data.data.maxAbsen));
-        setSettingId(res.data.data.id);
-      } else {
-        setMaxAbsen('');
-        setSettingId(null);
-      }
-    } catch {
-      Alert.alert('Error', 'Gagal mengambil setting absensi');
-    }
-  }, []);
-
-  const loadData = useCallback(async () => {
-    await fetchKelas();
-    if (selectedKelas) {
-      await Promise.all([
-        fetchJadwal(selectedKelas),
-        fetchAbsensiSetting(selectedKelas)
-      ]);
-    }
-    setRefreshing(false);
-  }, [fetchKelas, fetchJadwal, fetchAbsensiSetting, selectedKelas]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadData();
-  };
-
-  const onKelasChange = (id: number) => {
-    setSelectedKelas(id);
-    fetchJadwal(id);
-    fetchAbsensiSetting(id);
-  };
-
-  /* ================= GROUP ================= */
-
-  const jadwalPerBulan = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    jadwal.forEach(j => {
-      const d = new Date(j.tanggal);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (!map[key]) map[key] = [];
-      map[key].push(j);
-    });
-    return map;
-  }, [jadwal]);
-
-  /* ================= ACTION ================= */
-
-  const saveMaxAbsen = async () => {
-    if (!selectedKelas || !maxAbsen) return;
-    setLoading(true);
-    try {
-      const token = await getToken();
-      if (settingId) {
-        await axios.put(
-          `${API}/absensi-setting/${settingId}`,
-          { maxAbsen: Number(maxAbsen) },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-      } else {
-        await axios.post(
-          `${API}/absensi-setting/kelas/${selectedKelas}`,
-          { maxAbsen: Number(maxAbsen) },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-      }
-      socket.emit('absensi-setting-changed', { kelasId: selectedKelas });
-      Alert.alert('Sukses', 'Batas absen disimpan');
-    } catch {
-      Alert.alert('Error', 'Gagal menyimpan batas absen');
-    } finally {
-      setLoading(false);
-    }
-  };
-
- const createBulk = async () => {
-  if (!selectedKelas || !tanggalMulai || !tanggalSelesai) return;
-
-  setLoading(true);
-  try {
-    const token = await getToken();
-
-    await axios.post(
-      `${API}/jadwal`,
-      {
-        kelasId: selectedKelas,
-        jamMulai,
-        jamSelesai,
-        tanggal: tanggalMulai.toISOString(), // gunakan satu tanggal per sesi
-        hari: tanggalMulai.getDay(), // kalau pakai enum Hari
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    socket.emit("jadwal-changed", { kelasId: selectedKelas });
-    fetchJadwal(selectedKelas);
-  } catch (err: any) {
-    const message =
-      err?.response?.data?.message || "Gagal membuat jadwal";
-    Alert.alert("Error", message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  const deleteJadwal = async (id: number) => {
-    setLoading(true);
-    try {
-      const token = await getToken();
-      await axios.delete(`${API}/jadwal/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      socket.emit('jadwal-changed', { kelasId: selectedKelas });
-      fetchJadwal(selectedKelas!);
-    } catch {
-      Alert.alert('Error', 'Gagal menghapus jadwal');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-const submitEdit = async () => {
-  if (!editingJadwal) return;
-
-  setLoading(true);
-  try {
-    const token = await getToken();
-
-    const payload: any = {
-      jamMulai: editJamMulai,
-      jamSelesai: editJamSelesai,
-      tanggal: editTanggal.toISOString(),
-      hari: editTanggal.getDay(), // enum Hari sesuai backend
-    };
-
-    await axios.put(`${API}/jadwal/${editingJadwal.id}`, payload, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    socket.emit("jadwal-changed", { kelasId: selectedKelas });
-    setEditVisible(false);
-    fetchJadwal(selectedKelas);
-  } catch (err: any) {
-    const message =
-      err?.response?.data?.message || "Gagal menyimpan jadwal";
-    Alert.alert("Error", message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-
-  /* ================= SOCKET LISTENER ================= */
-  useEffect(() => {
-    const handleJadwalChanged = ({ kelasId }: { kelasId: number }) => {
-      if (selectedKelas === kelasId) fetchJadwal(kelasId);
-    };
-
-    const handleAbsensiSettingChanged = ({ kelasId }: { kelasId: number }) => {
-      if (selectedKelas === kelasId) fetchAbsensiSetting(kelasId);
-    };
-
-    socket.on('jadwal-changed', handleJadwalChanged);
-    socket.on('absensi-setting-changed', handleAbsensiSettingChanged);
-    
-    return () => {
-      socket.off('jadwal-changed', handleJadwalChanged);
-      socket.off('absensi-setting-changed', handleAbsensiSettingChanged);
-    };
-  }, [selectedKelas, fetchJadwal, fetchAbsensiSetting, socket]);
-
-  /* ================= STATE HANDLING ================= */
-
-  if (loading && !selectedKelas && !refreshing) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Manajemen Jadwal</Text>
-      <Text style={styles.headerSubtitle}>
-        Kelola jadwal dan batas absensi kelas
-      </Text>
-    </View>
-  );
-
-  const renderContent = () => (
-    <>
-      {/* FORM */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Pilih Kelas</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={selectedKelas ?? undefined}
-            onValueChange={onKelasChange}
-            style={styles.picker}
-            dropdownIconColor="#6b7280"
-          >
-            <Picker.Item label="Pilih Kelas" value={null} />
-            {kelasList.map(k => (
-              <Picker.Item key={k.id} label={k.namaKelas} value={k.id} />
-            ))}
-          </Picker>
-        </View>
-      </View>
-
-      {selectedKelas && (
-        <>
-          {/* BATAS ABSEN */}
-          <View style={styles.card}>
-            <Text style={styles.label}>Batas Absen</Text>
-            <Text style={styles.cardSubtitle}>
-              Tentukan jumlah maksimal absen yang diizinkan
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={maxAbsen}
-              onChangeText={setMaxAbsen}
-              keyboardType="numeric"
-              placeholder="Contoh: 3"
-              placeholderTextColor="#9ca3af"
-            />
-            <TouchableOpacity
-              style={[styles.button, loading && styles.disabled]}
-              onPress={saveMaxAbsen}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>SIMPAN BATAS ABSEN</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* BUAT JADWAL */}
-          <View style={styles.card}>
-            <Text style={styles.label}>Buat Jadwal Baru</Text>
-            <Text style={styles.cardSubtitle}>
-              Tambah jadwal untuk rentang tanggal tertentu
-            </Text>
-
-            <Text style={styles.inputLabel}>Jam Mulai</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={jamMulai}
-                onValueChange={setJamMulai}
-                style={styles.picker}
-                dropdownIconColor="#6b7280"
-              >
-                {jamOptions.map(j => (
-                  <Picker.Item key={j} label={j} value={j} />
-                ))}
-              </Picker>
-            </View>
-
-            <Text style={styles.inputLabel}>Jam Selesai</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={jamSelesai}
-                onValueChange={setJamSelesai}
-                style={styles.picker}
-                dropdownIconColor="#6b7280"
-              >
-                {jamOptions.map(j => (
-                  <Picker.Item key={j} label={j} value={j} />
-                ))}
-              </Picker>
-            </View>
-
-            <Text style={styles.inputLabel}>Tanggal Mulai</Text>
-            <TouchableOpacity
-              style={styles.dateInput}
-              onPress={() => setShowTM(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.dateInputText}>
-                {tanggalMulai?.toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) || 'Pilih Tanggal Mulai'}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={styles.inputLabel}>Tanggal Selesai</Text>
-            <TouchableOpacity
-              style={styles.dateInput}
-              onPress={() => setShowTS(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.dateInputText}>
-                {tanggalSelesai?.toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) || 'Pilih Tanggal Selesai'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, loading && styles.disabled]}
-              onPress={createBulk}
-              disabled={loading}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>BUAT JADWAL</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* LIST JADWAL PER BULAN */}
-          {Object.entries(jadwalPerBulan).map(([key, list]) => {
-            const [year, month] = key.split('-');
-            return (
-              <View style={styles.listCard} key={key}>
-                <Text style={styles.listTitle}>
-                  {bulanNama[+month]} {year}
-                </Text>
-                
-                {list.length === 0 ? (
-                  <Text style={styles.emptyText}>Belum ada jadwal</Text>
-                ) : (
-                  <FlatList
-                    data={list}
-                    numColumns={2}
-                    scrollEnabled={false}
-                    keyExtractor={i => i.id.toString()}
-                    renderItem={({ item }) => (
-                      <View style={styles.listItem}>
-                        <Text style={styles.itemDay}>{item.hari}</Text>
-                        <Text style={styles.itemTime}>
-                          {item.jamMulai} - {item.jamSelesai}
-                        </Text>
-                        <View style={styles.itemActions}>
-                          <TouchableOpacity 
-                            onPress={() => deleteJadwal(item.id)}
-                            style={styles.deleteButton}
-                            activeOpacity={0.85}
-                          >
-                            <Text style={styles.deleteText}>Hapus</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setEditingJadwal(item);
-                              setEditJamMulai(item.jamMulai);
-                              setEditJamSelesai(item.jamSelesai);
-                              setEditTanggal(new Date(item.tanggal));
-                              setEditVisible(true);
-                            }}
-                            style={styles.editButton}
-                            activeOpacity={0.85}
-                          >
-                            <Text style={styles.editText}>Edit</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    )}
-                  />
-                )}
-              </View>
-            );
-          })}
-        </>
-      )}
-
-      {/* SPACER UNTUK NAVIGATOR */}
-      <View style={styles.spacer} />
-    </>
-  );
-
-  /* ================= UI ================= */
+const CustomDropdown: React.FC<DropdownProps> = ({
+  label,
+  value,
+  items,
+  onSelect,
+  placeholder = "Pilih...",
+  disabled = false,
+}) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const selectedLabel = items.find(item => item.value === value)?.label || placeholder;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            colors={['#2563eb']}
-            tintColor="#2563eb"
-          />
-        }
-        contentContainerStyle={styles.scrollContent}
+    <>
+      <TouchableOpacity
+        style={[styles.dropdownContainer, disabled && styles.disabled]}
+        onPress={() => !disabled && setModalVisible(true)}
+        disabled={disabled}
+        activeOpacity={0.7}
       >
-        {renderHeader()}
-        {renderContent()}
-      </ScrollView>
+        <Text style={styles.dropdownLabel}>{label}</Text>
+        <View style={styles.dropdownValueContainer}>
+          <Text style={[styles.dropdownValue, !value && styles.placeholderText]}>
+            {selectedLabel}
+          </Text>
+          <Ionicons name={modalVisible ? "chevron-up" : "chevron-down"} size={20} color={disabled ? "#9ca3af" : "#3b82f6"} />
 
-      {/* MODAL EDIT */}
-      <Modal visible={editVisible} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
+        </View>
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Jadwal</Text>
-              <TouchableOpacity 
-                onPress={() => setEditVisible(false)}
-                style={styles.modalCloseButton}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
+              <Text style={styles.modalTitle}>Pilih {label}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.modalSubtitle}>Jam Mulai</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={editJamMulai}
-                onValueChange={setEditJamMulai}
-                style={styles.picker}
-              >
-                {jamOptions.map(j => (
-                  <Picker.Item key={j} label={j} value={j} />
-                ))}
-              </Picker>
-            </View>
-
-            <Text style={styles.modalSubtitle}>Jam Selesai</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={editJamSelesai}
-                onValueChange={setEditJamSelesai}
-                style={styles.picker}
-              >
-                {jamOptions.map(j => (
-                  <Picker.Item key={j} label={j} value={j} />
-                ))}
-              </Picker>
-            </View>
-
-            <Text style={styles.modalSubtitle}>Tanggal</Text>
-            <TouchableOpacity
-              disabled={editingJadwal?.absensi?.length > 0}
-              style={[
-                styles.dateInput,
-                editingJadwal?.absensi?.length > 0 && styles.disabledInput
-              ]}
-              onPress={() => setShowTM(true)}
-              activeOpacity={0.85}
-            >
-              <Text style={[
-                styles.dateInputText,
-                editingJadwal?.absensi?.length > 0 && styles.disabledText
-              ]}>
-                {editTanggal?.toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                }) || 'Pilih Tanggal'}
-              </Text>
-            </TouchableOpacity>
-
-            {editingJadwal?.absensi?.length > 0 && (
-              <Text style={styles.warningText}>
-                Jadwal sudah digunakan absensi, tanggal tidak bisa diubah
-              </Text>
-            )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setEditVisible(false)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.cancelButtonText}>Batal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.saveButton, loading && styles.disabled]}
-                onPress={submitEdit}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Simpan</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            
+            <FlatList
+              data={items}
+              keyExtractor={(item, index) => `${item.value}-${index}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItem,
+                    value === item.value && styles.selectedItem,
+                  ]}
+                  onPress={() => {
+                    onSelect(item.value);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.modalItemText,
+                    value === item.value && styles.selectedItemText,
+                  ]}>
+                    {item.label}
+                  </Text>
+                  {value === item.value && (
+                    <Ionicons name="checkmark" size={20} color="#3b82f6" />
+                  )}
+                </TouchableOpacity>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
           </View>
         </View>
       </Modal>
+    </>
+  );
+};
 
-      {/* DATE TIME PICKERS - HARUS DILUAR MODAL */}
-      {showTM && (
-        <DateTimePicker
-          value={tanggalMulai || new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowTM(false);
-            if (selectedDate) {
-              setTanggalMulai(selectedDate);
-            }
-          }}
-        />
-      )}
-      {showTS && (
-        <DateTimePicker
-          value={tanggalSelesai || new Date()}
-          mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowTS(false);
-            if (selectedDate) {
-              setTanggalSelesai(selectedDate);
-            }
-          }}
-        />
-      )}
+/* ================== TIME SELECTOR COMPONENT ================== */
+interface TimeSelectorProps {
+  label: string;
+  value: string;
+  onSelect: (value: string) => void;
+  options: string[];
+  disabled?: boolean;
+  highlightInvalid?: boolean;
+}
+
+const TimeSelector: React.FC<TimeSelectorProps> = ({
+  label,
+  value,
+  onSelect,
+  options,
+  disabled = false,
+  highlightInvalid = false,
+}) => {
+  const [modalVisible, setModalVisible] = useState(false);
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[styles.timeSelectorContainer, disabled && styles.disabled]}
+        onPress={() => !disabled && setModalVisible(true)}
+        disabled={disabled}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.dropdownLabel}>{label}</Text>
+        <View style={styles.timeValueContainer}>
+          <Text style={styles.timeValue}>{value}</Text>
+          <Ionicons 
+            name={modalVisible ? "chevron-up" : "chevron-down"} 
+            size={20} 
+            color={disabled ? "#9ca3af" : "#3b82f6"} 
+          />
+        </View>
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { height: height * 0.6 }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Pilih {label}</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.timeItem,
+                    value === item && styles.selectedTimeItem,
+                    highlightInvalid && { opacity: 0.5 }, // You can add validation logic here
+                  ]}
+                  onPress={() => {
+                    onSelect(item);
+                    setModalVisible(false);
+                  }}
+                  disabled={highlightInvalid}
+                >
+                  <Text style={[
+                    styles.timeItemText,
+                    value === item && styles.selectedTimeItemText,
+                  ]}>
+                    {item}
+                  </Text>
+                  {value === item && (
+                    <Ionicons name="checkmark" size={20} color="#3b82f6" />
+                  )}
+                </TouchableOpacity>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+};
+
+/* ================== SCREEN ================== */
+export default function CreateJadwalScreen() {
+  const [kelasList, setKelasList] = useState<any[]>([]);
+  const [kelasId, setKelasId] = useState<number | null>(null);
+
+  const [absensiSetting, setAbsensiSetting] = useState<any | null>(null);
+  const [maxAbsen, setMaxAbsen] = useState<string>('');
+
+  const [tanggal, setTanggal] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const [jamMulai, setJamMulai] = useState('08:00');
+  const [jamSelesai, setJamSelesai] = useState('09:00');
+
+  const [loading, setLoading] = useState(false);
+
+  const [jadwalList, setJadwalList] = useState<any[]>([]);
+  const [loadingJadwal, setLoadingJadwal] = useState(false);
+
+  const sudahAdaJadwal = jadwalList.length > 0;
+  const sudahPenuh =
+    absensiSetting && jadwalList.length >= absensiSetting.maxAbsen;
+
+  /* ================== FETCH KELAS ================== */
+  useEffect(() => {
+    fetchKelas();
+  }, []);
+
+  const authHeader = async () => ({
+    headers: {
+      Authorization: `Bearer ${await AsyncStorage.getItem('token')}`,
+    },
+  });
+
+  const fetchKelas = async () => {
+    const res = await axios.get(`${API}/kelas`, await authHeader());
+    setKelasList(res.data.data);
+  };
+
+  /* ================== PILIH KELAS ================== */
+  const onSelectKelas = async (id: number) => {
+    setKelasId(id);
+    setAbsensiSetting(null);
+    setMaxAbsen('');
+    setJadwalList([]);
+
+    try {
+      const res = await axios.get(
+        `${API}/absensi-setting/kelas/${id}`,
+        await authHeader(),
+      );
+
+      setAbsensiSetting(res.data.data);
+      setMaxAbsen(String(res.data.data.maxAbsen));
+      fetchJadwal(id);
+    } catch {
+      setAbsensiSetting(null);
+    }
+  };
+
+  /* ================== JAM OPTIONS ================== */
+  const jamOptions = useMemo(
+    () =>
+      Array.from({ length: 96 }, (_, i) => {
+        const h = String(Math.floor(i / 4)).padStart(2, '0');
+        const m = String((i % 4) * 15).padStart(2, '0');
+        return `${h}:${m}`;
+      }),
+    [],
+  );
+
+  /* ================== SUBMIT ABSENSI SETTING ================== */
+  const submitAbsensiSetting = async () => {
+    if (!kelasId || !maxAbsen) {
+      Alert.alert('Error', 'Max absen wajib diisi');
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API}/absensi-setting/kelas/${kelasId}`,
+        { maxAbsen: Number(maxAbsen) },
+        await authHeader(),
+      );
+
+      setAbsensiSetting({ maxAbsen: Number(maxAbsen) });
+      Alert.alert('Sukses', 'Absensi setting disimpan');
+    } catch (error: any) {
+      Alert.alert('Error', error.response?.data?.message || 'Gagal menyimpan');
+    }
+  };
+
+  const fetchJadwal = async (id: number) => {
+    setLoadingJadwal(true);
+    try {
+      const res = await axios.get(
+        `${API}/jadwal/kelas/${id}`,
+        await authHeader(),
+      );
+      setJadwalList(res.data.data);
+    } catch {
+      setJadwalList([]);
+    } finally {
+      setLoadingJadwal(false);
+    }
+  };
+
+  /* ================== VALIDASI JAM ================== */
+  const isValidJadwal = (mulai: string, selesai: string) => {
+    if (mulai >= selesai) return false;
+    return !jadwalList.some(j => !(selesai <= j.jamMulai || mulai >= j.jamSelesai));
+  };
+
+  /* ================== SUBMIT JADWAL ================== */
+  const submitJadwal = async () => {
+    if (!kelasId) {
+      Alert.alert('Error', 'Pilih kelas terlebih dahulu');
+      return;
+    }
+
+    if (!isValidJadwal(jamMulai, jamSelesai)) {
+      Alert.alert('Error', 'Jam tidak valid atau bentrok dengan jadwal lain!');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post(
+        `${API}/jadwal`,
+        {
+          kelasId,
+          tanggal: tanggal.toISOString(),
+          hari: getHariFromTanggal(tanggal),
+          jamMulai,
+          jamSelesai,
+        },
+        await authHeader(),
+      );
+
+      await fetchJadwal(kelasId);
+      Alert.alert('Sukses', 'Jadwal berhasil dibuat');
+    } catch (e: any) {
+      Alert.alert('Gagal', e.response?.data?.message || 'Terjadi kesalahan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ================== FORMAT ITEMS ================== */
+  const kelasItems = [
+    { label: '-- pilih kelas --', value: null },
+    ...kelasList.map(k => ({ label: k.namaKelas, value: k.id }))
+  ];
+
+  /* ================== UI ================== */
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Buat Jadwal Absensi</Text>
+          <Text style={styles.subtitle}>
+            Kelola jadwal dan pengaturan absensi kelas
+          </Text>
+        </View>
+
+        {/* FORM SECTION */}
+        <View style={styles.formSection}>
+          {/* PILIH KELAS */}
+          <CustomDropdown
+            label="Pilih Kelas"
+            value={kelasId}
+            items={kelasItems}
+            onSelect={onSelectKelas}
+            placeholder="Pilih kelas..."
+          />
+
+          {/* MAX ABSEN SECTION */}
+          {kelasId && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.iconContainer, { backgroundColor: '#3b82f610' }]}>
+                  <Ionicons name="settings-outline" size={20} color="#3b82f6" />
+                </View>
+                <Text style={styles.sectionTitle}>Pengaturan Absensi</Text>
+              </View>
+
+              {absensiSetting && (
+                <View style={styles.currentSetting}>
+                  <Ionicons name="information-circle-outline" size={16} color="#6b7280" />
+                  <Text style={styles.currentSettingText}>
+                    Max absen saat ini: <Text style={styles.highlight}>{absensiSetting.maxAbsen}</Text>
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Max Absensi per Semester</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    sudahAdaJadwal && styles.disabledInput,
+                  ]}
+                  keyboardType="number-pad"
+                  value={maxAbsen}
+                  onChangeText={setMaxAbsen}
+                  editable={!sudahAdaJadwal}
+                  placeholder="Misal: 16"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.secondaryButton,
+                  sudahAdaJadwal && styles.disabledButton,
+                ]}
+                onPress={submitAbsensiSetting}
+                disabled={sudahAdaJadwal || loading}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name={sudahAdaJadwal ? "lock-closed-outline" : "save-outline"} 
+                  size={20} 
+                  color={sudahAdaJadwal ? "#9ca3af" : "#3b82f6"} 
+                />
+                <Text style={[
+                  styles.buttonText,
+                  styles.secondaryButtonText,
+                  sudahAdaJadwal && styles.disabledButtonText,
+                ]}>
+                  {sudahAdaJadwal ? 'Terkunci' : absensiSetting ? 'Update' : 'Simpan'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* FORM JADWAL */}
+          {kelasId && absensiSetting && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.iconContainer, { backgroundColor: '#10b98110' }]}>
+                  <Ionicons name="calendar-outline" size={20} color="#10b981" />
+                </View>
+                <Text style={styles.sectionTitle}>Tambah Jadwal Baru</Text>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Tanggal</Text>
+                <TouchableOpacity
+                  style={styles.dateInput}
+                  onPress={() => setShowDatePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#3b82f6" />
+                  <Text style={styles.dateText}>
+                    {tanggal.toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={tanggal}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(_, d) => {
+                    setShowDatePicker(false);
+                    if (d) setTanggal(d);
+                  }}
+                />
+              )}
+
+              <View style={styles.timeGroup}>
+                <View style={styles.timeInputHalf}>
+                  <TimeSelector
+                    label="Jam Mulai"
+                    value={jamMulai}
+                    onSelect={setJamMulai}
+                    options={jamOptions}
+                    highlightInvalid={!isValidJadwal(jamMulai, jamSelesai)}
+                  />
+                </View>
+                <View style={styles.timeSpacer} />
+                <View style={styles.timeInputHalf}>
+                  <TimeSelector
+                    label="Jam Selesai"
+                    value={jamSelesai}
+                    onSelect={setJamSelesai}
+                    options={jamOptions}
+                    highlightInvalid={!isValidJadwal(jamMulai, jamSelesai)}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.validationInfo}>
+                {!isValidJadwal(jamMulai, jamSelesai) && (
+                  <View style={styles.warningBox}>
+                    <Ionicons name="warning-outline" size={16} color="#f59e0b" />
+                    <Text style={styles.warningText}>
+                      {jamMulai >= jamSelesai 
+                        ? 'Jam mulai harus lebih awal dari jam selesai' 
+                        : 'Jadwal bentrok dengan yang sudah ada'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  styles.primaryButton,
+                  (sudahPenuh || !isValidJadwal(jamMulai, jamSelesai) || loading) && styles.disabledButton,
+                ]}
+                onPress={submitJadwal}
+                disabled={sudahPenuh || !isValidJadwal(jamMulai, jamSelesai) || loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Ionicons 
+                      name={sudahPenuh ? "ban-outline" : "add-circle-outline"} 
+                      size={20} 
+                      color="#fff" 
+                    />
+                    <Text style={styles.buttonText}>
+                      {sudahPenuh
+                        ? 'Jadwal Penuh'
+                        : !isValidJadwal(jamMulai, jamSelesai)
+                        ? 'Jadwal Tidak Valid'
+                        : 'Tambah Jadwal'}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              {sudahPenuh && (
+                <View style={styles.infoBox}>
+                  <Ionicons name="information-circle-outline" size={16} color="#3b82f6" />
+                  <Text style={styles.infoText}>
+                    Jumlah jadwal sudah mencapai batas maksimal ({absensiSetting.maxAbsen})
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* LIST JADWAL */}
+          {kelasId && absensiSetting && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={[styles.iconContainer, { backgroundColor: '#8b5cf610' }]}>
+                  <Ionicons name="list-outline" size={20} color="#8b5cf6" />
+                </View>
+                <View style={styles.jadwalHeader}>
+                  <Text style={styles.sectionTitle}>Jadwal Kelas</Text>
+                  <View style={styles.counterBadge}>
+                    <Text style={styles.counterText}>{jadwalList.length}/{absensiSetting.maxAbsen}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {loadingJadwal ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                  <Text style={styles.loadingText}>Memuat jadwal...</Text>
+                </View>
+              ) : jadwalList.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
+                  <Text style={styles.emptyStateText}>Belum ada jadwal</Text>
+                  <Text style={styles.emptyStateSubtext}>
+                    Tambah jadwal pertama Anda
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={jadwalList}
+                  scrollEnabled={false}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <View style={styles.jadwalCard}>
+                      <View style={styles.jadwalCardHeader}>
+                        <View style={styles.dateBadge}>
+                          <Text style={styles.dateBadgeDay}>
+                            {new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit' })}
+                          </Text>
+                          <Text style={styles.dateBadgeMonth}>
+                            {new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}
+                          </Text>
+                        </View>
+                        <View style={styles.jadwalInfo}>
+                          <Text style={styles.jadwalHari}>
+                            {item.hari.charAt(0).toUpperCase() + item.hari.slice(1)}
+                          </Text>
+                          <Text style={styles.jadwalWaktu}>
+                            {item.jamMulai} - {item.jamSelesai}
+                          </Text>
+                        </View>
+                        <Ionicons name="time-outline" size={20} color="#9ca3af" />
+                      </View>
+                    </View>
+                  )}
+                />
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 /* ================== STYLE ================== */
-
 const styles = StyleSheet.create({
-  safe: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f8fafc',
   },
-
-  scrollView: {
-    flex: 1,
-    backgroundColor: "#f1f5f9",
+  container: {
+    paddingBottom: 40,
   },
-
-  scrollContent: {
-    paddingBottom: 30, // Spacer untuk navigator
-  },
-
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-
-  headerTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "800",
-  },
-
-  headerSubtitle: {
-    marginTop: 6,
-    color: "#c7d2fe",
-    fontSize: 14,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: 18,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1f2937',
     marginBottom: 6,
   },
-
-  cardSubtitle: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginBottom: 16,
-    fontWeight: "500",
-  },
-
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#374151",
-    marginBottom: 6,
-    marginTop: 12,
-  },
-
-  input: {
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
+  subtitle: {
     fontSize: 14,
-    color: "#111827",
+    color: '#6b7280',
   },
-
-  pickerContainer: {
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    marginBottom: 16,
-    overflow: 'hidden',
+  formSection: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
-
-  picker: {
-    backgroundColor: "#f9fafb",
-    color: "#111827", 
-  },
-
-  dateInput: {
-    backgroundColor: "#f9fafb",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-  },
-
-  dateInputText: {
-    fontSize: 14,
-    color: "#111827",
-  },
-
-  disabledInput: {
-    backgroundColor: "#f3f4f6",
-    opacity: 0.7,
-  },
-
-  disabledText: {
-    color: "#9ca3af",
-  },
-
-  button: {
-    backgroundColor: "#2563eb",
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-
-  disabled: {
-    opacity: 0.7,
-  },
-
-  buttonText: {
-    color: "#fff",
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-
-  listCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-
-  listTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 12,
-    color: "#111827",
-  },
-
-  listItem: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    padding: 16,
-    margin: 6,
-    flex: 1,
-  },
-
-  itemDay: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1f2933",
-    marginBottom: 4,
-  },
-
-  itemTime: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginBottom: 12,
-  },
-
-  itemActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-
-  deleteButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#fee2e2",
-    borderRadius: 8,
-  },
-
-  deleteText: {
-    color: "#dc2626",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  editButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#dbeafe",
-    borderRadius: 8,
-  },
-
-  editText: {
-    color: "#2563eb",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  emptyText: {
-    textAlign: "center",
-    color: "#6b7280",
-    fontSize: 13,
-    paddingVertical: 20,
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
-  },
-
-  spacer: {
-    height: 100,
-  },
-
-  // Modal Styles
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-
-  modalBox: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#FFFFFF',
+  sectionCard: {
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 24,
+    marginTop: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
-
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  jadwalHeader: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  counterBadge: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  counterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4b5563',
+  },
+  dropdownContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    marginBottom: 12,
+  },
+  dropdownLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  dropdownValueContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  dropdownValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#9ca3af',
+  },
+  disabled: {
+    opacity: 0.6,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: height * 0.8,
+    paddingTop: 20,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1f2937',
   },
-
-  modalCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f3f4f6',
-    justifyContent: 'center',
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-
-  modalCloseText: {
+  selectedItem: {
+    backgroundColor: '#eff6ff',
+  },
+  modalItemText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#4b5563',
+    flex: 1,
+  },
+  selectedItemText: {
+    color: '#1f2937',
     fontWeight: '600',
   },
-
-  modalSubtitle: {
+  currentSetting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  currentSettingText: {
     fontSize: 14,
     color: '#6b7280',
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-
-  warningText: {
-    fontSize: 12,
-    color: '#f59e0b',
-    marginTop: 4,
-    marginBottom: 16,
-    fontStyle: 'italic',
-  },
-
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-
-  cancelButton: {
+    marginLeft: 8,
     flex: 1,
-    paddingVertical: 14,
+  },
+  highlight: {
+    color: '#3b82f6',
+    fontWeight: '800',
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
     borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  disabledInput: {
     backgroundColor: '#f3f4f6',
+    color: '#9ca3af',
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#1f2937',
+    flex: 1,
+    marginLeft: 12,
+  },
+  timeGroup: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  timeInputHalf: {
+    flex: 1,
+  },
+  timeSpacer: {
+    width: 12,
+  },
+  timeSelectorContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  timeValueContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  timeValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  timeItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  selectedTimeItem: {
+    backgroundColor: '#eff6ff',
+  },
+  timeItemText: {
+    fontSize: 16,
+    color: '#4b5563',
+    flex: 1,
+  },
+  selectedTimeItemText: {
+    color: '#1f2937',
+    fontWeight: '600',
+  },
+  validationInfo: {
+    marginBottom: 20,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  warningText: {
+    fontSize: 14,
+    color: '#92400e',
+    marginLeft: 8,
+    flex: 1,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#1e40af',
+    marginLeft: 8,
+    flex: 1,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+  },
+  primaryButton: {
+    backgroundColor: '#3b82f6',
+  },
+  secondaryButton: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1.5,
+    borderColor: '#3b82f6',
+  },
+  disabledButton: {
+    backgroundColor: '#f3f4f6',
+    borderColor: '#e5e7eb',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  secondaryButtonText: {
+    color: '#3b82f6',
+  },
+  disabledButtonText: {
+    color: '#9ca3af',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginLeft: 8,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4b5563',
+    marginTop: 12,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 4,
+  },
+  jadwalCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  jadwalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateBadge: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    width: 60,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    alignItems: 'center',
+    marginRight: 16,
   },
-
-  cancelButtonText: {
-    fontSize: 14,
-    color: '#4B5563',
-    fontWeight: '600',
+  dateBadgeDay: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1f2937',
   },
-
-  saveButton: {
-    flex: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#2563eb',
-  },
-
-  saveButtonText: {
-    fontSize: 14,
-    color: '#fff',
+  dateBadgeMonth: {
+    fontSize: 11,
     fontWeight: '700',
+    color: '#3b82f6',
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  jadwalInfo: {
+    flex: 1,
+  },
+  jadwalHari: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 2,
+  },
+  jadwalWaktu: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
   },
 });
-
-export default AdminJadwalScreen;

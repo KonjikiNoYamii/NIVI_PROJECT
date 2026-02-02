@@ -9,15 +9,14 @@ import { UserContext, UserProvider } from './src/context/UserContext';
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-        <SocketProvider>
-          <UserProvider>
-            <AiBubbleProvider>
-          <RootNavigator />
-          <AIBubble />
-        </AiBubbleProvider>
-          </UserProvider>
-        </SocketProvider>
+      <SocketProvider>
+        <UserProvider>
+          <AiBubbleProvider>
+            <RootNavigator />
+            <AIBubble />
+          </AiBubbleProvider>
+        </UserProvider>
+      </SocketProvider>
     </GestureHandlerRootView>
   );
 }
-

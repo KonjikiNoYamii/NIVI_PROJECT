@@ -92,7 +92,7 @@ const ArsipScreen = () => {
   const fetchIzinArsip = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
-      const res = await axios.get(`${API}/izin/all/pengajar`, {
+      const res = await axios.get(`${API}/izin/arsip`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Hanya arsip: status bukan menunggu
@@ -160,8 +160,7 @@ const ArsipScreen = () => {
 
   const renderSubmissionItem = ({ item }: { item: Submission }) => {
     const statusColor = getSubmissionStatusColor(item.status);
-    const kelasName =
-      item.user.kelas?.namaKelas || `Kelas ${item.user.kelasId}`;
+    const kelasName = item.user.kelas?.namaKelas;
 
     return (
       <View style={styles.card}>
@@ -256,7 +255,6 @@ const ArsipScreen = () => {
             <Ionicons name="archive-outline" size={12} color="#6b7280" />
             <Text style={[styles.status, { color: '#6b7280' }]}> ARSIP</Text>
           </View>
-
           <View
             style={[
               styles.statusBadge,
@@ -266,6 +264,12 @@ const ArsipScreen = () => {
               },
             ]}
           >
+            <Ionicons
+              name={item.nilai ? 'ribbon' : 'ribbon-outline'}
+              size={16}
+              color={item.nilai ? '#10b981' : '#f59e0b'}
+              style={{ marginRight: 4 }}
+            />
             <Text
               style={[
                 styles.status,
@@ -876,7 +880,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#e5e7eb',
-    minWidth: 60  ,
+    minWidth: 60,
   },
   status: {
     fontSize: 11,

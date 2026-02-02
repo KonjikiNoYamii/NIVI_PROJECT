@@ -143,22 +143,21 @@ const PengajarSubmissionScreen = () => {
     setFilteredData(result);
   }, [data, selectedKelas, searchQuery]);
 
-
   const softDeleteSubmission = async (id: number) => {
-  try {
-    const token = await AsyncStorage.getItem('token');
-    await axios.put(
-      `${API}/submission/${id}/arsip`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    Alert.alert('Berhasil', 'Submission telah diarsipkan');
-    fetchSubmission(); // refresh data setelah soft delete
-  } catch (err) {
-    console.log('Soft delete error:', err);
-    Alert.alert('Error', 'Gagal mengarsipkan submission');
-  }
-};
+    try {
+      const token = await AsyncStorage.getItem('token');
+      await axios.put(
+        `${API}/submission/${id}/arsip`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      Alert.alert('Berhasil', 'Submission telah diarsipkan');
+      fetchSubmission(); // refresh data setelah soft delete
+    } catch (err) {
+      console.log('Soft delete error:', err);
+      Alert.alert('Error', 'Gagal mengarsipkan submission');
+    }
+  };
 
   useEffect(() => {
     fetchKelas();
@@ -171,8 +170,6 @@ const PengajarSubmissionScreen = () => {
 
     return unsubscribe;
   }, []);
-
-
 
   const renderItem = ({ item }: { item: Submission }) => {
     let statusColor = '#f59e0b';
@@ -216,8 +213,6 @@ const PengajarSubmissionScreen = () => {
           </View>
 
           <View style={styles.actionRow}>
-            
-
             {item.status === 'pending' && (
               <>
                 <TouchableOpacity
@@ -255,15 +250,14 @@ const PengajarSubmissionScreen = () => {
             )}
 
             {item.isGraded && (
-  <TouchableOpacity
-    style={[styles.btn, styles.archive]}
-    onPress={() => softDeleteSubmission(item.id)}
-    activeOpacity={0.85}
-  >
-    <Text style={styles.btnText}>Arsip</Text>
-  </TouchableOpacity>
-)}
-
+              <TouchableOpacity
+                style={[styles.btn, styles.archive]}
+                onPress={() => softDeleteSubmission(item.id)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.btnText}>Arsip</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -756,7 +750,6 @@ const styles = StyleSheet.create({
   },
 
   archive: {
-  backgroundColor: '#6b7280', // abu-abu
-},
-
+    backgroundColor: '#6b7280', // abu-abu
+  },
 });

@@ -121,44 +121,43 @@ export default function PengajarIzinScreen() {
 
   /* ================== UPDATE STATUS ================== */
 
-const updateStatus = async (id: number, status: StatusIzin) => {
-  const actionText = status === 'disetujui' ? 'MENYETUJUI' : 'MENOLAK';
+  const updateStatus = async (id: number, status: StatusIzin) => {
+    const actionText = status === 'disetujui' ? 'MENYETUJUI' : 'MENOLAK';
 
-  Alert.alert('Konfirmasi', `Yakin ingin ${actionText} izin ini?`, [
-    { text: 'Batal', style: 'cancel' },
-    {
-      text: 'Ya',
-      onPress: async () => {
-        setLoading(true);
-        try {
-          const token = await getToken();
+    Alert.alert('Konfirmasi', `Yakin ingin ${actionText} izin ini?`, [
+      { text: 'Batal', style: 'cancel' },
+      {
+        text: 'Ya',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            const token = await getToken();
 
-          const res = await axios.put(
-            `${API}/izin/${id}`,
-            { status },
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+            const res = await axios.put(
+              `${API}/izin/${id}`,
+              { status },
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
 
-          const realStatus: StatusIzin = res.data.data.status;
+            const realStatus: StatusIzin = res.data.data.status;
 
-          fetchIzinAktif();
+            fetchIzinAktif();
 
-          Alert.alert(
-            'Info',
-            realStatus === 'disetujui'
-              ? 'Izin disetujui'
-              : 'Izin ditolak otomatis karena kuota absensi penuh'
-          );
-        } catch {
-          Alert.alert('Error', 'Gagal update status izin');
-        } finally {
-          setLoading(false);
-        }
+            Alert.alert(
+              'Info',
+              realStatus === 'disetujui'
+                ? 'Izin disetujui'
+                : 'Izin ditolak otomatis karena kuota absensi penuh',
+            );
+          } catch {
+            Alert.alert('Error', 'Gagal update status izin');
+          } finally {
+            setLoading(false);
+          }
+        },
       },
-    },
-  ]);
-};
-
+    ]);
+  };
 
   const archiveIzin = async (id: number) => {
     Alert.alert('Konfirmasi', 'Izin ini akan diarsipkan. Lanjutkan?', [
@@ -303,59 +302,59 @@ const updateStatus = async (id: number, status: StatusIzin) => {
   /* ================== UI ================== */
 
   return (
-   <SafeAreaView style={styles.safe}>
-  <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
 
-  <ScrollView
-    style={styles.container}
-    showsVerticalScrollIndicator={false}
-    contentContainerStyle={styles.scrollContent}
-  >
-    {/* HEADER */}
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
-      <Text style={styles.headerSubtitle}>
-        Kelola pengajuan izin santri dengan mudah
-      </Text>
-    </View>
-
-    {/* CONTENT */}
-    <View style={styles.contentContainer}>
-      {loading && izinList.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Memuat data izin...</Text>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Manajemen Izin Santri</Text>
+          <Text style={styles.headerSubtitle}>
+            Kelola pengajuan izin santri dengan mudah
+          </Text>
         </View>
-      ) : (
-        <FlatList
-          data={izinList}
-          keyExtractor={item => item.id.toString()}
-          renderItem={renderItem}
-          scrollEnabled={false}
-          ListHeaderComponent={
-            <Text style={styles.totalText}>
-              Total: {izinList.length} pengajuan izin
-            </Text>
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
-              <Text style={styles.emptySubtext}>
-                Semua izin santri telah diproses
-              </Text>
+
+        {/* CONTENT */}
+        <View style={styles.contentContainer}>
+          {loading && izinList.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#2563eb" />
+              <Text style={styles.loadingText}>Memuat data izin...</Text>
             </View>
-          }
-        />
-      )}
-    </View>
+          ) : (
+            <FlatList
+              data={izinList}
+              keyExtractor={item => item.id.toString()}
+              renderItem={renderItem}
+              scrollEnabled={false}
+              ListHeaderComponent={
+                <Text style={styles.totalText}>
+                  Total: {izinList.length} pengajuan izin
+                </Text>
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>Tidak ada pengajuan izin</Text>
+                  <Text style={styles.emptySubtext}>
+                    Semua izin santri telah diproses
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </View>
 
-    {/* SPACER UNTUK NAVIGATOR */}
-    <View style={styles.spacer} />
-  </ScrollView>
+        {/* SPACER UNTUK NAVIGATOR */}
+        <View style={styles.spacer} />
 
-  <FloatingArchiveButton />
-</SafeAreaView>
-
+        
+      </ScrollView>
+      <FloatingArchiveButton />
+    </SafeAreaView>
   );
 }
 
