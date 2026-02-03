@@ -13,6 +13,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { API } from "../../services/api";
+import { useFocusEffect } from "@react-navigation/native";
 
 interface Tugas {
   id: number;
@@ -53,9 +54,18 @@ export default function TugasArsipScreen() {
     }
   };
 
-  useEffect(() => {
+  useFocusEffect(
+  React.useCallback(() => {
+    // Fetch data setiap layar difokuskan
     fetchArsip();
-  }, []);
+
+    // Cleanup optional
+    return () => {
+      // Jika ada abort controller atau cleanup lain, bisa ditambahkan di sini
+    };
+  }, [])
+);
+
 
   // Fungsi label status baru
   const getStatusLabel = (status: string) => {

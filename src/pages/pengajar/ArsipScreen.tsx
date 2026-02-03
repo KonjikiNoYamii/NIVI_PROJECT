@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,8 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../services/api';
-import { useNavigation } from '@react-navigation/native';
-import { UserContext } from '../../context/UserContext';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 
 interface Submission {
@@ -69,7 +68,6 @@ interface IzinData {
 
 const ArsipScreen = () => {
   const navigation = useNavigation<any>();
-  const { role } = useContext(UserContext);
   const [submissionData, setSubmissionData] = useState<Submission[]>([]);
   const [izinData, setIzinData] = useState<IzinData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,21 +103,28 @@ const ArsipScreen = () => {
     }
   };
 
-  useEffect(() => {
-    if (role !== 'pengajar') {
-      Alert.alert('Akses Ditolak', 'Halaman ini hanya untuk pengajar');
-      navigation.goBack();
-      return;
-    }
+  useFocusEffect(
+  useCallback(() => {
+    let isActive = true;
 
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchSubmissionArsip(), fetchIzinArsip()]);
-      setLoading(false);
+      try {
+        await Promise.all([fetchSubmissionArsip(), fetchIzinArsip()]);
+      } catch (err) {
+        console.log('Error fetching data on focus:', err);
+      } finally {
+        if (isActive) setLoading(false);
+      }
     };
 
     loadData();
-  }, [role]);
+
+    return () => {
+      isActive = false; // cleanup
+    };
+  }, [])
+);
 
   const openLink = async (url?: string | null) => {
     if (!url) return Alert.alert('Error', 'URL tidak ditemukan');

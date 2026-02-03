@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { API } from '../../services/api';
 import { socket } from '../../services/socket';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Santri {
   id: number;
@@ -129,6 +130,12 @@ const KelasScreen: React.FC = () => {
     setRefreshing(true);
     fetchKelas();
   };
+
+  useFocusEffect(
+  useCallback(() => {
+    fetchKelas(); // Memuat ulang data kelas setiap layar difokuskan
+  }, [])
+);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

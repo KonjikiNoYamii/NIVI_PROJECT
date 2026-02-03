@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API } from '../../services/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Kelas = {
   id: number;
@@ -165,6 +166,18 @@ export const RekapBulananScreen = () => {
       }
     }
   }, [searchQuery, rekapData]);
+
+  useFocusEffect(
+  useCallback(() => {
+    // Refresh data kelas dan rekap ketika screen difokuskan
+    fetchKelas();
+
+    // Jika sudah ada kelas yang dipilih, ambil rekapnya
+    if (selectedKelas) {
+      fetchRekap(selectedKelas.id);
+    }
+  }, [selectedKelas])
+);
 
   // Render status dengan warna
   const renderStatus = (status: string) => {

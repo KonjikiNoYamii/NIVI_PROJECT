@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { API } from '../../services/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ManageKelasScreen = () => {
   const [namaKelas, setNamaKelas] = useState('');
@@ -98,6 +99,19 @@ const ManageKelasScreen = () => {
       },
     ]);
   };
+
+  useFocusEffect(
+  useCallback
+  (() => {
+    // Otomatis refresh daftar kelas saat screen focus
+    fetchKelas();
+
+    // Opsional: cleanup saat screen blur
+    return () => {
+      setRefreshing(false);
+    };
+  }, [])
+);
 
   const renderHeader = () => (
     <View style={styles.header}>

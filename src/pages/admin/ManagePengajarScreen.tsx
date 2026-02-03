@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { Icon } from 'react-native-elements';
 import io from 'socket.io-client';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { Image } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 /* =======================
    INTERFACE
@@ -184,6 +185,19 @@ const ManagePengajarScreen = () => {
       socket.off('kelas-pengajar-updated');
     };
   }, [selectedKelasId]);
+
+  useFocusEffect(
+  useCallback(() => {
+    // Refresh data awal setiap layar focus
+    fetchInitData();
+
+    // Cleanup saat screen blur
+    return () => {
+      setRefreshing(false);
+    };
+  }, [])
+);
+
 
   const onRefresh = () => {
     setRefreshing(true);

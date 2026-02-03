@@ -186,16 +186,10 @@ export default function PengajarIzinScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (mode === 'aktif') {
-        fetchIzinAktif();
-      }
-
-      if (mode === 'arsip') {
-        fetchIzinArsip();
-      }
-    }, [mode, fetchIzinAktif, fetchIzinArsip]),
+      if (mode === 'aktif') fetchIzinAktif();
+      if (mode === 'arsip') fetchIzinArsip();
+    }, [mode, fetchIzinAktif, fetchIzinArsip])
   );
-
   /* ================== RENDER ITEM ================== */
 
   const renderItem = ({ item }: { item: IzinData }) => (

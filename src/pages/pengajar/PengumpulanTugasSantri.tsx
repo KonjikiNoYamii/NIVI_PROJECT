@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { API } from '../../services/api';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import FloatingArchiveButton from '../../components/FloatingArchiveButton';
@@ -170,6 +170,12 @@ const PengajarSubmissionScreen = () => {
 
     return unsubscribe;
   }, []);
+
+  useFocusEffect(
+  useCallback(() => {
+    fetchSubmission();
+  }, [])
+);
 
   const renderItem = ({ item }: { item: Submission }) => {
     let statusColor = '#f59e0b';

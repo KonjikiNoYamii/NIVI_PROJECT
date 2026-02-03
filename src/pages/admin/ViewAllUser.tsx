@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import { API } from '../../services/api';
 import { Icon } from 'react-native-elements';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface User {
   id: number;
@@ -137,6 +138,13 @@ const UserListScreen = () => {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useFocusEffect(
+  useCallback(() => {
+    loadUsers(); // Memuat ulang daftar pengguna setiap layar difokuskan
+  }, [])
+);
+
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {

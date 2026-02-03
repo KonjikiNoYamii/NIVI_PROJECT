@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { API } from '../../services/api';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,11 +62,12 @@ const CustomDropdown: React.FC<DropdownProps> = ({
   value,
   items,
   onSelect,
-  placeholder = "Pilih...",
+  placeholder = 'Pilih...',
   disabled = false,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const selectedLabel = items.find(item => item.value === value)?.label || placeholder;
+  const selectedLabel =
+    items.find(item => item.value === value)?.label || placeholder;
 
   return (
     <>
@@ -77,11 +79,16 @@ const CustomDropdown: React.FC<DropdownProps> = ({
       >
         <Text style={styles.dropdownLabel}>{label}</Text>
         <View style={styles.dropdownValueContainer}>
-          <Text style={[styles.dropdownValue, !value && styles.placeholderText]}>
+          <Text
+            style={[styles.dropdownValue, !value && styles.placeholderText]}
+          >
             {selectedLabel}
           </Text>
-          <Ionicons name={modalVisible ? "chevron-up" : "chevron-down"} size={20} color={disabled ? "#9ca3af" : "#3b82f6"} />
-
+          <Ionicons
+            name={modalVisible ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={disabled ? '#9ca3af' : '#3b82f6'}
+          />
         </View>
       </TouchableOpacity>
 
@@ -99,7 +106,7 @@ const CustomDropdown: React.FC<DropdownProps> = ({
                 <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={items}
               keyExtractor={(item, index) => `${item.value}-${index}`}
@@ -114,10 +121,12 @@ const CustomDropdown: React.FC<DropdownProps> = ({
                     setModalVisible(false);
                   }}
                 >
-                  <Text style={[
-                    styles.modalItemText,
-                    value === item.value && styles.selectedItemText,
-                  ]}>
+                  <Text
+                    style={[
+                      styles.modalItemText,
+                      value === item.value && styles.selectedItemText,
+                    ]}
+                  >
                     {item.label}
                   </Text>
                   {value === item.value && (
@@ -165,10 +174,10 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
         <Text style={styles.dropdownLabel}>{label}</Text>
         <View style={styles.timeValueContainer}>
           <Text style={styles.timeValue}>{value}</Text>
-          <Ionicons 
-            name={modalVisible ? "chevron-up" : "chevron-down"} 
-            size={20} 
-            color={disabled ? "#9ca3af" : "#3b82f6"} 
+          <Ionicons
+            name={modalVisible ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={disabled ? '#9ca3af' : '#3b82f6'}
           />
         </View>
       </TouchableOpacity>
@@ -187,16 +196,16 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
                 <Ionicons name="close" size={24} color="#374151" />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={options}
-              keyExtractor={(item) => item}
+              keyExtractor={item => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[
                     styles.timeItem,
                     value === item && styles.selectedTimeItem,
-                    highlightInvalid && { opacity: 0.5 }, // You can add validation logic here
+                    highlightInvalid && { opacity: 0.5 },
                   ]}
                   onPress={() => {
                     onSelect(item);
@@ -204,10 +213,12 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
                   }}
                   disabled={highlightInvalid}
                 >
-                  <Text style={[
-                    styles.timeItemText,
-                    value === item && styles.selectedTimeItemText,
-                  ]}>
+                  <Text
+                    style={[
+                      styles.timeItemText,
+                      value === item && styles.selectedTimeItemText,
+                    ]}
+                  >
                     {item}
                   </Text>
                   {value === item && (
@@ -221,6 +232,101 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
         </View>
       </Modal>
     </>
+  );
+};
+
+/* ================== GUIDANCE COMPONENT ================== */
+const GuidanceCard: React.FC = () => {
+  const steps = [
+    {
+      icon: 'school-outline',
+      title: 'Pilih Kelas',
+      description: 'Pilih kelas yang akan diatur jadwal absensinya',
+      color: '#3b82f6',
+    },
+    {
+      icon: 'settings-outline',
+      title: 'Atur Batas Absensi',
+      description: 'Tentukan jumlah maksimal absensi per semester',
+      color: '#10b981',
+    },
+    {
+      icon: 'calendar-outline',
+      title: 'Buat Jadwal',
+      description: 'Tambahkan jadwal pertemuan dengan tanggal dan waktu',
+      color: '#8b5cf6',
+    },
+    {
+      icon: 'checkmark-done-outline',
+      title: 'Verifikasi',
+      description: 'Pastikan tidak ada jadwal yang bentrok',
+      color: '#f59e0b',
+    },
+  ];
+
+  return (
+    <View style={styles.guidanceCard}>
+      <View style={styles.guidanceHeader}>
+        <View style={[styles.iconContainer, { backgroundColor: '#3b82f610' }]}>
+          <Ionicons name="book-outline" size={24} color="#3b82f6" />
+        </View>
+        <View>
+          <Text style={styles.guidanceTitle}>Panduan Membuat Jadwal</Text>
+          <Text style={styles.guidanceSubtitle}>
+            Ikuti langkah-langkah berikut untuk membuat jadwal absensi
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.stepsContainer}>
+        {steps.map((step, index) => (
+          <View key={index} style={styles.stepItem}>
+            <View style={styles.stepNumberContainer}>
+              <View
+                style={[
+                  styles.stepNumber,
+                  { backgroundColor: step.color + '20' },
+                ]}
+              >
+                <Ionicons name={step.icon} size={16} color={step.color} />
+              </View>
+              {index < steps.length - 1 && (
+                <View style={styles.stepConnector} />
+              )}
+            </View>
+            <View style={styles.stepContent}>
+              <Text style={styles.stepTitle}>{step.title}</Text>
+              <Text style={styles.stepDescription}>{step.description}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.tipsContainer}>
+        <View style={styles.tipsHeader}>
+          <Ionicons name="bulb-outline" size={18} color="#f59e0b" />
+          <Text style={styles.tipsTitle}>Tips Penting</Text>
+        </View>
+        <View style={styles.tipItem}>
+          <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+          <Text style={styles.tipText}>
+            Pastikan max absensi diatur sebelum membuat jadwal
+          </Text>
+        </View>
+        <View style={styles.tipItem}>
+          <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+          <Text style={styles.tipText}>
+            Periksa jadwal yang sudah ada untuk menghindari bentrok
+          </Text>
+        </View>
+        <View style={styles.tipItem}>
+          <Ionicons name="checkmark-circle" size={16} color="#10b981" />
+          <Text style={styles.tipText}>
+            Jam mulai harus lebih awal dari jam selesai
+          </Text>
+        </View>
+      </View>
+    </View>
   );
 };
 
@@ -334,7 +440,9 @@ export default function CreateJadwalScreen() {
   /* ================== VALIDASI JAM ================== */
   const isValidJadwal = (mulai: string, selesai: string) => {
     if (mulai >= selesai) return false;
-    return !jadwalList.some(j => !(selesai <= j.jamMulai || mulai >= j.jamSelesai));
+    return !jadwalList.some(
+      j => !(selesai <= j.jamMulai || mulai >= j.jamSelesai),
+    );
   };
 
   /* ================== SUBMIT JADWAL ================== */
@@ -371,11 +479,28 @@ export default function CreateJadwalScreen() {
       setLoading(false);
     }
   };
+  useFocusEffect(
+  useCallback(() => {
+    // Refresh daftar kelas
+    fetchKelas();
+
+    // Jika sudah ada kelas yang dipilih, refresh jadwalnya juga
+    if (kelasId) {
+      fetchJadwal(kelasId);
+    }
+
+    // Cleanup opsional saat screen blur
+    return () => {
+      // Contoh: bisa reset loading state jika diperlukan
+      // setLoadingJadwal(false);
+    };
+  }, [kelasId])
+);
 
   /* ================== FORMAT ITEMS ================== */
   const kelasItems = [
     { label: '-- pilih kelas --', value: null },
-    ...kelasList.map(k => ({ label: k.namaKelas, value: k.id }))
+    ...kelasList.map(k => ({ label: k.namaKelas, value: k.id })),
   ];
 
   /* ================== UI ================== */
@@ -402,244 +527,333 @@ export default function CreateJadwalScreen() {
             placeholder="Pilih kelas..."
           />
 
-          {/* MAX ABSEN SECTION */}
+          {/* GUIDANCE CARD - Tampilkan sebelum memilih kelas */}
+          {!kelasId && <GuidanceCard />}
+
+          {/* FORM SECTION - Tampilkan setelah memilih kelas */}
           {kelasId && (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.iconContainer, { backgroundColor: '#3b82f610' }]}>
-                  <Ionicons name="settings-outline" size={20} color="#3b82f6" />
+            <>
+              {/* MAX ABSEN SECTION */}
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionHeader}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      { backgroundColor: '#3b82f610' },
+                    ]}
+                  >
+                    <Ionicons
+                      name="settings-outline"
+                      size={20}
+                      color="#3b82f6"
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle}>Pengaturan Absensi</Text>
                 </View>
-                <Text style={styles.sectionTitle}>Pengaturan Absensi</Text>
-              </View>
 
-              {absensiSetting && (
-                <View style={styles.currentSetting}>
-                  <Ionicons name="information-circle-outline" size={16} color="#6b7280" />
-                  <Text style={styles.currentSettingText}>
-                    Max absen saat ini: <Text style={styles.highlight}>{absensiSetting.maxAbsen}</Text>
-                  </Text>
+                {absensiSetting && (
+                  <View style={styles.currentSetting}>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={16}
+                      color="#6b7280"
+                    />
+                    <Text style={styles.currentSettingText}>
+                      Max absen saat ini:{' '}
+                      <Text style={styles.highlight}>
+                        {absensiSetting.maxAbsen}
+                      </Text>
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Max Absensi per Semester</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      sudahAdaJadwal && styles.disabledInput,
+                    ]}
+                    keyboardType="number-pad"
+                    value={maxAbsen}
+                    onChangeText={setMaxAbsen}
+                    editable={!sudahAdaJadwal}
+                    placeholder="Misal: 16"
+                    placeholderTextColor="#9ca3af"
+                  />
                 </View>
-              )}
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Max Absensi per Semester</Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    sudahAdaJadwal && styles.disabledInput,
-                  ]}
-                  keyboardType="number-pad"
-                  value={maxAbsen}
-                  onChangeText={setMaxAbsen}
-                  editable={!sudahAdaJadwal}
-                  placeholder="Misal: 16"
-                  placeholderTextColor="#9ca3af"
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.secondaryButton,
-                  sudahAdaJadwal && styles.disabledButton,
-                ]}
-                onPress={submitAbsensiSetting}
-                disabled={sudahAdaJadwal || loading}
-                activeOpacity={0.8}
-              >
-                <Ionicons 
-                  name={sudahAdaJadwal ? "lock-closed-outline" : "save-outline"} 
-                  size={20} 
-                  color={sudahAdaJadwal ? "#9ca3af" : "#3b82f6"} 
-                />
-                <Text style={[
-                  styles.buttonText,
-                  styles.secondaryButtonText,
-                  sudahAdaJadwal && styles.disabledButtonText,
-                ]}>
-                  {sudahAdaJadwal ? 'Terkunci' : absensiSetting ? 'Update' : 'Simpan'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* FORM JADWAL */}
-          {kelasId && absensiSetting && (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.iconContainer, { backgroundColor: '#10b98110' }]}>
-                  <Ionicons name="calendar-outline" size={20} color="#10b981" />
-                </View>
-                <Text style={styles.sectionTitle}>Tambah Jadwal Baru</Text>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Tanggal</Text>
                 <TouchableOpacity
-                  style={styles.dateInput}
-                  onPress={() => setShowDatePicker(true)}
-                  activeOpacity={0.7}
+                  style={[
+                    styles.button,
+                    styles.secondaryButton,
+                    sudahAdaJadwal && styles.disabledButton,
+                  ]}
+                  onPress={submitAbsensiSetting}
+                  disabled={sudahAdaJadwal || loading}
+                  activeOpacity={0.8}
                 >
-                  <Ionicons name="calendar-outline" size={20} color="#3b82f6" />
-                  <Text style={styles.dateText}>
-                    {tanggal.toLocaleDateString('id-ID', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                  <Ionicons
+                    name={
+                      sudahAdaJadwal ? 'lock-closed-outline' : 'save-outline'
+                    }
+                    size={20}
+                    color={sudahAdaJadwal ? '#9ca3af' : '#3b82f6'}
+                  />
+                  <Text
+                    style={[
+                      styles.buttonText,
+                      styles.secondaryButtonText,
+                      sudahAdaJadwal && styles.disabledButtonText,
+                    ]}
+                  >
+                    {sudahAdaJadwal
+                      ? 'Terkunci'
+                      : absensiSetting
+                      ? 'Update'
+                      : 'Simpan'}
                   </Text>
-                  <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
                 </TouchableOpacity>
               </View>
 
-              {showDatePicker && (
-                <DateTimePicker
-                  value={tanggal}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(_, d) => {
-                    setShowDatePicker(false);
-                    if (d) setTanggal(d);
-                  }}
-                />
-              )}
-
-              <View style={styles.timeGroup}>
-                <View style={styles.timeInputHalf}>
-                  <TimeSelector
-                    label="Jam Mulai"
-                    value={jamMulai}
-                    onSelect={setJamMulai}
-                    options={jamOptions}
-                    highlightInvalid={!isValidJadwal(jamMulai, jamSelesai)}
-                  />
-                </View>
-                <View style={styles.timeSpacer} />
-                <View style={styles.timeInputHalf}>
-                  <TimeSelector
-                    label="Jam Selesai"
-                    value={jamSelesai}
-                    onSelect={setJamSelesai}
-                    options={jamOptions}
-                    highlightInvalid={!isValidJadwal(jamMulai, jamSelesai)}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.validationInfo}>
-                {!isValidJadwal(jamMulai, jamSelesai) && (
-                  <View style={styles.warningBox}>
-                    <Ionicons name="warning-outline" size={16} color="#f59e0b" />
-                    <Text style={styles.warningText}>
-                      {jamMulai >= jamSelesai 
-                        ? 'Jam mulai harus lebih awal dari jam selesai' 
-                        : 'Jadwal bentrok dengan yang sudah ada'}
-                    </Text>
+              {/* FORM JADWAL */}
+              {absensiSetting && (
+                <View style={styles.sectionCard}>
+                  <View style={styles.sectionHeader}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        { backgroundColor: '#10b98110' },
+                      ]}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color="#10b981"
+                      />
+                    </View>
+                    <Text style={styles.sectionTitle}>Tambah Jadwal Baru</Text>
                   </View>
-                )}
-              </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.primaryButton,
-                  (sudahPenuh || !isValidJadwal(jamMulai, jamSelesai) || loading) && styles.disabledButton,
-                ]}
-                onPress={submitJadwal}
-                disabled={sudahPenuh || !isValidJadwal(jamMulai, jamSelesai) || loading}
-                activeOpacity={0.8}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Ionicons 
-                      name={sudahPenuh ? "ban-outline" : "add-circle-outline"} 
-                      size={20} 
-                      color="#fff" 
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Tanggal</Text>
+                    <TouchableOpacity
+                      style={styles.dateInput}
+                      onPress={() => setShowDatePicker(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color="#3b82f6"
+                      />
+                      <Text style={styles.dateText}>
+                        {tanggal.toLocaleDateString('id-ID', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={20}
+                        color="#9ca3af"
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={tanggal}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(_, d) => {
+                        setShowDatePicker(false);
+                        if (d) setTanggal(d);
+                      }}
                     />
-                    <Text style={styles.buttonText}>
-                      {sudahPenuh
-                        ? 'Jadwal Penuh'
-                        : !isValidJadwal(jamMulai, jamSelesai)
-                        ? 'Jadwal Tidak Valid'
-                        : 'Tambah Jadwal'}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
+                  )}
 
-              {sudahPenuh && (
-                <View style={styles.infoBox}>
-                  <Ionicons name="information-circle-outline" size={16} color="#3b82f6" />
-                  <Text style={styles.infoText}>
-                    Jumlah jadwal sudah mencapai batas maksimal ({absensiSetting.maxAbsen})
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* LIST JADWAL */}
-          {kelasId && absensiSetting && (
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeader}>
-                <View style={[styles.iconContainer, { backgroundColor: '#8b5cf610' }]}>
-                  <Ionicons name="list-outline" size={20} color="#8b5cf6" />
-                </View>
-                <View style={styles.jadwalHeader}>
-                  <Text style={styles.sectionTitle}>Jadwal Kelas</Text>
-                  <View style={styles.counterBadge}>
-                    <Text style={styles.counterText}>{jadwalList.length}/{absensiSetting.maxAbsen}</Text>
+                  <View style={styles.timeGroup}>
+                    <View style={styles.timeInputHalf}>
+                      <TimeSelector
+                        label="Jam Mulai"
+                        value={jamMulai}
+                        onSelect={setJamMulai}
+                        options={jamOptions}
+                        highlightInvalid={!isValidJadwal(jamMulai, jamSelesai)}
+                      />
+                    </View>
+                    <View style={styles.timeSpacer} />
+                    <View style={styles.timeInputHalf}>
+                      <TimeSelector
+                        label="Jam Selesai"
+                        value={jamSelesai}
+                        onSelect={setJamSelesai}
+                        options={jamOptions}
+                        highlightInvalid={!isValidJadwal(jamMulai, jamSelesai)}
+                      />
+                    </View>
                   </View>
-                </View>
-              </View>
 
-              {loadingJadwal ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#3b82f6" />
-                  <Text style={styles.loadingText}>Memuat jadwal...</Text>
-                </View>
-              ) : jadwalList.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
-                  <Text style={styles.emptyStateText}>Belum ada jadwal</Text>
-                  <Text style={styles.emptyStateSubtext}>
-                    Tambah jadwal pertama Anda
-                  </Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={jadwalList}
-                  scrollEnabled={false}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={({ item }) => (
-                    <View style={styles.jadwalCard}>
-                      <View style={styles.jadwalCardHeader}>
-                        <View style={styles.dateBadge}>
-                          <Text style={styles.dateBadgeDay}>
-                            {new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit' })}
-                          </Text>
-                          <Text style={styles.dateBadgeMonth}>
-                            {new Date(item.tanggal).toLocaleDateString('id-ID', { month: 'short' })}
-                          </Text>
-                        </View>
-                        <View style={styles.jadwalInfo}>
-                          <Text style={styles.jadwalHari}>
-                            {item.hari.charAt(0).toUpperCase() + item.hari.slice(1)}
-                          </Text>
-                          <Text style={styles.jadwalWaktu}>
-                            {item.jamMulai} - {item.jamSelesai}
-                          </Text>
-                        </View>
-                        <Ionicons name="time-outline" size={20} color="#9ca3af" />
+                  <View style={styles.validationInfo}>
+                    {!isValidJadwal(jamMulai, jamSelesai) && (
+                      <View style={styles.warningBox}>
+                        <Ionicons
+                          name="warning-outline"
+                          size={16}
+                          color="#f59e0b"
+                        />
+                        <Text style={styles.warningText}>
+                          {jamMulai >= jamSelesai
+                            ? 'Jam mulai harus lebih awal dari jam selesai'
+                            : 'Jadwal bentrok dengan yang sudah ada'}
+                        </Text>
                       </View>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.button,
+                      styles.primaryButton,
+                      (sudahPenuh ||
+                        !isValidJadwal(jamMulai, jamSelesai) ||
+                        loading) &&
+                        styles.disabledButton,
+                    ]}
+                    onPress={submitJadwal}
+                    disabled={
+                      sudahPenuh ||
+                      !isValidJadwal(jamMulai, jamSelesai) ||
+                      loading
+                    }
+                    activeOpacity={0.8}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={
+                            sudahPenuh ? 'ban-outline' : 'add-circle-outline'
+                          }
+                          size={20}
+                          color="#fff"
+                        />
+                        <Text style={styles.buttonText}>
+                          {sudahPenuh
+                            ? 'Jadwal Penuh'
+                            : !isValidJadwal(jamMulai, jamSelesai)
+                            ? 'Jadwal Tidak Valid'
+                            : 'Tambah Jadwal'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  {sudahPenuh && (
+                    <View style={styles.infoBox}>
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={16}
+                        color="#3b82f6"
+                      />
+                      <Text style={styles.infoText}>
+                        Jumlah jadwal sudah mencapai batas maksimal (
+                        {absensiSetting.maxAbsen})
+                      </Text>
                     </View>
                   )}
-                />
+                </View>
               )}
-            </View>
+
+              {/* LIST JADWAL */}
+              {absensiSetting && (
+                <View style={styles.sectionCard}>
+                  <View style={styles.sectionHeader}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        { backgroundColor: '#8b5cf610' },
+                      ]}
+                    >
+                      <Ionicons name="list-outline" size={20} color="#8b5cf6" />
+                    </View>
+                    <View style={styles.jadwalHeader}>
+                      <Text style={styles.sectionTitle}>Jadwal Kelas</Text>
+                      <View style={styles.counterBadge}>
+                        <Text style={styles.counterText}>
+                          {jadwalList.length}/{absensiSetting.maxAbsen}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {loadingJadwal ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="small" color="#3b82f6" />
+                      <Text style={styles.loadingText}>Memuat jadwal...</Text>
+                    </View>
+                  ) : jadwalList.length === 0 ? (
+                    <View style={styles.emptyState}>
+                      <Ionicons
+                        name="calendar-outline"
+                        size={48}
+                        color="#d1d5db"
+                      />
+                      <Text style={styles.emptyStateText}>
+                        Belum ada jadwal
+                      </Text>
+                      <Text style={styles.emptyStateSubtext}>
+                        Tambah jadwal pertama Anda
+                      </Text>
+                    </View>
+                  ) : (
+                    <FlatList
+                      data={jadwalList}
+                      scrollEnabled={false}
+                      keyExtractor={item => item.id.toString()}
+                      renderItem={({ item }) => (
+                        <View style={styles.jadwalCard}>
+                          <View style={styles.jadwalCardHeader}>
+                            <View style={styles.dateBadge}>
+                              <Text style={styles.dateBadgeDay}>
+                                {new Date(item.tanggal).toLocaleDateString(
+                                  'id-ID',
+                                  { day: '2-digit' },
+                                )}
+                              </Text>
+                              <Text style={styles.dateBadgeMonth}>
+                                {new Date(item.tanggal).toLocaleDateString(
+                                  'id-ID',
+                                  { month: 'short' },
+                                )}
+                              </Text>
+                            </View>
+                            <View style={styles.jadwalInfo}>
+                              <Text style={styles.jadwalHari}>
+                                {item.hari.charAt(0).toUpperCase() +
+                                  item.hari.slice(1)}
+                              </Text>
+                              <Text style={styles.jadwalWaktu}>
+                                {item.jamMulai} - {item.jamSelesai}
+                              </Text>
+                            </View>
+                            <Ionicons
+                              name="time-outline"
+                              size={20}
+                              color="#9ca3af"
+                            />
+                          </View>
+                        </View>
+                      )}
+                    />
+                  )}
+                </View>
+              )}
+            </>
           )}
         </View>
       </ScrollView>
@@ -654,20 +868,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   container: {
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   header: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#1e3a8a',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
+    paddingBottom: 32,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#1f2937',
+    color: '#ffffff',
     marginBottom: 6,
   },
   subtitle: {
@@ -1048,5 +1264,104 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     fontWeight: '500',
+  },
+  /* ================== GUIDANCE STYLES ================== */
+  guidanceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    paddingRight:70,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  guidanceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  guidanceTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  guidanceSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  stepsContainer: {
+    marginBottom: 24,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  stepNumberContainer: {
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  stepNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  stepConnector: {
+    width: 2,
+    height: 24,
+    backgroundColor: '#e5e7eb',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  stepDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+  },
+  tipsContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginLeft: 8,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#4b5563',
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 20,
   },
 });

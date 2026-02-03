@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,9 @@ import { Icon } from 'react-native-elements';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { TextInput } from 'react-native-gesture-handler';
+import { useFocusEffect } from '@react-navigation/native';
+import { Dimensions } from 'react-native';
+const screenWidth = Dimensions.get('window').width;
 
 interface Kelas {
   id: number;
@@ -34,7 +37,7 @@ interface Kelas {
 interface Mapel {
   id: number;
   nama: string;
-  kode:string
+  kode: string;
   deskripsi?: string;
   createdAt?: string;
 }
@@ -74,7 +77,7 @@ const KelasListScreen = () => {
   const [pengajarModalVisible, setPengajarModalVisible] = useState(false);
   const [pengajarModalPosition, setPengajarModalPosition] = useState({
     top: 0,
-    left: 0,
+    left: Math.min(Math.max(16, screenWidth / 2 - 150), screenWidth - 16 - 300),
   });
 
   const [editKode, setEditKode] = useState('');
@@ -251,8 +254,8 @@ const KelasListScreen = () => {
 
     // Set position for modal (adjust as needed)
     setPengajarModalPosition({
-      top: pageY + 10, // Show modal 10px below the button
-      left: pageX - 150, // Center the modal horizontally
+     top: pageY + 10,
+  left: Math.min(Math.max(16, pageX - 150), screenWidth - 16 - 300), /// Center the modal horizontally
     });
 
     // Fetch pengajar data
@@ -265,9 +268,19 @@ const KelasListScreen = () => {
   };
 
   /* ================= EFFECTS ================= */
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Ganti useEffect loadData dengan useFocusEffect
+  useFocusEffect(
+    useCallback(() => {
+      // Set loading true dulu
+      setLoading(true);
+      loadData();
+
+      // Optional: bisa return cleanup function jika ada yang perlu dibersihkan
+      return () => {
+        // console.log('Screen lost focus'); // misal untuk debug
+      };
+    }, []),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -428,12 +441,12 @@ const KelasListScreen = () => {
     <View style={styles.mapelCard}>
       <View style={styles.mapelCardHeader}>
         <View style={styles.mapelIconContainer}>
-          <FontAwesome6 name="book-open" size={18}  />
+          <FontAwesome6 name="book-open" size={18} />
         </View>
 
         <View style={styles.mapelInfo}>
           <Text style={styles.mapelTitle}>{item.nama}</Text>
-<Text style={styles.mapelKode}>{item.kode}</Text>
+          <Text style={styles.mapelKode}>{item.kode}</Text>
           {item.deskripsi && (
             <Text style={styles.mapelDeskripsi} numberOfLines={2}>
               {item.deskripsi}
@@ -562,7 +575,6 @@ const KelasListScreen = () => {
       animationType="fade"
       onRequestClose={() => setDeleteModal(false)}
     >
-
       <View style={styles.modalBackdrop}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
@@ -654,105 +666,107 @@ const KelasListScreen = () => {
     </Modal>
   );
 
-const renderEditModal = () => (
-  <Modal
-    visible={editModal}
-    transparent
-    animationType="fade"
-    onRequestClose={() => setEditModal(false)}
-  >
-    <View style={styles.modalBackdrop}>
-      <View style={styles.editModalContent}>
-        {/* Header */}
-        <View style={styles.editModalHeader}>
-          <View style={styles.editModalIconContainer}>
-            <FontAwesome6 
-              name={editType === 'kelas' ? 'users' : 'book-open'} 
-              size={24} 
-              color={editType === 'kelas' ? '#2563eb' : '#7c3aed'} 
-            />
-          </View>
-          <Text style={styles.editModalTitle}>
-            Edit {editType === 'kelas' ? 'Kelas' : 'Mata Pelajaran'}
-          </Text>
-          <TouchableOpacity
-            style={styles.editModalCloseButton}
-            onPress={() => setEditModal(false)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="close" size={24} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Form */}
-        <View style={styles.editFormContainer}>
-          {/* Nama */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              {editType === 'kelas' ? 'Nama Kelas' : 'Nama Mata Pelajaran'}
-            </Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                value={editNama}
-                onChangeText={setEditNama}
-                style={styles.input}
-                placeholder={`Masukkan ${editType === 'kelas' ? 'nama kelas' : 'nama mata pelajaran'}`}
-                placeholderTextColor="#9ca3af"
+  const renderEditModal = () => (
+    <Modal
+      visible={editModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setEditModal(false)}
+    >
+      <View style={styles.modalBackdrop}>
+        <View style={styles.editModalContent}>
+          {/* Header */}
+          <View style={styles.editModalHeader}>
+            <View style={styles.editModalIconContainer}>
+              <FontAwesome6
+                name={editType === 'kelas' ? 'users' : 'book-open'}
+                size={24}
+                color={editType === 'kelas' ? '#2563eb' : '#7c3aed'}
               />
             </View>
+            <Text style={styles.editModalTitle}>
+              Edit {editType === 'kelas' ? 'Kelas' : 'Mata Pelajaran'}
+            </Text>
+            <TouchableOpacity
+              style={styles.editModalCloseButton}
+              onPress={() => setEditModal(false)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
           </View>
 
-          {/* Kode Mapel (hanya untuk mapel) */}
-          {editType === 'mapel' && (
+          {/* Form */}
+          <View style={styles.editFormContainer}>
+            {/* Nama */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>
-                Kode Mata Pelajaran
+                {editType === 'kelas' ? 'Nama Kelas' : 'Nama Mata Pelajaran'}
               </Text>
               <View style={styles.inputContainer}>
                 <TextInput
-                  value={editKode}
-                  onChangeText={setEditKode}
+                  value={editNama}
+                  onChangeText={setEditNama}
                   style={styles.input}
-                  placeholder="Contoh: MAT-001"
+                  placeholder={`Masukkan ${
+                    editType === 'kelas' ? 'nama kelas' : 'nama mata pelajaran'
+                  }`}
                   placeholderTextColor="#9ca3af"
-                  autoCapitalize="characters"
-                  maxLength={20}
                 />
               </View>
             </View>
-          )}
-        </View>
 
-        {/* Action Buttons */}
-        <View style={styles.editModalActions}>
-          <TouchableOpacity
-            style={styles.editCancelButton}
-            onPress={() => setEditModal(false)}
-            disabled={loadingEdit}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.editCancelButtonText}>Batal</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.editSaveButton, loadingEdit && styles.disabled]}
-            onPress={submitEdit}
-            disabled={loadingEdit}
-            activeOpacity={0.85}
-          >
-            {loadingEdit ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <>
-                <Text style={styles.editSaveButtonText}>Simpan Perubahan</Text>
-              </>
+            {/* Kode Mapel (hanya untuk mapel) */}
+            {editType === 'mapel' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Kode Mata Pelajaran</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    value={editKode}
+                    onChangeText={setEditKode}
+                    style={styles.input}
+                    placeholder="Contoh: MAT-001"
+                    placeholderTextColor="#9ca3af"
+                    autoCapitalize="characters"
+                    maxLength={20}
+                  />
+                </View>
+              </View>
             )}
-          </TouchableOpacity>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.editModalActions}>
+            <TouchableOpacity
+              style={styles.editCancelButton}
+              onPress={() => setEditModal(false)}
+              disabled={loadingEdit}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.editCancelButtonText}>Batal</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.editSaveButton, loadingEdit && styles.disabled]}
+              onPress={submitEdit}
+              disabled={loadingEdit}
+              activeOpacity={0.85}
+            >
+              {loadingEdit ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Text style={styles.editSaveButtonText}>
+                    Simpan Perubahan
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -1074,7 +1088,7 @@ const styles = StyleSheet.create({
     color: '#1f2933',
     marginBottom: 6,
   },
-    mapelKode: {
+  mapelKode: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1f2933',
@@ -1378,7 +1392,7 @@ const styles = StyleSheet.create({
     height: 100,
   },
 
-    editModalContent: {
+  editModalContent: {
     width: '90%',
     maxWidth: 400,
     backgroundColor: '#FFFFFF',

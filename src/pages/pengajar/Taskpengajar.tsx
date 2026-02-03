@@ -17,7 +17,7 @@ import { Icon } from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError } from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { ApiResponse } from '../../types/task';
 import { API } from '../../services/api';
@@ -114,10 +114,12 @@ const TaskPengajar: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => {
     fetchKelasList();
     fetchMapel();
-  }, []);
+  }, [fetchKelasList, fetchMapel])
+);
 
   /* =======================
      HANDLER

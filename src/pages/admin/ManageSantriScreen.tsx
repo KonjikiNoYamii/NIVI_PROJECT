@@ -50,7 +50,7 @@ const ManageSantriScreen = () => {
   const fetchKelas = async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`${API}/kelas/all/santri`, {
+      const res = await axios.get(`${API}/kelas/all/santri/admin`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setKelasList(res.data.data ?? []);
@@ -105,58 +105,55 @@ const ManageSantriScreen = () => {
     }
   };
 
-  
-
   const handleUpdate = async () => {
-  if (!editingSantri) return;
+    if (!editingSantri) return;
 
-  if (!name || !email || !kelasId) {
-    Alert.alert("Validasi", "Semua field wajib diisi");
-    return;
-  }
+    if (!name || !email || !kelasId) {
+      Alert.alert("Validasi", "Semua field wajib diisi");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    const token = await getToken();
+    try {
+      setLoading(true);
+      const token = await getToken();
 
-    await axios.put(
-      `${API}/users/${editingSantri.id}`,
-      {
-        name,
-        email,
-        kelasId,
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      await axios.put(
+        `${API}/users/${editingSantri.id}`,
+        {
+          name,
+          email,
+          kelasId,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    Alert.alert("Berhasil", "Santri berhasil diperbarui");
+      Alert.alert("Berhasil", "Santri berhasil diperbarui");
 
-    setName("");
-    setEmail("");
-    setKelasId(null);
-    setEditingSantri(null);
-    fetchKelas();
-  } catch (err: any) {
-    console.log(err.response || err.message);
-    Alert.alert(
-      "Gagal",
-      err.response?.data?.message || "Gagal memperbarui santri"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      setName("");
+      setEmail("");
+      setKelasId(null);
+      setEditingSantri(null);
+      fetchKelas();
+    } catch (err: any) {
+      console.log(err.response || err.message);
+      Alert.alert(
+        "Gagal",
+        err.response?.data?.message || "Gagal memperbarui santri"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Edit santri
   const handleEdit = (santri: Santri) => {
-  setEditingSantri(santri);
-  setName(santri.name || "");
-  setEmail(santri.email);
-  setKelasId(selectedKelasId); // 🔥 WAJIB
-};
-
+    setEditingSantri(santri);
+    setName(santri.name || "");
+    setEmail(santri.email);
+    setKelasId(selectedKelasId);
+  };
 
   // Nonaktifkan santri
   const handleDeactivate = async (id: number) => {
@@ -314,10 +311,9 @@ const ManageSantriScreen = () => {
         </View>
 
         <TouchableOpacity
-  style={[styles.button, loading && styles.disabled]}
-  onPress={editingSantri ? handleUpdate : handleCreate}
->
-
+          style={[styles.button, loading && styles.disabled]}
+          onPress={editingSantri ? handleUpdate : handleCreate}
+        >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
@@ -367,7 +363,7 @@ const ManageSantriScreen = () => {
                 styles.classIconContainer,
                 { backgroundColor: `#${((kelas.id * 30) % 255).toString(16).padStart(2, '0')}${((kelas.id * 60) % 255).toString(16).padStart(2, '0')}${((kelas.id * 90) % 255).toString(16).padStart(2, '0')}20` }
               ]}>
-<Ionicons name="school-outline" size={20} />
+                <Ionicons name="school-outline" size={20} />
               </View>
               <Text style={styles.className}>{kelas.namaKelas}</Text>
               <Text style={styles.classCount}>
@@ -523,6 +519,7 @@ const ManageSantriScreen = () => {
     </SafeAreaView>
   );
 };
+
 
 /* ================== STYLE ================== */
 

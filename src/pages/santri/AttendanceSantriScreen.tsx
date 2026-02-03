@@ -24,6 +24,7 @@ import { TextInput } from 'react-native-gesture-handler';
 import { socket } from '../../services/socket';
 import { useAiBubble } from '../../context/aiBubbleContext';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useFocusEffect } from '@react-navigation/native';
 
 const getToken = async () => {
   const token = await AsyncStorage.getItem('token');
@@ -85,9 +86,17 @@ export default function SantriAbsensiScreen() {
     await Promise.all([fetchAbsensiHariIni(), fetchIzinPending()]);
   }, [fetchAbsensiHariIni, fetchIzinPending]);
 
-  useEffect(() => {
+ useFocusEffect(
+  useCallback(() => {
+    // Ketika layar difokuskan, reload data
     loadData();
-  }, [loadData]);
+
+    return () => {
+      // Cleanup jika perlu, misal batalkan request atau reset state
+      // Tidak wajib jika loadData aman
+    };
+  }, [loadData])
+);
 
   useEffect(() => {
     socket.connect();

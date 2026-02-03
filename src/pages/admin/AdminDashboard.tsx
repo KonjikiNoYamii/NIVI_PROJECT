@@ -56,6 +56,8 @@ export default function DashboardAdmin() {
     fetchDashboard();
   };
 
+  
+
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.safe}>

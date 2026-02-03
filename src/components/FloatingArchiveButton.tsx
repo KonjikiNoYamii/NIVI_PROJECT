@@ -2,13 +2,10 @@ import React, { useContext } from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { UserContext } from '../context/UserContext';
 
 const FloatingArchiveButton = () => {
   const navigation = useNavigation<any>();
-  const { role } = useContext(UserContext);
 
-  if (role !== 'pengajar') return null; // hanya pengajar
 
   return (
     <TouchableOpacity

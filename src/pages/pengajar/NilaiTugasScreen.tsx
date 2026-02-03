@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { API } from '../../services/api';
 import { Icon } from 'react-native-elements';
 
@@ -89,6 +89,16 @@ const NilaiScreen = () => {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+  useCallback(() => {
+    // Reset form saat fokus kembali ke halaman
+    setNilai('');
+    setCatatan('');
+    setInputErrors({ nilai: false });
+  }, [])
+);
+
 
   return (
     <SafeAreaView style={styles.safe}>

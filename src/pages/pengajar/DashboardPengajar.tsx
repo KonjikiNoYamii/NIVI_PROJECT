@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { dashboardService } from '../../services/dashboard';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 
 const { width } = Dimensions.get('window');
@@ -56,6 +56,12 @@ const DashboardPengajar = () => {
   useEffect(() => {
     loadDashboard();
   }, []);
+
+    useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

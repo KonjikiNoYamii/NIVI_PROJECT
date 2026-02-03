@@ -15,6 +15,7 @@ import UserListScreen from '../pages/admin/ViewAllUser';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import KelasList from '../pages/admin/KelasList';
 import { RekapBulananScreen } from '../pages/admin/RekapBulananScreen';
+import CreateAdminBiometric from '../pages/admin/CreateAdminScreen';
 
 const Drawer = createDrawerNavigator();
 
@@ -230,6 +231,28 @@ export default function AdminDrawer() {
                 name={focused ? 'file-lines' : 'file'}
                 size={focused ? 20 : 18}
                 color={focused ? '#3498db' : '#000000'}
+              />
+            </View>
+          ),
+        }}
+      />
+            <Drawer.Screen
+        name="CreateAdmin"
+        component={CreateAdminBiometric}
+        options={{
+          title: 'Add Admin',
+          drawerIcon: ({ focused }) => (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && styles.iconContainerActive,
+              ]}
+            >
+              <Icon
+                name="user"
+                type="font-awesome"
+                size={18}
+                color={focused ? '#3498db' : '#64748b'}
               />
             </View>
           ),
