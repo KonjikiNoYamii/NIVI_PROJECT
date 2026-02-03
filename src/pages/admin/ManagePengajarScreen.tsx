@@ -22,6 +22,7 @@ import io from 'socket.io-client';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import { Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 /* =======================
    INTERFACE
@@ -593,9 +594,8 @@ const ManagePengajarScreen = () => {
               </View>
             ) : (
               <View style={styles.emptyContainer}>
-                <Icon
-                  name="user-slash"
-                  type="font-awesome-5"
+                <Ionicons
+                  name="person-remove-outline"
                   size={24}
                   color="#d1d5db"
                 />
@@ -677,9 +677,8 @@ const ManagePengajarScreen = () => {
             {allPengajar.filter(p => !pengajarKelas.some(pk => pk.id === p.id))
               .length === 0 && (
               <View style={styles.emptyContainer}>
-                <Icon
-                  name="check-circle"
-                  type="font-awesome-5"
+                <Ionicons
+                  name="people-outline"
                   size={24}
                   color="#d1d5db"
                 />

@@ -27,7 +27,7 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation<any>();
 
-  const MIN_LOADING_TIME = 2000;
+  const MIN_LOADING_TIME = 2500;
   const sleep = (ms: number) => new Promise(resolve => setTimeout<any>(resolve, ms));
 
   const validateForm = () => {

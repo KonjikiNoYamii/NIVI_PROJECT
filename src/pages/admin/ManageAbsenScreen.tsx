@@ -211,7 +211,7 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
                     onSelect(item);
                     setModalVisible(false);
                   }}
-                  disabled={highlightInvalid}
+                  disabled={false}
                 >
                   <Text
                     style={[
@@ -440,9 +440,10 @@ export default function CreateJadwalScreen() {
   /* ================== VALIDASI JAM ================== */
   const isValidJadwal = (mulai: string, selesai: string) => {
     if (mulai >= selesai) return false;
-    return !jadwalList.some(
-      j => !(selesai <= j.jamMulai || mulai >= j.jamSelesai),
-    );
+
+    return !jadwalList.some(j => {
+      return mulai < j.jamSelesai && selesai > j.jamMulai;
+    });
   };
 
   /* ================== SUBMIT JADWAL ================== */
@@ -480,22 +481,55 @@ export default function CreateJadwalScreen() {
     }
   };
   useFocusEffect(
-  useCallback(() => {
-    // Refresh daftar kelas
-    fetchKelas();
+    useCallback(() => {
+      // Refresh daftar kelas
+      fetchKelas();
 
-    // Jika sudah ada kelas yang dipilih, refresh jadwalnya juga
-    if (kelasId) {
-      fetchJadwal(kelasId);
-    }
+      // Jika sudah ada kelas yang dipilih, refresh jadwalnya juga
+      if (kelasId) {
+        fetchJadwal(kelasId);
+      }
 
-    // Cleanup opsional saat screen blur
-    return () => {
-      // Contoh: bisa reset loading state jika diperlukan
-      // setLoadingJadwal(false);
-    };
-  }, [kelasId])
-);
+      // Cleanup opsional saat screen blur
+      return () => {
+        // Contoh: bisa reset loading state jika diperlukan
+        // setLoadingJadwal(false);
+      };
+    }, [kelasId]),
+  );
+
+  const deleteJadwal = async (jadwalId: number) => {
+    Alert.alert(
+      'Hapus Jadwal',
+      'Apakah Anda yakin ingin menghapus jadwal ini?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await axios.delete(
+                `${API}/jadwal/${jadwalId}`,
+                await authHeader(),
+              );
+
+              if (kelasId) {
+                fetchJadwal(kelasId);
+              }
+
+              Alert.alert('Sukses', 'Jadwal berhasil dihapus');
+            } catch (e: any) {
+              Alert.alert(
+                'Gagal',
+                e.response?.data?.message || 'Gagal menghapus jadwal',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
 
   /* ================== FORMAT ITEMS ================== */
   const kelasItems = [
@@ -568,7 +602,9 @@ export default function CreateJadwalScreen() {
                 )}
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Max Absensi per Semester</Text>
+                  <Text style={styles.inputLabel}>
+                    Max Absensi per Semester
+                  </Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -832,6 +868,7 @@ export default function CreateJadwalScreen() {
                                 )}
                               </Text>
                             </View>
+
                             <View style={styles.jadwalInfo}>
                               <Text style={styles.jadwalHari}>
                                 {item.hari.charAt(0).toUpperCase() +
@@ -841,11 +878,19 @@ export default function CreateJadwalScreen() {
                                 {item.jamMulai} - {item.jamSelesai}
                               </Text>
                             </View>
-                            <Ionicons
-                              name="time-outline"
-                              size={20}
-                              color="#9ca3af"
-                            />
+
+                            {/* TOMBOL HAPUS */}
+                            <TouchableOpacity
+                              onPress={() => deleteJadwal(item.id)}
+                              style={styles.deleteButton}
+                              activeOpacity={0.7}
+                            >
+                              <Ionicons
+                                name="trash-outline"
+                                size={20}
+                                color="#ef4444"
+                              />
+                            </TouchableOpacity>
                           </View>
                         </View>
                       )}
@@ -1270,7 +1315,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 24,
-    paddingRight:70,
+    paddingRight: 70,
     marginTop: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1363,5 +1408,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
     lineHeight: 20,
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 10,
+    backgroundColor: '#fee2e2',
   },
 });
