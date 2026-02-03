@@ -248,9 +248,8 @@ export default function AdminDrawer() {
                 focused && styles.iconContainerActive,
               ]}
             >
-              <Icon
-                name="user"
-                type="font-awesome"
+              <Ionicons
+                name="person-add-outline"
                 size={18}
                 color={focused ? '#3498db' : '#64748b'}
               />

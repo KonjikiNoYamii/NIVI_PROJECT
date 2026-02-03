@@ -21,8 +21,6 @@ import Loading from '../../components/loading';
 import { API } from '../../services/api';
 import { Icon } from 'react-native-elements';
 import { TextInput } from 'react-native-gesture-handler';
-import { socket } from '../../services/socket';
-import { useAiBubble } from '../../context/aiBubbleContext';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -32,12 +30,13 @@ const getToken = async () => {
   return token;
 };
 
-type StatusAbsensi = 'hadir' | 'izin' | 'sakit';
+type StatusAbsensi = 'hadir' | 'izin' | 'sakit' | 'alpha';
 
 const statusColors: any = {
   hadir: '#10B981',
   izin: '#F59E0B',
   sakit: '#EF4444',
+  alpha: '#6B7280', // abu-abu
 };
 
 export default function SantriAbsensiScreen() {
@@ -48,7 +47,6 @@ export default function SantriAbsensiScreen() {
   const [showIzinModal, setShowIzinModal] = useState(false);
   const [alasanIzin, setAlasanIzin] = useState('');
   const [izinPending, setIzinPending] = useState(false);
-  const { bubble, clearBubble } = useAiBubble();
 
   const statusOptions: StatusAbsensi[] = ['hadir', 'izin', 'sakit'];
 
@@ -56,8 +54,6 @@ export default function SantriAbsensiScreen() {
   const fetchAbsensiHariIni = useCallback(async () => {
     setLoading(true);
     try {
-      clearBubble();
-
       const token = await getToken();
       const res = await axios.get(`${API}/absensi/me/today`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -86,48 +82,17 @@ export default function SantriAbsensiScreen() {
     await Promise.all([fetchAbsensiHariIni(), fetchIzinPending()]);
   }, [fetchAbsensiHariIni, fetchIzinPending]);
 
- useFocusEffect(
-  useCallback(() => {
-    // Ketika layar difokuskan, reload data
-    loadData();
+  useFocusEffect(
+    useCallback(() => {
+      // Ketika layar difokuskan, reload data
+      loadData();
 
-    return () => {
-      // Cleanup jika perlu, misal batalkan request atau reset state
-      // Tidak wajib jika loadData aman
-    };
-  }, [loadData])
-);
-
-  useEffect(() => {
-    socket.connect();
-
-    socket.on('connect', () => {
-      console.log('WEBSOCKET CONNECTED:', socket.id);
-    });
-
-    // Ambil kelas user dari AsyncStorage atau dari state user
-    const joinKelas = async () => {
-      const kelasStr = await AsyncStorage.getItem('kelasIds');
-      const kelasIds = kelasStr ? JSON.parse(kelasStr) : [];
-      if (kelasIds.length) {
-        socket.emit('join-kelas', kelasIds);
-        console.log('Joined kelas:', kelasIds);
-      }
-    };
-
-    joinKelas();
-
-    socket.on('absensi-update', data => {
-      console.log('Realtime absensi:', data);
-      setAbsensiHariIni(data);
-    });
-
-    return () => {
-      socket.off('connect');
-      socket.off('absensi-update');
-      socket.disconnect();
-    };
-  }, []);
+      return () => {
+        // Cleanup jika perlu, misal batalkan request atau reset state
+        // Tidak wajib jika loadData aman
+      };
+    }, [loadData]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -380,17 +345,18 @@ export default function SantriAbsensiScreen() {
                     { backgroundColor: `${statusColors[item.status]}15` },
                   ]}
                 >
-                  <Icon
+                  <Ionicons
                     name={
                       item.status === 'hadir'
-                        ? 'check-circle'
+                        ? 'checkmark-circle'
                         : item.status === 'izin'
-                        ? 'clock'
-                        : 'heartbeat'
+                        ? 'time-outline'
+                        : item.status === 'sakit'
+                        ? 'medkit-outline'
+                        : 'close-circle' // alpha
                     }
-                    type="font-awesome"
-                    color={statusColors[item.status]}
                     size={16}
+                    color={statusColors[item.status]}
                   />
                 </View>
                 <View style={styles.listItemContent}>

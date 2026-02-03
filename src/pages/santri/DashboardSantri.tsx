@@ -18,7 +18,6 @@ import { absensiSettingService } from '../../services/absensiSetting';
 import AbsensiCard from '../../components/santri/AbsensiCard';
 import HistoryCard from '../../components/santri/HistoryCard';
 import InfoCard from '../../components/santri/InfoCard';
-import { useAiBubble } from '../../context/aiBubbleContext';
 
 const DashboardSantri = () => {
   const [loading, setLoading] = useState(true);
@@ -26,12 +25,10 @@ const DashboardSantri = () => {
   const [submitting, setSubmitting] = useState(false);
   const [absensi, setAbsensi] = useState<Absensi[]>([]);
   const [MAX_ABSEN, setMaxAbsen] = useState<number>(0);
-  const { bubble, clearBubble } = useAiBubble();
 
   // Load maxAbsen dari backend
   const loadMaxAbsen = async () => {
     try {
-      clearBubble();
       const max = await absensiSettingService.getMaxAbsen();
       if (max !== null) setMaxAbsen(max);
     } catch {

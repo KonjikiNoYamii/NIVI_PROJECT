@@ -389,16 +389,6 @@ const ProfileScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
-
-            <View style={styles.infoRow}>
-              <Icon name="calendar" type="font-awesome" size={16} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Bergabung Sejak</Text>
-                <Text style={styles.infoValue}>
-                  {formatDate(profileData.user.createdAt)}
-                </Text>
-              </View>
-            </View>
           </View>
         </View>
 

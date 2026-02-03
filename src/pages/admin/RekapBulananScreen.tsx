@@ -260,49 +260,6 @@ export const RekapBulananScreen = () => {
             <Text style={styles.detailValue}>{detail.alasan}</Text>
           </View>
         )}
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Komentar AI:</Text>
-          <Text style={styles.detailValue}>{detail.aiComment}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Tone AI:</Text>
-          <View
-            style={[
-              styles.toneBadge,
-              {
-                backgroundColor:
-                  detail.aiTone === 'positif'
-                    ? '#D1FAE5'
-                    : detail.aiTone === 'netral'
-                    ? '#FEF3C7'
-                    : '#FEE2E2',
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.toneText,
-                {
-                  color:
-                    detail.aiTone === 'positif'
-                      ? '#10B981'
-                      : detail.aiTone === 'netral'
-                      ? '#F59E0B'
-                      : '#EF4444',
-                },
-              ]}
-            >
-              {detail.aiTone}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Confidence AI:</Text>
-          {renderConfidenceBar(detail.aiConfidence)}
-        </View>
       </View>
     );
   };

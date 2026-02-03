@@ -18,7 +18,6 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icon } from 'react-native-elements';
 import { API } from '../../services/api';
-import { socket } from '../../services/socket';
 import FontAwesome6 from 'react-native-vector-icons/FontAwesome6';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -84,13 +83,7 @@ const KelasScreen: React.FC = () => {
     fetchKelas();
   }, []);
 
-  useEffect(() => {
-    socket.connect();
 
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
 
   const fetchKelas = async () => {
     try {
@@ -123,7 +116,6 @@ const KelasScreen: React.FC = () => {
     if (!kelasList.length) return;
 
     const kelasIds = kelasList.map(k => k.id);
-    socket.emit('join-kelas', kelasIds);
   }, [kelasList]);
 
   const onRefresh = () => {
@@ -132,10 +124,10 @@ const KelasScreen: React.FC = () => {
   };
 
   useFocusEffect(
-  useCallback(() => {
-    fetchKelas(); // Memuat ulang data kelas setiap layar difokuskan
-  }, [])
-);
+    useCallback(() => {
+      fetchKelas(); // Memuat ulang data kelas setiap layar difokuskan
+    }, []),
+  );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
