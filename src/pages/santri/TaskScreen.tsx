@@ -17,9 +17,14 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useFocusEffect, useIsFocused, useNavigation } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useIsFocused,
+  useNavigation,
+} from '@react-navigation/native';
 import { API } from '../../services/api';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import Loading from '../../components/loading';
 
 interface Task {
   id: number;
@@ -41,8 +46,7 @@ const TaskScreen: React.FC = () => {
   const [submissionLink, setSubmissionLink] = useState('');
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
-
-
+  const [showLoading, setShowLoading] = useState(false); // modal loading submit
 
   const fetchTasks = useCallback(async (showLoading = true) => {
     try {
@@ -90,6 +94,8 @@ const TaskScreen: React.FC = () => {
 
     try {
       setSubmitting(true);
+      setShowLoading(true); // tampilkan modal
+
       const token = await AsyncStorage.getItem('token');
 
       await axios.post(
@@ -105,6 +111,9 @@ const TaskScreen: React.FC = () => {
         },
       );
 
+      // pastikan modal terlihat minimal 2,5 detik
+      await new Promise(resolve => setTimeout<any>(resolve, 2500));
+
       Alert.alert('Sukses', 'Tugas berhasil dikumpulkan');
       setSelectedTask(null);
       setSubmissionLink('');
@@ -113,6 +122,7 @@ const TaskScreen: React.FC = () => {
       Alert.alert('Error', 'Gagal mengumpulkan tugas');
     } finally {
       setSubmitting(false);
+      setShowLoading(false); // tutup modal
     }
   };
 
@@ -163,38 +173,37 @@ const TaskScreen: React.FC = () => {
     };
 
     const archiveTask = async (taskId: number) => {
-  try {
-    const token = await AsyncStorage.getItem("token");
+      try {
+        const token = await AsyncStorage.getItem('token');
 
-    await axios.patch(
-      `${API}/tugas/santri/${taskId}/archive`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        await axios.patch(
+          `${API}/tugas/santri/${taskId}/archive`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        Alert.alert('Sukses', 'Tugas berhasil diarsipkan');
+        fetchTasks(false);
+      } catch (e: any) {
+        Alert.alert(
+          'Gagal',
+          e?.response?.data?.message ?? 'Tidak dapat mengarsipkan tugas',
+        );
       }
-    );
+    };
+    const canArchive = (task: Task) => {
+      if (!isLate(task.deadline)) return false;
 
-    Alert.alert("Sukses", "Tugas berhasil diarsipkan");
-    fetchTasks(false);
-  } catch (e: any) {
-    Alert.alert(
-      "Gagal",
-      e?.response?.data?.message ?? "Tidak dapat mengarsipkan tugas"
-    );
-  }
-};
-const canArchive = (task: Task) => {
-  if (!isLate(task.deadline)) return false;
-
-  return (
-    task.status === "belum_submit" ||
-    task.status === "reviewed" ||
-    task.status === "rejected"
-  );
-};
-
+      return (
+        task.status === 'belum_submit' ||
+        task.status === 'reviewed' ||
+        task.status === 'rejected'
+      );
+    };
 
     return (
       <View style={styles.card}>
@@ -208,21 +217,29 @@ const canArchive = (task: Task) => {
         </View>
 
         <Text style={styles.title}>{item.title}</Text>
-        {item.description && <Text style={styles.desc}>{item.description}</Text>}
+        {item.description && (
+          <Text style={styles.desc}>{item.description}</Text>
+        )}
 
         <View style={styles.statusContainer}>
-          <View style={[
-            styles.statusBadge, 
-            { backgroundColor: `${getStatusColor(item.status)}15` }
-          ]}>
-            <View style={[
-              styles.statusDot, 
-              { backgroundColor: getStatusColor(item.status) }
-            ]} />
-            <Text style={[
-              styles.statusText,
-              { color: getStatusColor(item.status) }
-            ]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: `${getStatusColor(item.status)}15` },
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: getStatusColor(item.status) },
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                { color: getStatusColor(item.status) },
+              ]}
+            >
               {getStatusLabel(item.status)}
             </Text>
           </View>
@@ -262,27 +279,26 @@ const canArchive = (task: Task) => {
         )}
 
         {canArchive(item) && (
-  <TouchableOpacity
-    style={styles.archiveBtn}
-    onPress={() =>
-      Alert.alert(
-        "Arsipkan Tugas",
-        "Tugas yang diarsipkan akan dipindahkan ke arsip. Lanjutkan?",
-        [
-          { text: "Batal", style: "cancel" },
-          {
-            text: "Arsipkan",
-            style: "destructive",
-            onPress: () => archiveTask(item.id),
-          },
-        ]
-      )
-    }
-  >
-    <Text style={styles.archiveText}>Arsipkan</Text>
-  </TouchableOpacity>
-)}
-
+          <TouchableOpacity
+            style={styles.archiveBtn}
+            onPress={() =>
+              Alert.alert(
+                'Arsipkan Tugas',
+                'Tugas yang diarsipkan akan dipindahkan ke arsip. Lanjutkan?',
+                [
+                  { text: 'Batal', style: 'cancel' },
+                  {
+                    text: 'Arsipkan',
+                    style: 'destructive',
+                    onPress: () => archiveTask(item.id),
+                  },
+                ],
+              )
+            }
+          >
+            <Text style={styles.archiveText}>Arsipkan</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -291,9 +307,7 @@ const canArchive = (task: Task) => {
     <View style={styles.header}>
       <View>
         <Text style={styles.headerTitle}>Daftar Tugas</Text>
-        <Text style={styles.headerSubtitle}>
-          {tasks.length} tugas tersedia
-        </Text>
+        <Text style={styles.headerSubtitle}>{tasks.length} tugas tersedia</Text>
       </View>
     </View>
   );
@@ -318,14 +332,14 @@ const canArchive = (task: Task) => {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="light-content" backgroundColor="#1e3a8a" />
-      
+
       <FlatList
         data={tasks}
         keyExtractor={i => i.id.toString()}
         renderItem={renderItem}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={() => fetchTasks(false)}
             colors={['#2563eb']}
             tintColor="#2563eb"
@@ -364,29 +378,24 @@ const canArchive = (task: Task) => {
       />
 
       {/* Floating Button ke Arsip */}
-<TouchableOpacity
-  style={[
-    styles.fab,
-    isFocused && styles.fabFocused,
-  ]}
-  activeOpacity={0.85}
-  onPress={() => navigation.navigate('ArsipTugas')}
->
-  <Ionicons
-    name={isFocused ? 'archive' : 'archive-outline'}
-    size={22}
-    color="#fff"
-  />
-</TouchableOpacity>
-
-
+      <TouchableOpacity
+        style={[styles.fab, isFocused && styles.fabFocused]}
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('ArsipTugas')}
+      >
+        <Ionicons
+          name={isFocused ? 'archive' : 'archive-outline'}
+          size={22}
+          color="#fff"
+        />
+      </TouchableOpacity>
 
       <Modal visible={!!selectedTask} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalBox}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Pengumpulan Tugas</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setSelectedTask(null);
                   setSubmissionLink('');
@@ -402,7 +411,8 @@ const canArchive = (task: Task) => {
               <View style={styles.taskInfo}>
                 <Text style={styles.taskTitle}>{selectedTask.title}</Text>
                 <Text style={styles.taskDeadline}>
-                  Deadline: {new Date(selectedTask.deadline).toLocaleString('id-ID')}
+                  Deadline:{' '}
+                  {new Date(selectedTask.deadline).toLocaleString('id-ID')}
                 </Text>
               </View>
             )}
@@ -456,6 +466,8 @@ const canArchive = (task: Task) => {
           </View>
         </View>
       </Modal>
+      {/* Modal Loading saat submit */}
+      <Loading visible={showLoading} />
     </SafeAreaView>
   );
 };
@@ -467,16 +479,16 @@ export default TaskScreen;
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
   container: {
     flex: 1,
   },
   center: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f1f5f9",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
   },
   loadingText: {
     marginTop: 16,
@@ -487,8 +499,8 @@ const styles = StyleSheet.create({
 
   /* HEADER BLOK BIRU - SEKARANG DI DALAM LIST */
   header: {
-    backgroundColor: "#1e3a8a",
-    paddingTop: Platform.OS === "android" ? 48 : 64,
+    backgroundColor: '#1e3a8a',
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     paddingBottom: 32,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 28,
@@ -496,20 +508,20 @@ const styles = StyleSheet.create({
     marginBottom: 20, // Spasi antara header dan konten
   },
   headerTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 22,
-    fontWeight: "800",
+    fontWeight: '800',
   },
   headerSubtitle: {
     marginTop: 6,
-    color: "#c7d2fe",
+    color: '#c7d2fe',
     fontSize: 14,
   },
 
   // List Styles
   list: {
     flex: 1,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: '#f1f5f9',
   },
 
   listHeader: {
@@ -519,8 +531,8 @@ const styles = StyleSheet.create({
 
   listTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#374151",
+    fontWeight: '700',
+    color: '#374151',
   },
 
   // List Container
@@ -531,17 +543,17 @@ const styles = StyleSheet.create({
 
   // Card Styles
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 20,
     borderRadius: 18,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -550,34 +562,34 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   subjectContainer: {
-    backgroundColor: "#dbeafe",
+    backgroundColor: '#dbeafe',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
   },
   subject: {
-    color: "#2563eb",
+    color: '#2563eb',
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   deadline: {
     fontSize: 12,
-    color: "#6b7280",
-    fontWeight: "500",
+    color: '#6b7280',
+    fontWeight: '500',
   },
   late: {
-    color: "#dc2626",
-    fontWeight: "600",
+    color: '#dc2626',
+    fontWeight: '600',
   },
   title: {
     fontSize: 17,
-    fontWeight: "700",
-    color: "#1f2933",
+    fontWeight: '700',
+    color: '#1f2933',
     marginBottom: 8,
   },
   desc: {
     fontSize: 14,
-    color: "#6b7280",
+    color: '#6b7280',
     marginBottom: 16,
     lineHeight: 20,
   },
@@ -600,47 +612,47 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   button: {
-    backgroundColor: "#2563eb",
+    backgroundColor: '#2563eb',
     paddingVertical: 14,
     borderRadius: 14,
-    alignItems: "center",
+    alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
-    color: "#fff",
-    fontWeight: "800",
+    color: '#fff',
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
   lateBtn: {
-    backgroundColor: "#dc2626",
+    backgroundColor: '#dc2626',
   },
   submittedContainer: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
+    borderTopColor: '#f3f4f6',
   },
   submittedDate: {
     fontSize: 12,
-    color: "#6b7280",
-    fontWeight: "500",
+    color: '#6b7280',
+    fontWeight: '500',
   },
   linkContainer: {
     marginTop: 12,
     padding: 12,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: '#f3f4f6',
     borderRadius: 12,
-    alignItems: "center",
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
   },
   linkText: {
-    color: "#2563eb",
+    color: '#2563eb',
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 
   // Empty State
@@ -654,19 +666,19 @@ const styles = StyleSheet.create({
   emptyIcon: {
     fontSize: 56,
     marginBottom: 16,
-    color: "#9ca3af",
+    color: '#9ca3af',
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#9ca3af",
+    fontWeight: '700',
+    color: '#9ca3af',
     marginBottom: 10,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: "#9ca3af",
-    textAlign: "center",
-    fontWeight: "400",
+    color: '#9ca3af',
+    textAlign: 'center',
+    fontWeight: '400',
     lineHeight: 22,
     paddingHorizontal: 40,
     marginBottom: 24,
@@ -675,12 +687,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: "#2563eb",
+    backgroundColor: '#2563eb',
   },
   reloadText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 
   // Modal Styles
@@ -749,8 +761,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#374151",
+    fontWeight: '600',
+    color: '#374151',
     marginBottom: 6,
   },
   inputHint: {
@@ -759,13 +771,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 12,
     padding: 14,
     fontSize: 14,
-    color: "#111827",
+    color: '#111827',
     minHeight: 100,
   },
   modalActions: {
@@ -805,42 +817,40 @@ const styles = StyleSheet.create({
   },
 
   archiveBtn: {
-  marginTop: 10,
-  padding: 10,
-  borderRadius: 8,
-  backgroundColor: "#fef2f2",
-  borderWidth: 1,
-  borderColor: "#e74c3c",
-  alignItems: "center",
-},
-archiveText: {
-  color: "#e74c3c",
-  fontWeight: "600",
-},
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+    alignItems: 'center',
+  },
+  archiveText: {
+    color: '#e74c3c',
+    fontWeight: '600',
+  },
 
-fab: {
-  position: "absolute",
-  right: 20,
-  bottom: 110,
-  width: 58,
-  height: 58,
-  borderRadius: 29,
-  backgroundColor: "#1e3a8a",
-  justifyContent: "center",
-  alignItems: "center",
-  shadowColor: "#000",
-  shadowOpacity: 0.3,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 4 },
-  elevation: 8,
-},
-fabIcon: {
-  fontSize: 24,
-  color: "#fff",
-},
-fabFocused: {
-  backgroundColor: '#4f46e5', // lebih gelap saat aktif
-},
-
-
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 110,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#1e3a8a',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 24,
+    color: '#fff',
+  },
+  fabFocused: {
+    backgroundColor: '#4f46e5', // lebih gelap saat aktif
+  },
 });

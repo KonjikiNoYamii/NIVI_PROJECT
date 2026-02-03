@@ -1,4 +1,4 @@
-// DashboardSantri.tsx
+// DashboardSantri.tsx (modifikasi bagian render absensi)
 import React, { useCallback, useState, useEffect } from 'react';
 import {
   View,
@@ -18,6 +18,7 @@ import { absensiSettingService } from '../../services/absensiSetting';
 import AbsensiCard from '../../components/santri/AbsensiCard';
 import HistoryCard from '../../components/santri/HistoryCard';
 import InfoCard from '../../components/santri/InfoCard';
+import Loading from '../../components/loading';
 
 const DashboardSantri = () => {
   const [loading, setLoading] = useState(true);
@@ -25,8 +26,9 @@ const DashboardSantri = () => {
   const [submitting, setSubmitting] = useState(false);
   const [absensi, setAbsensi] = useState<Absensi[]>([]);
   const [MAX_ABSEN, setMaxAbsen] = useState<number>(0);
+    const [showLoading, setShowLoading] = useState(false); // <-- untuk modal loading
 
-  // Load maxAbsen dari backend
+
   const loadMaxAbsen = async () => {
     try {
       const max = await absensiSettingService.getMaxAbsen();
@@ -66,11 +68,17 @@ const DashboardSantri = () => {
     loadData();
   };
 
-  const handleAbsen = async () => {
+const handleAbsen = async () => {
     try {
       setSubmitting(true);
+      setShowLoading(true); // tampilkan loading
+
       await absensiService.absen('hadir');
       await loadAbsensi();
+
+      // pastikan loading tetap terlihat 2500ms
+      await new Promise(resolve => setTimeout<any>(resolve, 2500));
+
       Alert.alert('Berhasil', 'Absensi berhasil dikirim');
     } catch (e: any) {
       Alert.alert(
@@ -79,6 +87,7 @@ const DashboardSantri = () => {
       );
     } finally {
       setSubmitting(false);
+      setShowLoading(false); // hilangkan loading
     }
   };
 
@@ -89,6 +98,25 @@ const DashboardSantri = () => {
     if (hour < 18) return 'Sore';
     return 'Malam';
   };
+  
+
+  // ================================
+  // FILTER ABSENSI ALPHA SESUAI JAM SELESAI
+  // ================================
+const filteredAbsensi = absensi.filter(a => {
+  if (a.status === 'alpha') {
+    const tanggalAbsensi = new Date(a.tanggal);
+    const today = new Date();
+
+    // Buat string YYYY-MM-DD untuk kedua tanggal
+    const tanggalStr = tanggalAbsensi.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
+
+    return todayStr >= tanggalStr;
+  }
+  return true;
+});
+
 
   if (loading) {
     return (
@@ -117,7 +145,6 @@ const DashboardSantri = () => {
         }
         contentContainerStyle={styles.scrollContent}
       >
-        {/* HEADER YANG IKUT SCROLL */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Dashboard Santri</Text>
           <Text style={styles.headerSubtitle}>
@@ -125,35 +152,33 @@ const DashboardSantri = () => {
           </Text>
         </View>
 
-        {/* CONTENT */}
         <View style={styles.contentContainer}>
-          {/* ABSENSI CARD */}
           <View style={styles.card}>
             <AbsensiCard
-              absensi={absensi}
+              absensi={filteredAbsensi}
               submitting={submitting}
               handleAbsen={handleAbsen}
               MAX_ABSEN={MAX_ABSEN}
             />
           </View>
 
-          {/* HISTORY CARD */}
           <View style={styles.listCard}>
-            <HistoryCard absensi={absensi} />
+            <HistoryCard absensi={filteredAbsensi} />
           </View>
 
-          {/* INFO CARD */}
           <View style={styles.listCard}>
             <InfoCard MAX_ABSEN={MAX_ABSEN} />
           </View>
         </View>
 
-        {/* SPACER UNTUK NAVIGATOR */}
         <View style={styles.spacer} />
       </ScrollView>
+            <Loading visible={showLoading} />
+
     </SafeAreaView>
   );
 };
+
 
 /* ================== STYLE ================== */
 
