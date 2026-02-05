@@ -35,6 +35,7 @@ interface Task {
   status: 'belum_submit' | 'pending' | 'reviewed' | 'rejected';
   submission_link?: string | null;
   submitted_at?: string | null;
+  nilai?: number | null;
 }
 
 const TaskScreen: React.FC = () => {
@@ -47,6 +48,7 @@ const TaskScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
   const [showLoading, setShowLoading] = useState(false); // modal loading submit
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
 
   const fetchTasks = useCallback(async (showLoading = true) => {
     try {
@@ -74,6 +76,7 @@ const TaskScreen: React.FC = () => {
 
           submission_link: submission?.linkUrl ?? null,
           submitted_at: submission?.submittedAt ?? null,
+          nilai: submission?.nilai?.nilai ?? null,
         };
       });
 
@@ -129,16 +132,31 @@ const TaskScreen: React.FC = () => {
   const isLate = (deadline: string) =>
     new Date(deadline).getTime() < new Date().getTime();
 
-  const openLink = async (url: string) => {
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) await Linking.openURL(url);
-  };
+const openLink = async (url: string) => {
+  if (!url) {
+    Alert.alert('Error', 'Link tidak tersedia');
+    return;
+  }
+
+  const finalUrl = url.startsWith('http')
+    ? url
+    : `https://${url}`;
+
+  try {
+    await Linking.openURL(finalUrl);
+  } catch {
+    Alert.alert('Error', 'Gagal membuka link');
+  }
+};
+
 
   useFocusEffect(
     useCallback(() => {
       fetchTasks(true);
     }, [fetchTasks]),
   );
+
+
 
   // Bagian renderItem di TaskScreen
   const renderItem = ({ item }: { item: Task }) => {
@@ -271,7 +289,7 @@ const TaskScreen: React.FC = () => {
         {item.submission_link && (
           <TouchableOpacity
             style={styles.linkContainer}
-            onPress={() => openLink(item.submission_link!)}
+            onPress={() => setDetailTask(item)}
             activeOpacity={0.85}
           >
             <Text style={styles.linkText}>Lihat Pengumpulan</Text>
@@ -466,6 +484,65 @@ const TaskScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={!!detailTask} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Detail Pengumpulan</Text>
+              <TouchableOpacity
+                onPress={() => setDetailTask(null)}
+                style={styles.modalCloseButton}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {detailTask && (
+              <>
+                <View style={styles.taskInfo}>
+                  <Text style={styles.taskTitle}>{detailTask.title}</Text>
+                  <Text style={styles.submittedDate}>
+                    Dikumpulkan:{' '}
+                    {detailTask.submitted_at
+                      ? new Date(detailTask.submitted_at).toLocaleString(
+                          'id-ID',
+                        )
+                      : '-'}
+                  </Text>
+                </View>
+
+                {/* STATUS */}
+                <View style={styles.statusContainer}>
+                  <Text style={styles.label}>Status</Text>
+                  <Text style={{ fontWeight: '700' }}>{detailTask.status}</Text>
+                </View>
+
+                {/* NILAI */}
+                {detailTask.status === 'reviewed' && (
+                  <View style={styles.nilaiContainer}>
+                    <Text style={styles.nilaiLabel}>Nilai</Text>
+                    <Text style={styles.nilaiValue}>
+                      {(detailTask as any).nilai ?? '-'}
+                    </Text>
+                  </View>
+                )}
+
+                {/* LINK */}
+                {detailTask.submission_link && (
+                  <TouchableOpacity
+                    style={[styles.button, { marginTop: 20 }]}
+                    onPress={() => openLink(detailTask.submission_link!)}
+                  >
+                    <Text style={styles.buttonText}>Buka Link Pengumpulan</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
       {/* Modal Loading saat submit */}
       <Loading visible={showLoading} />
     </SafeAreaView>
@@ -852,5 +929,27 @@ const styles = StyleSheet.create({
   },
   fabFocused: {
     backgroundColor: '#4f46e5', // lebih gelap saat aktif
+  },
+  nilaiContainer: {
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: '#ecfdf5',
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  nilaiLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#065f46',
+  },
+
+  nilaiValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#047857',
   },
 });
